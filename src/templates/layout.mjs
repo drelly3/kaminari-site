@@ -22,6 +22,17 @@ export const shock = ({
   </div>
 </div>`;
 
+// Same GA4 + Clarity properties as the Webflow site. Only fires on the production domain so preview deploys don't pollute the data.
+const analytics = `<script>
+if (/(^|\\.)joinkaminari\\.com$/.test(location.hostname)) {
+  var s = document.createElement('script'); s.async = true;
+  s.src = 'https://www.googletagmanager.com/gtag/js?id=${site.ga4Id}'; document.head.appendChild(s);
+  window.dataLayer = window.dataLayer || []; window.gtag = function(){dataLayer.push(arguments);};
+  gtag('js', new Date()); gtag('config', '${site.ga4Id}');
+  (function(c,l,a,r,i,t,y){c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};t=l.createElement(r);t.async=1;t.src='https://www.clarity.ms/tag/'+i;y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);})(window,document,'clarity','script','${site.clarityId}');
+}
+</script>`;
+
 const logo = `<img src="/assets/kaminari-mark.svg" alt="" width="35" height="28">Kaminari`;
 
 export function layout({ title, description = site.description, path, image = site.ogImage, type = 'website', jsonLd, body }) {
@@ -53,6 +64,7 @@ export function layout({ title, description = site.description, path, image = si
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/styles.css">
 ${jsonLd ? `<script type="application/ld+json">${JSON.stringify(jsonLd).replace(/</g, '\\u003c')}</script>` : ''}
+${analytics}
 </head>
 <body>
 

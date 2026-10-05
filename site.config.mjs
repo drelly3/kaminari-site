@@ -6,6 +6,8 @@ export const site = {
   description:
     'Stay ahead of the anime curve with Kaminari. Get the latest news, reviews, and exclusive content delivered straight to your inbox every week.',
   googleSiteVerification: 'Ey0CAWBSEi4WMjgZLYF4ixwntx00lI0Qd1rEQinoJQ4',
+  ga4Id: 'G-G0ZNGK9CCS',
+  clarityId: 'vfa1cvf7bd',
   ogImage: '/assets/og-image.jpg',
   email: 'joinkaminari@gmail.com',
   advertiseEmail: 'hello@joinkaminari.com',
