@@ -22,7 +22,7 @@ export const shock = ({
   </div>
 </div>`;
 
-const logo = `<img src="/assets/kaminari-logo-white.svg" alt="Kaminari" width="220" height="22">`;
+const logo = `<img src="/assets/kaminari-mark.svg" alt="" width="35" height="28">Kaminari`;
 
 export function layout({ title, description = site.description, path, image = site.ogImage, type = 'website', jsonLd, body }) {
   const canonical = site.url + (path === '/' ? '' : path);
