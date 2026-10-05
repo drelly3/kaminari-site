@@ -34,3 +34,7 @@ Static site for joinkaminari.com, migrated off Webflow. No dependencies — just
 
 One-time Webflow migration inputs and scripts (`scripts/migrate-webflow.mjs`, `scripts/download-images.mjs`).
 Not needed for day-to-day work; safe to delete once the new site is live.
+
+Until cutover, Webflow is still the source of truth. To pull in anything published or edited there since the last export:
+
+    WEBFLOW_API_TOKEN=... node scripts/export-webflow.mjs && node scripts/migrate-webflow.mjs && node scripts/download-images.mjs
