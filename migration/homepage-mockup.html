@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kaminari — Turn The Anime You Love Into Habits That Actually Stick</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0B0B0F;
+    --bg-alt:#131317;
+    --card:#161619;
+    --ink:#F5F5F7;
+    --muted:#9A9AA8;
+    --line: rgba(245,245,247,0.10);
+    --line-strong: rgba(245,245,247,0.18);
+    --accent:#00C0F9;
+    --accent-soft: rgba(0,192,249,0.12);
+    --white:#FFFFFF;
+    --r:14px;
+  }
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  html{ scroll-behavior:smooth; }
+  body{
+    background:var(--bg); color:var(--ink);
+    font-family:'Inter',sans-serif; line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3{ font-weight:800; letter-spacing:-0.025em; line-height:1.08; }
+  a{ color:inherit; text-decoration:none; }
+  img,svg{ display:block; }
+  .wrap{ max-width:1160px; margin:0 auto; padding:0 28px; }
+
+  .eyebrow{
+    display:inline-block; font-size:11.5px; font-weight:700; letter-spacing:1.6px;
+    text-transform:uppercase; color:var(--accent); margin-bottom:18px;
+  }
+  .btn{
+    display:inline-flex; align-items:center; justify-content:center; gap:8px;
+    padding:14px 26px; font-weight:700; font-size:14.5px; letter-spacing:-0.01em;
+    border-radius:999px; cursor:pointer; border:1.5px solid transparent;
+    transition:opacity .16s ease, transform .16s ease, border-color .16s ease;
+    white-space:nowrap; text-align:center;
+  }
+  .btn-primary{ background:var(--accent); color:#0B0B0F; }
+  .btn-primary:hover{ transform:translateY(-1px); opacity:0.9; }
+  .btn-outline{ border-color:var(--line-strong); color:var(--ink); }
+  .btn-outline:hover{ border-color:var(--ink); transform:translateY(-1px); }
+  .btn-sm{ padding:10px 20px; font-size:13px; }
+
+  .note-banner{
+    background:var(--accent); color:#0B0B0F; text-align:center;
+    font-size:12.5px; font-weight:700; padding:9px 16px;
+  }
+
+  /* NAV */
+  nav{
+    position:sticky; top:0; z-index:60;
+    background:rgba(11,11,15,0.82); backdrop-filter:blur(14px);
+    border-bottom:1px solid var(--line);
+  }
+  nav .wrap{ display:flex; align-items:center; justify-content:space-between; height:76px; }
+  .brand{ display:flex; align-items:center; gap:9px; font-weight:800; font-size:19px; letter-spacing:-0.02em; }
+  .bolt{ width:19px; height:19px; }
+  .nav-links{ display:flex; gap:34px; font-size:14.5px; font-weight:500; color:var(--muted); }
+  .nav-links a{ transition:color .15s; }
+  .nav-links a:hover{ color:var(--ink); }
+  .nav-cta{ display:flex; align-items:center; gap:14px; }
+  .mobile-toggle{ display:none; background:none; border:none; color:var(--ink); font-size:22px; cursor:pointer; }
+  @media (max-width:1120px){ .nav-links{ display:none; } .mobile-toggle{ display:block; } }
+  @media (max-width:560px){ .nav-cta .btn{ display:none; } }
+
+  /* HERO */
+  .hero{ padding:100px 0 92px; position:relative; overflow:hidden; }
+  .hero::before{
+    content:''; position:absolute; top:-34%; left:50%; transform:translateX(-50%);
+    width:1000px; height:660px; pointer-events:none;
+    background:radial-gradient(ellipse at center, rgba(0,192,249,0.11), transparent 68%);
+  }
+  .hero-grid{ display:grid; grid-template-columns:1.08fr 0.92fr; gap:60px; align-items:center; position:relative; z-index:2; }
+  @media (max-width:940px){ .hero-grid{ grid-template-columns:1fr; gap:44px; } }
+  .hero h1{ font-size:clamp(38px,5.4vw,58px); margin-bottom:22px; }
+  .hero p.lede{ font-size:17.5px; color:var(--muted); max-width:540px; margin-bottom:32px; }
+  .hero-actions{ display:flex; gap:12px; flex-wrap:wrap; align-items:center; }
+  .hero-note{ font-size:12.5px; color:var(--muted); margin-top:16px; }
+  .hero-visual{
+    border:1px solid var(--line); border-radius:var(--r); background:var(--card);
+    aspect-ratio:4/3; display:flex; align-items:center; justify-content:center;
+    color:var(--muted); font-size:13px; font-weight:600; text-align:center; padding:24px;
+  }
+
+  /* SECTIONS */
+  section{ padding:88px 0; }
+  .section-head{ max-width:660px; margin-bottom:48px; }
+  .section-head.center{ margin-left:auto; margin-right:auto; text-align:center; }
+  .section-head h2{ font-size:clamp(29px,3.9vw,42px); margin-bottom:16px; }
+  .section-head h2 .accent{ color:var(--accent); }
+  .section-head p{ color:var(--muted); font-size:16.5px; }
+  .alt{ background:var(--bg-alt); border-top:1px solid var(--line); border-bottom:1px solid var(--line); }
+
+  /* THREE BRANCHES */
+  .branch-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:22px; }
+  @media (max-width:880px){ .branch-grid{ grid-template-columns:1fr; } }
+  .branch-card{
+    background:var(--card); border:1px solid var(--line); border-radius:var(--r);
+    padding:34px 30px; display:flex; flex-direction:column;
+    transition:border-color .18s ease, transform .18s ease;
+  }
+  .branch-card:hover{ border-color:var(--line-strong); transform:translateY(-2px); }
+  .branch-card .icon{
+    width:42px; height:42px; border-radius:11px; background:var(--accent-soft);
+    display:flex; align-items:center; justify-content:center; margin-bottom:20px;
+  }
+  .branch-card .k{ font-size:11px; font-weight:700; color:var(--accent); text-transform:uppercase; letter-spacing:1.2px; margin-bottom:10px; }
+  .branch-card h3{ font-size:21px; margin-bottom:12px; }
+  .branch-card p{ font-size:14.5px; color:var(--muted); margin-bottom:22px; flex:1; }
+  .branch-card .link{ font-size:14px; font-weight:700; color:var(--ink); }
+  .branch-card .link:hover{ color:var(--accent); }
+
+  /* ARCHETYPE */
+  .archetype-grid{ display:grid; grid-template-columns:1fr 1fr; gap:60px; align-items:center; }
+  @media (max-width:880px){ .archetype-grid{ grid-template-columns:1fr; gap:40px; } }
+  .archetype-list{ list-style:none; margin-bottom:30px; }
+  .archetype-list li{ font-size:14.5px; color:var(--ink); padding-left:24px; position:relative; margin-bottom:11px; }
+  .archetype-list li::before{
+    content:''; position:absolute; left:0; top:9px; width:8px; height:8px;
+    border-radius:50%; background:var(--accent);
+  }
+  .archetype-visual{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .arch-tile{
+    background:var(--card); border:1px solid var(--line); border-radius:var(--r);
+    padding:26px 20px; text-align:center; font-size:14.5px; font-weight:700;
+    display:flex; flex-direction:column; align-items:center; gap:10px;
+    transition:border-color .18s ease, transform .18s ease;
+  }
+  .arch-tile:hover{ border-color:var(--accent); transform:translateY(-2px); }
+  .arch-tile .glyph{
+    width:38px; height:38px; border-radius:50%; background:var(--accent-soft);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .arch-tile .sub{ font-size:11.5px; font-weight:500; color:var(--muted); }
+
+  /* COMMUNITY */
+  .community-grid{ display:grid; grid-template-columns:1fr 1fr; gap:60px; align-items:center; }
+  @media (max-width:880px){ .community-grid{ grid-template-columns:1fr; gap:40px; } }
+  .discord-card{
+    background:var(--card); border:1px solid var(--line); border-radius:var(--r); overflow:hidden;
+  }
+  .discord-top{
+    padding:16px 20px; border-bottom:1px solid var(--line);
+    display:flex; align-items:center; gap:10px; font-size:13.5px; font-weight:700;
+  }
+  .discord-top .dot{ width:8px; height:8px; border-radius:50%; background:#4ADE80; }
+  .discord-top .count{ margin-left:auto; font-size:12px; font-weight:500; color:var(--muted); }
+  .discord-body{ padding:18px 20px; }
+  .dmsg{ display:flex; gap:12px; padding:11px 0; }
+  .dmsg + .dmsg{ border-top:1px solid var(--line); }
+  .dmsg .av{
+    width:32px; height:32px; border-radius:50%; background:var(--accent-soft); flex-shrink:0;
+    display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:800; color:var(--accent);
+  }
+  .dmsg .who{ font-size:12.5px; font-weight:700; margin-bottom:2px; }
+  .dmsg .who span{ font-weight:500; color:var(--muted); margin-left:6px; font-size:11.5px; }
+  .dmsg .txt{ font-size:13.5px; color:var(--muted); }
+  .channel-row{ display:flex; gap:8px; flex-wrap:wrap; margin-top:16px; }
+  .channel{ font-size:12px; font-weight:600; color:var(--muted); border:1px solid var(--line); border-radius:999px; padding:5px 12px; }
+
+  /* FOUNDER */
+  .founder-grid{ display:grid; grid-template-columns:0.8fr 1.2fr; gap:56px; align-items:center; }
+  @media (max-width:880px){ .founder-grid{ grid-template-columns:1fr; gap:36px; } }
+  .founder-photo{
+    aspect-ratio:1/1; border-radius:var(--r); background:var(--card); border:1px solid var(--line);
+    display:flex; align-items:center; justify-content:center; font-size:13px; color:var(--muted); font-weight:600;
+  }
+  .founder-sig .fs-name{ font-weight:800; font-size:16px; }
+  .founder-sig .fs-role{ font-size:13px; color:var(--muted); }
+
+  /* QUOTES */
+  .quote-block{ max-width:800px; margin:0 auto; text-align:center; }
+  .quote-block .mark{ font-size:40px; color:var(--accent); font-weight:800; line-height:1; margin-bottom:10px; }
+  .quote-block p{ font-size:clamp(21px,2.9vw,30px); font-weight:700; letter-spacing:-0.02em; line-height:1.3; }
+  .quote-block .src{ margin-top:20px; font-size:12px; color:var(--muted); font-weight:700; letter-spacing:1.4px; text-transform:uppercase; }
+  .quote-dots{ display:flex; justify-content:center; gap:7px; margin-top:28px; }
+  .quote-dots button{ width:7px; height:7px; border-radius:50%; border:none; background:var(--line-strong); cursor:pointer; padding:0; transition:all .2s; }
+  .quote-dots button.active{ background:var(--accent); width:22px; border-radius:4px; }
+
+  /* SHOCK CTA */
+  .shock{
+    position:relative; overflow:hidden; text-align:center;
+    background:radial-gradient(ellipse at 50% 0%, rgba(0,192,249,0.16), transparent 62%), var(--bg-alt);
+    border-top:1px solid var(--line); border-bottom:1px solid var(--line);
+    padding:100px 0;
+  }
+  .shock h2{ font-size:clamp(30px,4.4vw,48px); margin-bottom:18px; }
+  .shock p{ color:var(--muted); font-size:17px; max-width:540px; margin:0 auto 32px; }
+  .shock-actions{ display:flex; gap:12px; justify-content:center; flex-wrap:wrap; }
+
+  /* FOOTER */
+  footer{ padding:72px 0 36px; }
+  .footer-top{ display:grid; grid-template-columns:1.4fr 1fr 1fr 1.2fr; gap:44px; margin-bottom:52px; }
+  @media (max-width:880px){ .footer-top{ grid-template-columns:1fr 1fr; gap:36px; } }
+  @media (max-width:520px){ .footer-top{ grid-template-columns:1fr; } }
+  .footer-brand .brand{ margin-bottom:16px; }
+  .footer-brand p{ font-size:13.5px; color:var(--muted); max-width:280px; margin-bottom:22px; }
+  .footer-form{ display:flex; gap:8px; flex-wrap:wrap; }
+  .footer-form input{
+    flex:1; min-width:170px; padding:11px 15px; border-radius:999px; border:1px solid var(--line-strong);
+    background:var(--card); color:var(--ink); font-size:13.5px; font-family:'Inter',sans-serif;
+  }
+  .footer-form input::placeholder{ color:var(--muted); }
+  .footer-col h4{ font-size:11.5px; font-weight:700; letter-spacing:1.3px; text-transform:uppercase; color:var(--muted); margin-bottom:16px; }
+  .footer-col ul{ list-style:none; }
+  .footer-col li{ margin-bottom:11px; }
+  .footer-col a{ font-size:14px; }
+  .footer-col a:hover{ color:var(--accent); }
+  .socials{ display:flex; gap:10px; margin-top:8px; flex-wrap:wrap; }
+  .socials a{
+    width:34px; height:34px; border-radius:50%; border:1px solid var(--line-strong);
+    display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:var(--muted);
+  }
+  .socials a:hover{ border-color:var(--accent); color:var(--accent); }
+  .footer-bottom{ border-top:1px solid var(--line); padding-top:24px; display:flex; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+  .footer-bottom p{ font-size:12px; color:var(--muted); }
+  .fine{ font-size:11.5px; color:var(--muted); margin-top:14px; max-width:820px; opacity:0.8; }
+</style>
+</head>
+<body>
+
+<div class="note-banner">MOCKUP PREVIEW — placeholder images, names &amp; form wiring for review, not a live page</div>
+
+<nav>
+  <div class="wrap">
+    <a href="#" class="brand">
+      <svg class="bolt" viewBox="0 0 24 24" fill="none"><path d="M13 2L4 14h6l-1 8 9-12h-6l1-8z" fill="#00C0F9"/></svg>
+      Kaminari
+    </a>
+    <div class="nav-links">
+      <a href="#about">About</a>
+      <a href="#">Blog</a>
+      <a href="#newsletter">Newsletter</a>
+      <a href="#community">Community</a>
+      <a href="kaminari-landing.html">Anime Mindset</a>
+    </div>
+    <div class="nav-cta">
+      <a href="#newsletter" class="btn btn-primary btn-sm">Join Our Free Weekly Newsletter</a>
+      <button class="mobile-toggle" aria-label="menu">☰</button>
+    </div>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap hero-grid">
+    <div>
+      <span class="eyebrow">Anime Mindset</span>
+      <h1>Turn The Anime You Love Into Habits That Actually Stick.</h1>
+      <p class="lede">Weekly lessons, archetype-matched templates, coaching, and a community of others doing the same. Start free.</p>
+      <div class="hero-actions">
+        <a href="#newsletter" class="btn btn-primary">Join Our Free Weekly Newsletter</a>
+        <a href="#archetype" class="btn btn-outline">Take The Archetype Quiz</a>
+      </div>
+      <p class="hero-note">No spam. One email a week. Unsubscribe anytime.</p>
+    </div>
+    <div class="hero-visual">Add hero image</div>
+  </div>
+</header>
+
+<section id="branches" class="alt">
+  <div class="wrap">
+    <div class="section-head center">
+      <span class="eyebrow">What We Do</span>
+      <h2>Three Branches, <span class="accent">One Mission</span></h2>
+      <p>The newsletter builds the mindset, the templates turn it into habits, and the coaching keeps you consistent. Start wherever fits your week.</p>
+    </div>
+    <div class="branch-grid">
+      <div class="branch-card">
+        <div class="icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="14" rx="2" stroke="#00C0F9" stroke-width="1.7"/><path d="M3 7l9 6 9-6" stroke="#00C0F9" stroke-width="1.7" stroke-linecap="round"/></svg>
+        </div>
+        <div class="k">Free</div>
+        <h3>The Newsletter</h3>
+        <p>One anime story or character breakdown every Wednesday, with insights and exercises to level up each week.</p>
+        <a href="#newsletter" class="link">Start reading →</a>
+      </div>
+      <div class="branch-card">
+        <div class="icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="5" y="3" width="14" height="18" rx="2" stroke="#00C0F9" stroke-width="1.7"/><path d="M9 8h6M9 12h6M9 16h3" stroke="#00C0F9" stroke-width="1.7" stroke-linecap="round"/></svg>
+        </div>
+        <div class="k">Templates</div>
+        <h3>The Anime Mindset System</h3>
+        <p>Habit and productivity templates matched to your archetype, so the plan fits how you're actually wired.</p>
+        <a href="kaminari-landing.html" class="link">See the system →</a>
+      </div>
+      <div class="branch-card">
+        <div class="icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="3.4" stroke="#00C0F9" stroke-width="1.7"/><path d="M5 20c0-3.6 3.1-6 7-6s7 2.4 7 6" stroke="#00C0F9" stroke-width="1.7" stroke-linecap="round"/></svg>
+        </div>
+        <div class="k">Coaching</div>
+        <h3>Guided Accountability</h3>
+        <p>Group goal-setting, weekly check-ins with founders, and opportunities for 1:1 coaching with trained professionals.</p>
+        <a href="kaminari-landing.html" class="link">Work with us →</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="archetype">
+  <div class="wrap archetype-grid">
+    <div>
+      <span class="eyebrow">Start Here</span>
+      <h2 style="font-size:clamp(29px,3.9vw,42px); margin-bottom:16px;">Which Protagonist Are You?</h2>
+      <p style="color:var(--muted); font-size:16.5px; margin-bottom:26px;">Every archetype builds habits differently. Take the quiz and get a system matched to how you're actually wired — not a generic routine you'll drop by week two.</p>
+      <ul class="archetype-list">
+        <li>2 minutes, 12 questions</li>
+        <li>Your archetype plus the habit template built for it</li>
+        <li>Free, no account required</li>
+      </ul>
+      <a href="#" class="btn btn-primary" onclick="alert('Mockup — link this to your archetype quiz.'); return false;">Take The Archetype Quiz</a>
+    </div>
+    <div class="archetype-visual">
+      <div class="arch-tile">
+        <div class="glyph"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M13 2L4 14h6l-1 8 9-12h-6l1-8z" fill="#00C0F9"/></svg></div>
+        The Striker
+        <div class="sub">Momentum first</div>
+      </div>
+      <div class="arch-tile">
+        <div class="glyph"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 3l7 3v6c0 4-3 7-7 9-4-2-7-5-7-9V6l7-3z" stroke="#00C0F9" stroke-width="1.7" stroke-linejoin="round"/></svg></div>
+        The Guardian
+        <div class="sub">Consistency first</div>
+      </div>
+      <div class="arch-tile">
+        <div class="glyph"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="#00C0F9" stroke-width="1.7"/><path d="M12 8v4l3 2" stroke="#00C0F9" stroke-width="1.7" stroke-linecap="round"/></svg></div>
+        The Strategist
+        <div class="sub">Systems first</div>
+      </div>
+      <div class="arch-tile">
+        <div class="glyph"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 3c2 4 6 5 6 9a6 6 0 11-12 0c0-4 4-5 6-9z" stroke="#00C0F9" stroke-width="1.7" stroke-linejoin="round"/></svg></div>
+        The Rival
+        <div class="sub">Competition first</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="community" class="alt">
+  <div class="wrap community-grid">
+    <div class="discord-card">
+      <div class="discord-top">
+        <span class="dot"></span> Kaminari Discord
+        <span class="count">[X] members online</span>
+      </div>
+      <div class="discord-body">
+        <div class="dmsg">
+          <div class="av">K</div>
+          <div>
+            <div class="who">[Member] <span>Today</span></div>
+            <div class="txt">Day 14 of the morning routine. Didn't skip once this week.</div>
+          </div>
+        </div>
+        <div class="dmsg">
+          <div class="av">M</div>
+          <div>
+            <div class="who">[Member] <span>Today</span></div>
+            <div class="txt">This week's breakdown hit way too close to home.</div>
+          </div>
+        </div>
+        <div class="dmsg">
+          <div class="av">R</div>
+          <div>
+            <div class="who">[Member] <span>Yesterday</span></div>
+            <div class="txt">Anyone else on the Strategist template? Comparing setups.</div>
+          </div>
+        </div>
+        <div class="channel-row">
+          <span class="channel"># daily-check-ins</span>
+          <span class="channel"># arc-progress</span>
+          <span class="channel"># recommendations</span>
+          <span class="channel"># wins</span>
+        </div>
+      </div>
+    </div>
+    <div>
+      <span class="eyebrow">The Community</span>
+      <h2 style="font-size:clamp(29px,3.9vw,42px); margin-bottom:16px;">You'll Quit Alone. You Won't Quit Here.</h2>
+      <p style="color:var(--muted); font-size:16.5px; margin-bottom:26px;">Most habits die quietly, with nobody around to notice. The Kaminari Discord is where members post check-ins, compare templates, and keep each other honest through the boring middle of an arc.</p>
+      <ul class="archetype-list">
+        <li>Daily check-in channels that make skipping visible</li>
+        <li>Weekly founder drop-ins and group goal-setting</li>
+        <li>Recommendations, deep dives, and arc discussion</li>
+      </ul>
+      <a href="#" class="btn btn-primary" onclick="alert('Mockup — link this to your Discord invite.'); return false;">Join The Discord</a>
+    </div>
+  </div>
+</section>
+
+<section id="about">
+  <div class="wrap founder-grid">
+    <div class="founder-photo">Add founder photo</div>
+    <div>
+      <span class="eyebrow">About Kaminari</span>
+      <h2 style="font-size:clamp(29px,3.9vw,42px); margin-bottom:18px;">We Break Down Arcs. You Get The Takeaways.</h2>
+      <p style="color:var(--muted); font-size:16px; margin-bottom:16px;">The fights, arcs, and characters you grew up on hold real lessons about mindset, discipline, and purpose. Kaminari exists to make that explicit — we pull the lesson out of the story and hand you something you can use on a random Tuesday.</p>
+      <p style="color:var(--muted); font-size:16px; margin-bottom:24px;">Not "watch more anime." Extract the arc. Apply the lesson. Repeat until it's who you are.</p>
+      <div class="founder-sig">
+        <div class="fs-name">[Founder Name]</div>
+        <div class="fs-role">Founder, Kaminari</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="alt">
+  <div class="wrap">
+    <div class="quote-block">
+      <div class="mark">"</div>
+      <p id="quote-text">You don't need a bigger villain. You need a longer training arc.</p>
+      <div class="src" id="quote-src">Kaminari</div>
+      <div class="quote-dots" id="quote-dots"></div>
+    </div>
+  </div>
+</section>
+
+<div class="shock">
+  <div class="wrap">
+    <h2>We're Here To Shock Your System.</h2>
+    <p>Motivation, insights, and actionable exercises that will help you hit your final form.</p>
+    <div class="shock-actions">
+      <a href="#newsletter" class="btn btn-primary">Join Our Free Weekly Newsletter</a>
+      <a href="kaminari-landing.html" class="btn btn-outline">See The 90-Day System</a>
+    </div>
+  </div>
+</div>
+
+<footer id="newsletter">
+  <div class="wrap">
+    <div class="footer-top">
+      <div class="footer-brand">
+        <div class="brand">
+          <svg class="bolt" viewBox="0 0 24 24" fill="none"><path d="M13 2L4 14h6l-1 8 9-12h-6l1-8z" fill="#00C0F9"/></svg>
+          Kaminari
+        </div>
+        <p>Your weekly dose of anime insights, recs, and deep dives. Trusted by thousands of readers worldwide.</p>
+        <div class="footer-form">
+          <input type="email" placeholder="Enter your email">
+          <button class="btn btn-primary btn-sm" onclick="alert('Mockup — connect this to your Substack embed.'); return false;">Subscribe</button>
+        </div>
+      </div>
+      <div class="footer-col">
+        <h4>Explore</h4>
+        <ul>
+          <li><a href="#about">About</a></li>
+          <li><a href="#">Blog</a></li>
+          <li><a href="#newsletter">Newsletter</a></li>
+          <li><a href="kaminari-landing.html">Anime Mindset</a></li>
+          <li><a href="#community">Discord</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>More</h4>
+        <ul>
+          <li><a href="#">Privacy Policy</a></li>
+          <li><a href="#">Advertise</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Contact</h4>
+        <ul>
+          <li><a href="mailto:joinkaminari@gmail.com">joinkaminari@gmail.com</a></li>
+        </ul>
+        <div class="socials">
+          <a href="#" aria-label="LinkedIn">in</a>
+          <a href="#" aria-label="Instagram">ig</a>
+          <a href="#" aria-label="X">X</a>
+          <a href="#" aria-label="YouTube">yt</a>
+          <a href="#" aria-label="TikTok">tt</a>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>© Kaminari. All rights reserved.</p>
+      <p>Design mockup — not a live page.</p>
+    </div>
+    <p class="fine">Placeholder images, member names, Discord stats, social links, and the Substack form must be replaced or wired up before publishing.</p>
+  </div>
+</footer>
+
+<script>
+  var quotes = [
+    { text: "You don't need a bigger villain. You need a longer training arc.", src: "Kaminari" },
+    { text: "Every main character was a background character first. The arc is the only difference.", src: "Kaminari" },
+    { text: "Motivation gets you to episode one. Systems get you to the finale.", src: "Kaminari" },
+    { text: "The training arc is boring on purpose. That's how you know it's working.", src: "Kaminari" },
+    { text: "You're not behind. You're mid-arc.", src: "Kaminari" },
+    { text: "Power-ups aren't sudden. They're a hundred reps nobody saw.", src: "Kaminari" },
+    { text: "Stop waiting for a rival to force your growth. Be your own trial arc.", src: "Kaminari" }
+  ];
+  var idx = 0;
+  var textEl = document.getElementById('quote-text');
+  var srcEl = document.getElementById('quote-src');
+  var dotsEl = document.getElementById('quote-dots');
+
+  quotes.forEach(function(q, i){
+    var b = document.createElement('button');
+    if(i === 0) b.className = 'active';
+    b.addEventListener('click', function(){ showQuote(i); });
+    dotsEl.appendChild(b);
+  });
+
+  function showQuote(i){
+    idx = i;
+    textEl.textContent = quotes[i].text;
+    srcEl.textContent = quotes[i].src;
+    Array.prototype.forEach.call(dotsEl.children, function(d, di){
+      d.className = di === i ? 'active' : '';
+    });
+  }
+
+  setInterval(function(){ showQuote((idx + 1) % quotes.length); }, 6000);
+</script>
+
+</body>
+</html>
