@@ -10,7 +10,7 @@ export const site = {
   clarityId: 'vfa1cvf7bd',
   ogImage: '/assets/og-image.jpg',
   email: 'joinkaminari@gmail.com',
-  advertiseEmail: 'hello@joinkaminari.com',
+  advertiseEmail: 'joinkaminari@gmail.com',
 };
 
 export const links = {
