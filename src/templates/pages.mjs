@@ -32,7 +32,7 @@ export const home = posts => {
       </div>
       <p class="hero-note">No spam. One email a week. Unsubscribe anytime.</p>
     </div>
-    <div class="hero-visual"><video src="/assets/hero-loop.mp4" poster="/assets/hero-poster.jpg" autoplay muted loop playsinline preload="auto" aria-label="Anime silhouette surrounded by lightning"></video></div>
+    <div class="hero-visual"><img src="/assets/hero.webp" alt="Anime silhouette in the rain, lit by lightning" width="960" height="705" fetchpriority="high"></div>
   </div>
 </header>
 
