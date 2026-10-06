@@ -32,7 +32,7 @@ export const home = posts => {
       </div>
       <p class="hero-note">No spam. One email a week. Unsubscribe anytime.</p>
     </div>
-    <div class="hero-visual"><img src="/assets/hero-desktop.png" alt="Kaminari — anime lessons for real life" fetchpriority="high"></div>
+    <div class="hero-visual"><video src="/assets/hero-loop.mp4" poster="/assets/hero-poster.jpg" autoplay muted loop playsinline preload="auto" aria-label="Anime silhouette surrounded by lightning"></video></div>
   </div>
 </header>
 

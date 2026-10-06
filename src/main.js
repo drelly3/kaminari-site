@@ -84,3 +84,7 @@ if (tocLinks.length && 'IntersectionObserver' in window) {
   }, { rootMargin: '-100px 0px -70% 0px' });
   Object.keys(byId).forEach(id => { const h = document.getElementById(id); if (h) io.observe(h); });
 }
+
+// Hero lightning loop: respect reduced-motion (show the still poster instead)
+const heroVideo = document.querySelector('.hero-visual video');
+if (heroVideo && matchMedia('(prefers-reduced-motion: reduce)').matches) { heroVideo.removeAttribute('autoplay'); heroVideo.pause(); }
