@@ -35,7 +35,8 @@ if (/(^|\\.)joinkaminari\\.com$/.test(location.hostname)) {
 
 const logo = `<img src="/assets/kaminari-mark.svg" alt="" width="35" height="28">Kaminari`;
 
-export function layout({ title, description = site.description, path, image = site.ogImage, type = 'website', jsonLd, body }) {
+// head: extra tags for one page. tracking: false leaves GA4 + Clarity off that page.
+export function layout({ title, description = site.description, path, image = site.ogImage, type = 'website', jsonLd, body, head = '', tracking = true }) {
   const canonical = site.url + (path === '/' ? '' : path);
   return `<!DOCTYPE html>
 <html lang="en">
@@ -64,7 +65,8 @@ export function layout({ title, description = site.description, path, image = si
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/styles.css">
 ${jsonLd ? `<script type="application/ld+json">${JSON.stringify(jsonLd).replace(/</g, '\\u003c')}</script>` : ''}
-${analytics}
+${head}
+${tracking ? analytics : ''}
 </head>
 <body>
 

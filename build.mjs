@@ -38,14 +38,22 @@ fs.mkdirSync(DIST, { recursive: true });
 fs.cpSync('public', DIST, { recursive: true });
 fs.copyFileSync('src/styles.css', path.join(DIST, 'styles.css'));
 fs.copyFileSync('src/main.js', path.join(DIST, 'main.js'));
+fs.copyFileSync('src/arc-tracker.css', path.join(DIST, 'arc-tracker.css'));
+fs.copyFileSync('src/arc-tracker.js', path.join(DIST, 'arc-tracker.js'));
+fs.copyFileSync('src/arc-gate.js', path.join(DIST, 'arc-gate.js'));
 
 const routes = [];
 function write(route, opts) {
   const file = path.join(DIST, route === '/' ? 'index.html' : route.slice(1) + '.html');
   fs.mkdirSync(path.dirname(file), { recursive: true });
   fs.writeFileSync(file, layout({ path: route, ...opts }));
-  if (route !== '/404') routes.push({ route, lastmod: opts.lastmod });
+  if (route !== '/404' && opts.listed !== false) routes.push({ route, lastmod: opts.lastmod });
 }
+
+// the tracker's archetype data lives in the browser script; read it here so pages can show it too
+const arcSrc = fs.readFileSync('src/arc-tracker.js', 'utf8');
+const arcStart = arcSrc.indexOf('const ARCHETYPES = ['), arcEnd = arcSrc.indexOf('\nconst ARCHETYPE_ICONS');
+const arcArchetypes = Function(arcSrc.slice(arcStart, arcEnd) + '; return ARCHETYPES;')();
 
 const org = { '@type': 'Organization', '@id': site.url + '/#organization', name: site.name, url: site.url, logo: abs('/assets/kaminari-logo-white.svg') };
 
@@ -71,6 +79,21 @@ write('/blog', {
   title: 'Blog | Kaminari — Anime Lessons, Watch Orders, Filler Lists & Quotes',
   description: 'Anime lessons, watch orders, filler lists, character quotes, and recommendations from the Kaminari universe.',
   body: pages.blogIndex(posts),
+});
+// public page that sells the tracker
+if (site.arcTrackerPublic) write('/arc-tracker', {
+  title: 'Arc Tracker | Kaminari',
+  description: 'Pick your archetype, commit to three habits, and earn your rank one full-clear day at a time.',
+  body: pages.arcTrackerLanding(arcArchetypes),
+});
+// the tracker itself (members only once sign-in and payment are connected)
+write('/arc-tracker/app', {
+  title: 'Arc Tracker | Kaminari',
+  description: 'Your Arc Tracker.',
+  head: `<meta name="robots" content="noindex">\n<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">\n<link rel="stylesheet" href="/arc-tracker.css">`,
+  tracking: false, // habit logs are private: no analytics on this page unless Drelly says otherwise
+  listed: false,
+  body: pages.arcTracker(),
 });
 write('/404', { title: 'Page Not Found | Kaminari', body: pages.notFound() });
 

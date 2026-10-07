@@ -439,6 +439,157 @@ ${p.html}
 ${shock()}`;
 };
 
+/* ---------- ARC TRACKER: public page ---------- */
+// Buy goes to the Gumroad membership; sign-in goes to the tracker, which asks for the licence key.
+const ARC_BUY = links.arcTracker, ARC_SIGN_IN = '/arc-tracker/app';
+export const arcTrackerLanding = all => {
+  const starters = all.filter(a => a.ranks);
+  const sample = starters[0];
+  const ring = a => `style="--hue:${a.hue}"`;
+  return `
+<header class="hero">
+  <div class="wrap hero-grid">
+    <div>
+      <span class="eyebrow">Arc Tracker</span>
+      <h1>Pick Your Archetype. Clear Your Day. Earn Your Rank.</h1>
+      <p class="lede">A habit tracker built on the Anime Mindset. Commit to three habits, face your archetype's shadow, and climb a rank ladder you can only earn by showing up.</p>
+      <div class="hero-actions">
+        <a href="${ARC_BUY}" class="btn btn-primary">Get Access</a>
+        <a href="${ARC_SIGN_IN}" class="btn btn-outline">Member Sign In</a>
+      </div>
+      <p class="hero-note">Built for your phone first.</p>
+    </div>
+    <div class="arc-faces">
+      ${starters.map(a => `<img class="arc-face" ${ring(a)} src="/assets/avatars/${a.key}.png" alt="${esc(a.title)}" width="200" height="200" loading="lazy">`).join('\n      ')}
+    </div>
+  </div>
+</header>
+
+<section class="alt">
+  <div class="wrap">
+    <div class="section-head center">
+      <span class="eyebrow">How It Works</span>
+      <h2>Three Habits. One Shadow. <span class="accent">One Arc.</span></h2>
+      <p>No twenty-item checklists. You pick what matters, log it honestly, and the tracker does the math.</p>
+    </div>
+    <div class="branch-grid">
+      <div class="branch-card">
+        <div class="icon">3️⃣</div>
+        <div class="k">Habits</div>
+        <h3>Three habits, max</h3>
+        <p>One Non-Negotiable plus two supporting habits, each stacked onto something you already do: "After I pour my coffee, I will read one page."</p>
+      </div>
+      <div class="branch-card">
+        <div class="icon">🌗</div>
+        <div class="k">Shadow-Check</div>
+        <h3>Face your shadow</h3>
+        <p>Every archetype has a failure mode. Your shadow-check works against it and is tracked on its own, with badges at 10, 25 and 50 check-ins.</p>
+      </div>
+      <div class="branch-card">
+        <div class="icon">🏆</div>
+        <div class="k">Ranks</div>
+        <h3>Earn your rank</h3>
+        <p>Ranks come from full-clear days, when all three habits land on the same day. Time on the calendar doesn't count.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="section-head center">
+      <span class="eyebrow">Choose Your Character</span>
+      <h2>Twelve Archetypes, Twelve Arcs</h2>
+      <p>Each one has its own painted avatar, its own colour, its own strengths and shadow, and its own five-step rank ladder.</p>
+    </div>
+    <div class="arc-grid">
+      ${starters.map(a => `<div class="arc-tile" ${ring(a)}>
+        <img class="arc-face" src="/assets/avatars/${a.key}.png" alt="" width="200" height="200" loading="lazy">
+        <h3>${esc(a.title)}</h3>
+        <p class="q">"${esc(a.quote)}"</p>
+        <p class="top">Final rank: <b>${esc(a.ranks[a.ranks.length - 1].name)}</b></p>
+      </div>`).join('\n      ')}
+    </div>
+  </div>
+</section>
+
+<section class="alt">
+  <div class="wrap split">
+    <div>
+      <span class="eyebrow">The Rank Ladder</span>
+      <h2 class="h">Ranks You Can't Fake</h2>
+      <p class="sub">Five ranks per archetype, unlocked at 0, 10, 25, 50 and 100 full-clear days. Miss a day and you keep what you've earned, but the only way up is another clear.</p>
+      <ul class="archetype-list">
+        <li>Streaks, with a "Never Miss Twice" nudge after a missed day</li>
+        <li>XP and levels from every real check-in</li>
+        <li>A five-minute weekly review to adjust your habits</li>
+        <li>Day Cleared and Rank Up celebrations in your archetype's colours</li>
+      </ul>
+      <a href="${ARC_BUY}" class="btn btn-primary">Get Access</a>
+    </div>
+    <div class="arc-ladder" ${ring(sample)}>
+      <div class="arc-ladder-head"><img class="arc-face" src="/assets/avatars/${sample.key}.png" alt="" width="200" height="200" loading="lazy"><div><b>${esc(sample.title)}</b><span>Example ladder</span></div></div>
+      ${sample.ranks.map((r, i) => `<div class="arc-step" style="--lvl:${i}"><span class="n">${i + 1}</span><b>${esc(r.name)}</b><span class="ms">${r.ms} full-clear days</span></div>`).join('\n      ')}
+    </div>
+  </div>
+</section>
+
+<div class="shock">
+  <div class="wrap">
+    <h2>Your Arc Starts With One Cleared Day.</h2>
+    <p>Pick your archetype, name three habits, and log today.</p>
+    <div class="shock-actions">
+      <a href="${ARC_BUY}" class="btn btn-primary">Get Access</a>
+      <a href="${links.quiz}" target="_blank" rel="noopener" class="btn btn-outline">Find Your Archetype First</a>
+    </div>
+  </div>
+</div>`;
+};
+
+/* ---------- ARC TRACKER (the app itself lives in src/arc-tracker.js + src/arc-tracker.css) ---------- */
+export const arcTracker = () => `
+<div class="arc-root">
+  <div id="arc-gate" class="arc-gate" hidden>
+    <form class="arc-gate-card" id="arc-gate-form" novalidate>
+      <div class="arc-gate-icon" aria-hidden="true">⚡</div>
+      <h1>Unlock Arc Tracker</h1>
+      <p>${site.arcTrackerPublic ? 'Enter the licence key from your Gumroad receipt email.' : 'Enter your access key.'}</p>
+      <label for="arc-key">Licence key</label>
+      <input type="text" id="arc-key" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX">
+      <div class="arc-gate-msg" id="arc-gate-msg" role="alert"></div>
+      <button type="submit" class="btn" id="arc-unlock">Unlock</button>
+      <p class="arc-gate-foot">${site.arcTrackerPublic ? `No key yet? <a href="${ARC_BUY}">Get access</a>` : 'Arc Tracker is in an invite-only test run.'}</p>
+      <div id="arc-preview-note" hidden>
+        <button type="button" class="btn ghost" id="arc-preview-open" style="margin-top:14px;">Skip the key and open the tracker</button>
+        <p class="arc-gate-foot">Preview only. This button and the sample key ARC7-K2MQ-9XTD-4HPL do not work on the live site.</p>
+      </div>
+    </form>
+  </div>
+  <div id="arc-app" hidden>
+    <header class="top">
+      <div class="brand"><span class="bolt">⚡</span><span class="word">ARC TRACKER</span></div>
+      <div class="headline-badge" id="headerBadge">Set up your character in Setup →</div>
+    </header>
+
+    <nav class="tabs">
+      <button data-tab="today" class="active">Today</button>
+      <button data-tab="progress">Progress</button>
+      <button data-tab="archetypes">Archetypes</button>
+      <button data-tab="setup">Setup</button>
+    </nav>
+
+    <div class="arc-main">
+      <section class="tab active" id="tab-today"></section>
+      <section class="tab" id="tab-progress"></section>
+      <section class="tab" id="tab-archetypes"></section>
+      <section class="tab" id="tab-setup"></section>
+    </div>
+    <noscript><p>Arc Tracker needs JavaScript turned on.</p></noscript>
+  </div>
+  <div id="modalRoot"></div>
+</div>
+<script src="/arc-gate.js" defer></script>`;
+
 export const notFound = () => `
 <header class="page-hero center">
   <div class="wrap">

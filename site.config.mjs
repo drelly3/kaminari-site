@@ -9,6 +9,9 @@ export const site = {
   ga4Id: 'G-G0ZNGK9CCS',
   clarityId: 'vfa1cvf7bd',
   ogImage: '/assets/og-image.jpg',
+  // false = invite-only test run: no menu link, no public Arc Tracker page, no buy button.
+  // The tracker itself still works at /arc-tracker/app for anyone holding a key.
+  arcTrackerPublic: false,
   email: 'joinkaminari@gmail.com',
   advertiseEmail: 'joinkaminari@gmail.com',
 };
@@ -18,6 +21,7 @@ export const links = {
   substackEmbed: 'https://joinkaminari.substack.com/embed',
   quiz: 'https://kaminari-archetype-quiz.vercel.app/',
   templates: 'https://kaminari4.gumroad.com/l/anime-mindset-system',
+  arcTracker: 'https://kaminari4.gumroad.com/l/huotdg',
   discord: 'https://discord.gg/6H5KAp3edZ',
   linkedin: 'https://www.linkedin.com/company/kaminari-newsletter/',
 };
@@ -28,6 +32,7 @@ export const nav = [
   { label: 'Newsletter', href: '/newsletter' },
   { label: 'Community', href: '/#community' },
   { label: 'Anime Mindset', href: '/anime-mindset' },
+  ...(site.arcTrackerPublic ? [{ label: 'Arc Tracker', href: '/arc-tracker' }] : []),
 ];
 
 export const authors = {

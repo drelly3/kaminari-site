@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Arc Tracker cover</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  html,body{ width:1280px; height:720px; overflow:hidden; }
+  body{
+    background:#0A0D13; color:#E9EEF5; font-family:'Inter',sans-serif;
+    display:grid; grid-template-columns:560px 1fr; align-items:center; position:relative;
+  }
+  body::before{
+    content:""; position:absolute; inset:0;
+    background:radial-gradient(ellipse 760px 520px at 78% 50%, rgba(0,192,249,0.16), transparent 70%);
+  }
+  .copy{ padding-left:72px; position:relative; }
+  .brand{ display:flex; align-items:center; gap:12px; font-weight:600; font-size:22px; color:#96A1B4; margin-bottom:34px; }
+  .brand img{ height:30px; }
+  h1{ font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:92px; line-height:0.95; letter-spacing:-2px; }
+  h1 span{ color:#00C0F9; }
+  p{ font-size:25px; line-height:1.4; color:#B9C3D3; margin-top:26px; max-width:440px; font-weight:500; }
+  .pill{ display:inline-block; margin-top:32px; font-size:19px; font-weight:600; color:#0A0D13; background:#00C0F9; border-radius:999px; padding:11px 24px; }
+  .faces{ position:relative; display:grid; grid-template-columns:repeat(4,132px); gap:22px; justify-content:center; padding-right:56px; }
+  .faces img{ width:132px; height:132px; border-radius:50%; object-fit:cover; border:3px solid hsl(var(--h) 85% 58%); box-shadow:0 0 30px hsla(var(--h),90%,55%,0.45); }
+</style>
+</head>
+<body>
+  <div class="copy">
+    <div class="brand"><img src="../../public/assets/kaminari-mark.svg" alt="">Kaminari</div>
+    <h1>Arc<br><span>Tracker</span></h1>
+    <p>Pick your archetype. Clear your day. Earn your rank.</p>
+    <span class="pill">12 archetypes · 3 habits · 5 ranks</span>
+  </div>
+  <div class="faces">
+    <img style="--h:192" src="../../public/assets/avatars/lone-wolf.png" alt="">
+    <img style="--h:255" src="../../public/assets/avatars/strategist.png" alt="">
+    <img style="--h:14" src="../../public/assets/avatars/demon-grind.png" alt="">
+    <img style="--h:45" src="../../public/assets/avatars/prodigy.png" alt="">
+    <img style="--h:24" src="../../public/assets/avatars/reborn.png" alt="">
+    <img style="--h:42" src="../../public/assets/avatars/beacon.png" alt="">
+    <img style="--h:340" src="../../public/assets/avatars/social-commander.png" alt="">
+    <img style="--h:275" src="../../public/assets/avatars/visionary.png" alt="">
+    <img style="--h:50" src="../../public/assets/avatars/believer.png" alt="">
+    <img style="--h:132" src="../../public/assets/avatars/underdog.png" alt="">
+    <img style="--h:350" src="../../public/assets/avatars/devoted.png" alt="">
+    <img style="--h:300" src="../../public/assets/avatars/free-spirit.png" alt="">
+  </div>
+</body>
+</html>
