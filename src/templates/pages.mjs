@@ -451,14 +451,14 @@ ${shock()}`;
 /* ---------- ARC TRACKER: sections shown on the Anime Mindset page ---------- */
 // Buy goes to the Gumroad membership; sign-in goes to the tracker, which asks for the licence key.
 const ARC_BUY = links.arcTracker, ARC_SIGN_IN = '/arc-tracker/app';
-// Until sales open, the buy button is a "Coming Soon" label that can't be clicked.
+// Until sales open, the buy button reads "Coming Soon" and opens the Gumroad page, where buying is switched off.
 // Same button with the product named, for places where the tracker hasn't been introduced yet.
 const arcHeroButton = site.arcTrackerSales
   ? `<a href="${links.arcTracker}" class="btn btn-outline">Get The Arc Tracker</a>`
-  : `<span class="btn btn-soon" aria-disabled="true">Arc Tracker: Coming Soon</span>`;
+  : `<a href="${links.arcTracker}" target="_blank" rel="noopener" class="btn btn-soon">Arc Tracker: Coming Soon</a>`;
 const arcBuyButton = site.arcTrackerSales
   ? `<a href="${ARC_BUY}" class="btn btn-primary">Get Access</a>`
-  : `<span class="btn btn-soon" aria-disabled="true">Coming Soon</span>`;
+  : `<a href="${links.arcTracker}" target="_blank" rel="noopener" class="btn btn-soon">Coming Soon</a>`;
 // The tracker's part of the Anime Mindset page.
 const arcTrackerSections = all => {
   const sample = all.find(a => a.ranks);
