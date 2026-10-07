@@ -11,7 +11,9 @@ export const site = {
   ogImage: '/assets/og-image.jpg',
   // false = invite-only test run: no menu link, no public Arc Tracker page, no buy button.
   // The tracker itself still works at /arc-tracker/app for anyone holding a key.
-  arcTrackerPublic: false,
+  arcTrackerPublic: true,
+  // false = the buy buttons read "Coming Soon" and can't be clicked. true = they open the Gumroad checkout.
+  arcTrackerSales: false,
   email: 'joinkaminari@gmail.com',
   advertiseEmail: 'joinkaminari@gmail.com',
 };

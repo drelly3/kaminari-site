@@ -442,6 +442,10 @@ ${shock()}`;
 /* ---------- ARC TRACKER: public page ---------- */
 // Buy goes to the Gumroad membership; sign-in goes to the tracker, which asks for the licence key.
 const ARC_BUY = links.arcTracker, ARC_SIGN_IN = '/arc-tracker/app';
+// Until sales open, the buy button is a "Coming Soon" label that can't be clicked.
+const arcBuyButton = site.arcTrackerSales
+  ? `<a href="${ARC_BUY}" class="btn btn-primary">Get Access</a>`
+  : `<span class="btn btn-soon" aria-disabled="true">Coming Soon</span>`;
 export const arcTrackerLanding = all => {
   const starters = all.filter(a => a.ranks);
   const sample = starters[0];
@@ -454,10 +458,10 @@ export const arcTrackerLanding = all => {
       <h1>Pick Your Archetype. Clear Your Day. Earn Your Rank.</h1>
       <p class="lede">A habit tracker built on the Anime Mindset. Commit to three habits, face your archetype's shadow, and climb a rank ladder you can only earn by showing up.</p>
       <div class="hero-actions">
-        <a href="${ARC_BUY}" class="btn btn-primary">Get Access</a>
-        <a href="${ARC_SIGN_IN}" class="btn btn-outline">Member Sign In</a>
+        ${arcBuyButton}
+        <a href="${ARC_SIGN_IN}" class="btn btn-outline">${site.arcTrackerSales ? 'Member Sign In' : 'Have A Key? Sign In'}</a>
       </div>
-      <p class="hero-note">Built for your phone first.</p>
+      <p class="hero-note">${site.arcTrackerSales ? 'Built for your phone first.' : `Not on sale yet. <a href="${links.substack}subscribe" data-subscribe style="color:var(--accent);">Join the newsletter</a> to hear when it opens.`}</p>
     </div>
     <div class="arc-faces">
       ${starters.map(a => `<img class="arc-face" ${ring(a)} src="/assets/avatars/${a.key}.png" alt="${esc(a.title)}" width="200" height="200" loading="lazy">`).join('\n      ')}
@@ -525,7 +529,7 @@ export const arcTrackerLanding = all => {
         <li>A five-minute weekly review to adjust your habits</li>
         <li>Day Cleared and Rank Up celebrations in your archetype's colours</li>
       </ul>
-      <a href="${ARC_BUY}" class="btn btn-primary">Get Access</a>
+      ${arcBuyButton}
     </div>
     <div class="arc-ladder" ${ring(sample)}>
       <div class="arc-ladder-head"><img class="arc-face" src="/assets/avatars/${sample.key}.png" alt="" width="200" height="200" loading="lazy"><div><b>${esc(sample.title)}</b><span>Example ladder</span></div></div>
@@ -539,7 +543,7 @@ export const arcTrackerLanding = all => {
     <h2>Your Arc Starts With One Cleared Day.</h2>
     <p>Pick your archetype, name three habits, and log today.</p>
     <div class="shock-actions">
-      <a href="${ARC_BUY}" class="btn btn-primary">Get Access</a>
+      ${arcBuyButton}
       <a href="${links.quiz}" target="_blank" rel="noopener" class="btn btn-outline">Find Your Archetype First</a>
     </div>
   </div>
@@ -553,12 +557,12 @@ export const arcTracker = () => `
     <form class="arc-gate-card" id="arc-gate-form" novalidate>
       <div class="arc-gate-icon" aria-hidden="true">⚡</div>
       <h1>Unlock Arc Tracker</h1>
-      <p>${site.arcTrackerPublic ? 'Enter the licence key from your Gumroad receipt email.' : 'Enter your access key.'}</p>
+      <p>${site.arcTrackerSales ? 'Enter the licence key from your Gumroad receipt email.' : 'Enter your access key.'}</p>
       <label for="arc-key">Licence key</label>
       <input type="text" id="arc-key" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX">
       <div class="arc-gate-msg" id="arc-gate-msg" role="alert"></div>
       <button type="submit" class="btn" id="arc-unlock">Unlock</button>
-      <p class="arc-gate-foot">${site.arcTrackerPublic ? `No key yet? <a href="${ARC_BUY}">Get access</a>` : 'Arc Tracker is in an invite-only test run.'}</p>
+      <p class="arc-gate-foot">${site.arcTrackerSales ? `No key yet? <a href="${ARC_BUY}">Get access</a>` : 'Arc Tracker is coming soon. Access is invite-only for now.'}</p>
       <div id="arc-preview-note" hidden>
         <button type="button" class="btn ghost" id="arc-preview-open" style="margin-top:14px;">Skip the key and open the tracker</button>
         <p class="arc-gate-foot">Preview only. This button and the sample key ARC7-K2MQ-9XTD-4HPL do not work on the live site.</p>
