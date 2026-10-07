@@ -81,7 +81,7 @@ for (const p of posts) {
   const pick = [...same.slice(i + 1), ...same.slice(0, i), ...posts.filter(o => o.kind !== p.kind)].slice(0, 3);
   const author = authors[p.author];
   write(`/blog/${p.slug}`, {
-    title: `${p.metaTitle} | Kaminari Newsletter`,
+    title: `${p.metaTitle} | Kaminari`,
     description: p.metaDescription,
     image: p.thumbnail || site.ogImage,
     type: 'article',
