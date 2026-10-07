@@ -3,16 +3,6 @@
 (() => {
 /* ---------------- Archetype data ---------------- */
 const ARCHETYPES = [
-  {key:'lone-wolf',emoji:'🐺',title:'The Lone Wolf',alias:'Sage',hue:192,
-   quote:"I move in silence. My results make the noise.",
-   check:"You'd rather work through something alone than ask for help, you get twitchy when a group project turns into a group chat, people call you \u201chard to read,\u201d and you trust results over reassurance.",
-   light:'Deep focus, self-reliance, quiet consistency.',
-   shadow:'Isolation. Refuses help, mistakes detachment for strength.',
-   integration:'Let people in without losing your edge.',
-   anime:'Itachi Uchiha, Levi Ackerman.',
-   ranks:[{name:'Drifter',ms:0},{name:'Wanderer',ms:10},{name:'Sharpshooter',ms:25},{name:'Ronin',ms:50},{name:'Sage',ms:100}],
-   lightHabits:['Do a deep-work block, phone in another room','Finish a task solo before asking for feedback','Journal for 5 minutes before opening any messages'],
-   shadowOptions:['Text one person for help with something today','Share a work-in-progress before it feels finished','Accept one invite you\u2019d normally decline']},
   {key:'strategist',emoji:'🧠',title:'The Strategist',alias:'Magician',hue:255,
    quote:"I don't chase outcomes. I position myself for them.",
    check:"You're the one thinking three moves ahead while everyone else reacts, you'd rather wait for the right moment than force one, you overthink before you commit, and people come to you for \u201cwhat's actually going on here.\u201d",
@@ -23,7 +13,7 @@ const ARCHETYPES = [
    ranks:[{name:'Reactor',ms:0},{name:'Analyst',ms:10},{name:'Operator',ms:25},{name:'Tactician',ms:50},{name:'Grandmaster',ms:100}],
    lightHabits:['Write tomorrow\u2019s top 3 priorities before bed','Review one system or process for 10 minutes','Study one example of someone who executed well'],
    shadowOptions:['Make one decision today with the info you already have, no more research','Ship one \u201cgood enough\u201d version instead of the perfect one','Set a 10-minute timer and act when it ends, decision or not']},
-  {key:'demon-grind',emoji:'🔥',title:'The Demon Grind',alias:'Hero',hue:14,
+  {key:'demon-grind',emoji:'🔥',title:'The Relentless',alias:'Hero',hue:14,
    quote:"I don't stop when I'm tired. I stop when I'm done.",
    check:"You measure your day by how hard you worked, resting feels like falling behind, you'd rather suffer through it than half-do it, and quitting isn't in your vocabulary even when you probably should.",
    light:'Discipline, courage, willingness to suffer for the goal.',
@@ -73,16 +63,6 @@ const ARCHETYPES = [
    ranks:[{name:'Voice',ms:0},{name:'Presence',ms:10},{name:'Influencer',ms:25},{name:'Leader',ms:50},{name:'Commander',ms:100}],
    lightHabits:['Lead one conversation or meeting with a clear point of view','Make one decisive call instead of polling the room','Practice your pitch or message out loud'],
    shadowOptions:['Let someone else lead today, on purpose','Ask for feedback and just listen, no rebuttal','Give credit to someone else before taking any yourself']},
-  {key:'visionary',emoji:'🔮',title:'The Visionary',alias:'Creator',hue:275,
-   quote:'I move like the future already exists.',
-   check:"You see the finished thing before anyone else believes it's possible, you get bored maintaining what already works, you'd rather build something new than optimize something old, and you sometimes talk about ideas more than you ship them.",
-   light:"Imagination, conviction, builds what others can't yet see.",
-   shadow:'Lives in the vision. Never ships, or ego/ends-justify-means.',
-   integration:'A vision unbuilt is just a daydream. Ground it in the work.',
-   anime:'Senku Ishigami, Hange Zoë.',
-   ranks:[{name:'Dreamer',ms:0},{name:'Sketch',ms:10},{name:'Builder',ms:25},{name:'Inventor',ms:50},{name:'Futurist',ms:100}],
-   lightHabits:['Sketch or outline one new idea for 10 minutes','Research one thing that feeds the vision','Pitch the idea to one person'],
-   shadowOptions:['Ship one small, unfinished-feeling piece of the vision today','Do one boring maintenance task on something you already built','Finish something instead of starting something new']},
   {key:'believer',emoji:'✨',title:'The Believer',alias:'Innocent',hue:50,
    quote:'The dream is worth believing in, so I do, fully.',
    check:"You're the one still hopeful when everyone else has given up, you take people at their word until they prove otherwise, you get hurt by cynicism more than most, and you'd rather believe in something and be wrong than believe in nothing.",
@@ -103,16 +83,6 @@ const ARCHETYPES = [
    ranks:[{name:'Earthling',ms:0},{name:'Fighter',ms:10},{name:'Elite Saiyan',ms:25},{name:'Super Saiyan',ms:50},{name:'Ascended Saiyan',ms:100}],
    lightHabits:['Do one rep or task that proves the doubters wrong','Track a small win, no matter how minor','Study someone who started where you\u2019re starting'],
    shadowOptions:['Say one thing out loud you\u2019re actually good at','Take up space in a room today instead of shrinking','Ask for something you deserve instead of waiting to be noticed']},
-  {key:'devoted',emoji:'❤️‍🔥',title:'The Devoted',alias:'Lover',hue:350,
-   quote:'I give everything to what, and who, I love.',
-   check:"You go all-in on the people and things you care about, your mood is tied to how those relationships are going, you find it hard to hold back once you're invested, and you'd rather feel too much than feel nothing.",
-   light:'Passion, loyalty, devotion as fuel, fights for people.',
-   shadow:"Loses self in the thing. Obsession, jealousy, collapse when it's gone.",
-   integration:'Love from wholeness, not from need.',
-   anime:'Asta, Natsu Dragneel.',
-   ranks:[{name:'Spark',ms:0},{name:'Flame',ms:10},{name:'Passion',ms:25},{name:'Unbreakable',ms:50},{name:'Boundless',ms:100}],
-   lightHabits:['Tell someone you love why they matter to you','Do one thing purely to support someone you care about','Follow through on a promise you made'],
-   shadowOptions:['Spend 15 minutes on something that\u2019s just for you','Set one boundary today, even a small one','Check in with yourself before checking in on them']},
   {key:'free-spirit',emoji:'🎭',title:'The Free Spirit',alias:'Jester',hue:300,
    quote:'I refuse to let the weight steal the joy.',
    check:"You use humor to defuse tension, you'd rather laugh through a hard week than talk about it directly, commitment makes you a little itchy, and people say you're \u201cfun to be around\u201d more than they say you're \u201cdeep.\u201d",
@@ -715,7 +685,7 @@ function renderArchetypes(){
       html += '</tbody></table>';
       html += '<button class="btn" style="margin-top:12px;" data-pick="'+a.key+'">'+(isCurrent?'This is your archetype':'Choose this archetype')+'</button>';
     } else {
-      html += '<div class="banner info" style="margin-top:10px;">Not a starting archetype \u2014 this is the endgame all twelve arcs are headed toward.</div>';
+      html += '<div class="banner info" style="margin-top:10px;">Not a starting archetype \u2014 this is the endgame all nine arcs are headed toward.</div>';
     }
     html += '</div></details>';
   });
@@ -956,8 +926,83 @@ function checkReminder(){
   }
 }
 
+/* ---------------- Start Here tab (the setup guide, from the Notion "Arc Tracker" page) ---------------- */
+function renderGuide(){
+  const el=document.getElementById('tab-guide');
+  const starters=ARCHETYPES.filter(a=>a.ranks);
+  const endgame=ARCHETYPES.find(a=>a.endgame);
+  const list=items=>'<ul>'+items.map(t=>'<li>'+escapeHtml(t)+'</li>').join('')+'</ul>';
+  let html=`
+  <div class="banner info"><div><b>One system. Nine arcs. Pick yours and start today.</b><br>
+  This is the system every Anime Mindset archetype runs on. The habit science is from Atomic Habits. Your archetype’s identity, shadow, and rank ladder sit on top. Rank, XP, and level calculate themselves. You never do math.</div></div>
+
+  <h2 class="section-title">Setup (15 minutes, one time)</h2>
+  <div class="card"><ol>
+    <li><b>Know your archetype.</b> Open the toggles in <i>Know Your Archetype</i> below and find the one that stings a little. That’s usually yours.</li>
+    <li><b>Set up your character.</b> In the Character Profile below, rename <b>Your Name Here</b> to your name and pick your <b>Archetype</b>. Your rank ladder switches to your archetype automatically.</li>
+    <li><b>Pick 3 habits, max.</b> One Non-Negotiable plus two supporting habits. Each archetype toggle has ideas built for it. Size each one to the <b>two-minute rule</b>: “open the book,” not “read 30 pages.”</li>
+    <li><b>Pick one shadow-check.</b> This is separate from your 3 habits and works against your archetype’s specific failure mode. Ideas are in your archetype toggle.</li>
+    <li><b>Write your habit stacks</b> in the Habit Stacking section so each habit rides on something you already do.</li>
+    <li><b>Rename the Daily Log columns.</b> Click the <i>Habit 2</i> and <i>Habit 3</i> column headers and rename them to your actual habits, so check-off reads like your life, not a template.</li>
+  </ol></div>
+  <div class="banner note"><div>If setup is taking longer than 15 minutes, you’re overbuilding it. Three habits and one shadow-check. That’s the whole system.</div></div>
+
+  <h2 class="section-title">Your Character</h2>
+  <div class="banner info"><div><b>Your progress is automatic.</b> Ranks are earned by <b>full-clear days</b> (all 3 habits on the same day), not by time on the calendar. Coasting doesn’t move you up. Check the Rank Progress bar after each log.</div></div>
+
+  <h2 class="section-title">The Daily Loop (under 5 minutes)</h2>
+  <div class="card"><ol>
+    <li>Add today’s row in the Daily Log below and check off what you did, <b>even on a miss.</b> An honest empty box keeps your rank real.</li>
+    <li>Check <b>Shadow-Check</b> if you did it.</li>
+    <li>Write <b>one line</b>: a win or something you’re grateful for (+2 XP).</li>
+    <li>Watch the <b>Status</b> column. All three habits gives you ⚡ Day Cleared.</li>
+  </ol></div>
+  <div class="banner warn"><div><b>Never Miss Twice.</b> Missing one day is an accident. Missing two is the start of a new (worse) habit. If you miss a day, the only rule is: don’t miss the next one.</div></div>
+  <div class="banner note"><div><b>XP breakdown:</b> Non-Negotiable 10 · Habit 2: 5 · Habit 3: 5 · Shadow-Check 5 · Win line 2. Every 100 XP is a new level.</div></div>
+
+  <h2 class="section-title">Habit Stacking Setup (fill once, then leave alone)</h2>
+  <p class="guide-p"><b>The formula:</b> “After I [thing I already do], I will [new habit].” Your morning coffee, sitting down at your desk, brushing your teeth: all reliable enough to build on. Example: <i>After I pour my morning coffee, I will open my book and read one page.</i></p>
+  <div class="banner info"><div>
+    <b>Non-Negotiable:</b> After I (existing habit), I will (new habit).<br>
+    <b>Habit 2:</b> After I (existing habit), I will (new habit).<br>
+    <b>Habit 3:</b> After I (existing habit), I will (new habit).<br>
+    <b>Shadow-Check:</b> After I (existing habit), I will (shadow-check).
+  </div></div>
+  <p class="guide-p"><i>Each one should take 2 minutes or less to start. The goal is showing up, not going hard.</i></p>
+
+  <h2 class="section-title">Weekly Review (5 minutes, once a week)</h2>
+  <p class="guide-p">Pick a day (Sunday night works for most people). Add a row below and answer the prompts. It’s the only place you actually see your patterns instead of just grinding through days.</p>
+
+  <h2 class="section-title">Know Your Archetype</h2>
+  <p class="guide-p">Open your toggle. Each one has a self-check, your Light and Shadow, habit ideas built for your archetype, shadow-check ideas, and your rank ladder.</p>`;
+  starters.forEach(a=>{
+    html+='<details class="arche"><summary><span class="em">'+iconSVG(a,34)+'</span>'+a.title+' · '+a.alias+'</summary><div class="body">'+
+      '<p class="quote">'+escapeHtml(a.quote)+'</p>'+
+      '<div class="fieldrow"><b>You might be this if:</b> '+a.check+'</div>'+
+      '<div class="fieldrow"><b>Light:</b> '+a.light+'</div>'+
+      '<div class="fieldrow"><b>Shadow (the demon):</b> '+a.shadow+'</div>'+
+      '<div class="fieldrow"><b>Integration:</b> '+a.integration+'</div>'+
+      '<div class="fieldrow"><b>Anime:</b> '+a.anime+'</div>'+
+      '<div class="fieldrow"><b>Habit ideas that build your Light:</b>'+list(a.lightHabits)+'</div>'+
+      '<div class="fieldrow"><b>Shadow-check ideas</b> (pick one, log it in the Shadow-Check column):'+list(a.shadowOptions)+'</div>'+
+      '<div class="fieldrow"><b>Rank ladder</b> (full-clear days): '+a.ranks.map(r=>escapeHtml(r.name)+' '+r.ms).join(' → ')+'</div>'+
+      '</div></details>';
+  });
+  if(endgame){
+    html+='<details class="arche"><summary><span class="em">'+iconSVG(endgame,34)+'</span>'+endgame.title+' · '+endgame.alias+' (the endgame)</summary><div class="body">'+
+      '<p class="quote">'+escapeHtml(endgame.quote)+'</p>'+
+      '<div class="fieldrow">Not a starting archetype. This is where every arc is headed: the version of you that has done the shadow work.</div>'+
+      '<div class="fieldrow"><b>Shadow:</b> '+endgame.shadow+'</div>'+
+      '<div class="fieldrow"><b>Integration:</b> '+endgame.integration+'</div>'+
+      '<div class="fieldrow"><b>Anime:</b> '+endgame.anime+'</div></div></details>';
+  }
+  html+='<div class="banner note" style="margin-top:18px;"><div><b>Final Rule of the System</b><br><i>You do not wait to feel different. You act different until you become different.</i></div></div>';
+  el.innerHTML='<div class="guide">'+html+'</div>';
+}
+
 /* ---------------- Master render ---------------- */
 function renderAll(){
+  renderGuide();
   renderHeader();
   renderToday();
   renderProgress();
@@ -965,6 +1010,8 @@ function renderAll(){
   renderSetup();
 }
 renderAll();
+// someone who hasn't picked an archetype yet lands on the setup guide first
+if(!getArchetype(profile.archetypeKey)) document.querySelector('nav.tabs button[data-tab="guide"]').click();
 if(reminder.enabled) startReminderTimer();
 // load today's proof, then draw again so habits with proof show as done
 openProofDb().then(db=>{ proofDb=db; return loadTodayProof(); }).then(()=>{ renderToday(); pruneProof(); }).catch(()=>{});

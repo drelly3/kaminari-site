@@ -83,8 +83,8 @@ export const home = posts => {
       <a href="${links.quiz}" ${ext} class="btn btn-primary">Take The Archetype Quiz</a>
     </div>
     <div class="archetype-visual">
-      ${tiles.map(([emoji, name, , , , demon]) => `<div class="arch-tile">
-        <div class="glyph">${emoji}</div>
+      ${tiles.map(([, name, , , , demon, key, hue]) => `<div class="arch-tile">
+        <img class="arc-face" style="--hue:${hue};width:64px;" src="/assets/avatars/${key}.png" alt="" width="200" height="200" loading="lazy">
         ${name}
         <div class="sub">Demon: ${esc(demon)}</div>
       </div>`).join('\n      ')}
@@ -264,15 +264,24 @@ export const newsletter = posts => `
 ${shock({ text: 'Good energy, heavy laughs, and anime truths that hit harder than a final form.' })}`;
 
 /* ---------- ANIME MINDSET ---------- */
-export const animeMindset = () => `
+// Line-art emblems for the three ideas, drawn like the archetype icons and ringed like the avatars.
+const emblem = (hue, paths) => `<div class="idea-emblem" style="--hue:${hue}"><svg viewBox="0 0 48 48" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths}</svg></div>`;
+const EMBLEMS = {
+  mirror: emblem(192, '<ellipse cx="24" cy="19" rx="10.5" ry="12.5" fill="currentColor" fill-opacity=".16"/><path d="M24 31.5V43M19.5 43h9"/><path d="M18.5 15c1.2-3 3.6-4.6 6.5-4.6" stroke-opacity=".6"/><path d="M20 24l7-9M24.5 25.5l4-5" stroke-opacity=".45"/>'),
+  demon: emblem(350, '<path d="M14 22c0 11 5 19 10 21 5-2 10-10 10-21-3-5-7-7-10-7s-7 2-10 7z" fill="currentColor" fill-opacity=".16"/><path d="M15 20C10.500 15 9.500 9.500 11.500 5c1.800 4.500 4.500 7.500 8.500 9.800M33 20c4.500-5 5.500-10.500 3.500-15-1.800 4.500-4.500 7.500-8.500 9.800"/><path d="M18 26l4.500 2.200M30 26l-4.500 2.200"/><path d="M19.500 35l4.500 2.500 4.500-2.500"/>'),
+  gear: emblem(45, '<circle cx="24" cy="24" r="12" fill="currentColor" fill-opacity=".16"/><circle cx="24" cy="24" r="5"/><path d="M24 6v6M24 36v6M6 24h6M36 24h6M11.300 11.300l4.200 4.200M32.500 32.500l4.200 4.200M11.300 36.700l4.200-4.200M32.500 15.500l4.200-4.200"/>'),
+};
+
+export const animeMindset = all => `
 <header class="page-hero center">
   <div class="wrap">
-    <span class="eyebrow">The Anime Mindset ⚡️</span>
+    <span class="eyebrow">The Anime Mindset</span>
     <h1>Stop Watching Growth And Start Living It</h1>
     <p class="lede">You've felt the surge after a great arc — "I need to get my life together." Then a few days pass and nothing changes. Not because you don't care. Because you don't have a system. The Anime Mindset is that system.</p>
     <div class="hero-actions">
-      <a href="${links.quiz}" ${ext} class="btn btn-primary">Find Your Archetype ⚡️</a>
-      <a href="${links.templates}" ${ext} class="btn btn-outline">Check Out Templates</a>
+      <a href="${links.quiz}" class="btn btn-primary">Find Your Archetype</a>
+      ${arcHeroButton}
+      <a href="${ARC_SIGN_IN}" class="btn btn-outline">Have A Key? Sign In</a>
     </div>
   </div>
 </header>
@@ -285,17 +294,17 @@ export const animeMindset = () => `
     </div>
     <div class="branch-grid">
       <div class="branch-card">
-        <div class="icon">🪞</div>
+        ${EMBLEMS.mirror}
         <h3>A mirror, not a test</h3>
         <p>Every great character runs on a core identity. Find yours and you stop guessing who you're becoming. You build on purpose.</p>
       </div>
       <div class="branch-card">
-        <div class="icon">😈</div>
+        ${EMBLEMS.demon}
         <h3>Every hero has a demon</h3>
         <p>Burnout, doubt, ego, avoidance. Your archetype's greatest strength has a shadow side. Name it, then chop the head off.</p>
       </div>
       <div class="branch-card">
-        <div class="icon">⚙️</div>
+        ${EMBLEMS.gear}
         <h3>Systems over willpower</h3>
         <p>Inspiration fades by Thursday. The Anime Mindset replaces white-knuckle motivation with a daily system that compounds.</p>
       </div>
@@ -312,9 +321,9 @@ export const animeMindset = () => `
 <section class="alt">
   <div class="wrap">
     <div class="section-head center">
-      <h2>Which Of The 12 Are You?</h2>
+      <h2>Which Of The 9 Are You?</h2>
       <p>Twelve quick questions. No wrong answers, just honest ones. Under five minutes, and your demon is waiting at the end.</p>
-      <p style="margin-top:26px;"><a href="${links.quiz}" ${ext} class="btn btn-primary">Take The Archetype Quiz ⚡️</a></p>
+      <p style="margin-top:26px;"><a href="${links.quiz}" class="btn btn-primary">Take The Archetype Quiz</a></p>
     </div>
   </div>
 </section>
@@ -322,13 +331,13 @@ export const animeMindset = () => `
 <section>
   <div class="wrap">
     <div class="section-head center">
-      <h2>The 12 Archetypes</h2>
-      <p>Twelve ways of moving through the world, each grounded in a Jungian root, and each with a demon to chop.</p>
+      <h2>The 9 Archetypes</h2>
+      <p>Nine ways of moving through the world, each grounded in a Jungian root, and each with a demon to chop.</p>
     </div>
     <div class="arch-table">
       <div class="arch-row head"><div>Archetype</div><div>Root</div><div>What drives them</div><div>Their demon</div></div>
-      ${archetypes.map(([emoji, name, quote, root, drive, demon]) => `<div class="arch-row">
-        <div><div class="name">${emoji} ${esc(name)}</div><div class="q">"${esc(quote)}"</div></div>
+      ${archetypes.map(([, name, quote, root, drive, demon, key, hue]) => `<div class="arch-row">
+        <div class="who"><img class="arc-face" style="--hue:${hue}" src="/assets/avatars/${key}.png" alt="" width="200" height="200" loading="lazy"><div><div class="name">${esc(name)}</div><div class="q">"${esc(quote)}"</div></div></div>
         <div class="root">${esc(root)}</div>
         <div class="drive">${esc(drive)}</div>
         <div class="demon">${esc(demon)}</div>
@@ -336,8 +345,8 @@ export const animeMindset = () => `
     </div>
   </div>
 </section>
-
-${shock({ text: 'Good energy, heavy laughs, and anime truths that hit harder than a final form.', second: `<a href="${links.templates}" ${ext} class="btn btn-outline">Check Out Templates</a>` })}`;
+${site.arcTrackerPublic ? arcTrackerSections(all) : ''}
+${shock({ text: 'Good energy, heavy laughs, and anime truths that hit harder than a final form.', second: arcHeroButton })}`;
 
 /* ---------- PRIVACY ---------- */
 export const privacy = html => `
@@ -439,85 +448,49 @@ ${p.html}
 ${shock()}`;
 };
 
-/* ---------- ARC TRACKER: public page ---------- */
+/* ---------- ARC TRACKER: sections shown on the Anime Mindset page ---------- */
 // Buy goes to the Gumroad membership; sign-in goes to the tracker, which asks for the licence key.
 const ARC_BUY = links.arcTracker, ARC_SIGN_IN = '/arc-tracker/app';
 // Until sales open, the buy button is a "Coming Soon" label that can't be clicked.
+// Same button with the product named, for places where the tracker hasn't been introduced yet.
+const arcHeroButton = site.arcTrackerSales
+  ? `<a href="${links.arcTracker}" class="btn btn-outline">Get The Arc Tracker</a>`
+  : `<span class="btn btn-soon" aria-disabled="true">Arc Tracker: Coming Soon</span>`;
 const arcBuyButton = site.arcTrackerSales
   ? `<a href="${ARC_BUY}" class="btn btn-primary">Get Access</a>`
   : `<span class="btn btn-soon" aria-disabled="true">Coming Soon</span>`;
-export const arcTrackerLanding = all => {
-  const starters = all.filter(a => a.ranks);
-  const sample = starters[0];
-  const ring = a => `style="--hue:${a.hue}"`;
+// The tracker's part of the Anime Mindset page.
+const arcTrackerSections = all => {
+  const sample = all.find(a => a.ranks);
   return `
-<header class="hero">
-  <div class="wrap hero-grid">
-    <div>
-      <span class="eyebrow">Arc Tracker</span>
-      <h1>Pick Your Archetype. Clear Your Day. Earn Your Rank.</h1>
-      <p class="lede">A habit tracker built on the Anime Mindset. Commit to three habits, face your archetype's shadow, and climb a rank ladder you can only earn by showing up.</p>
-      <div class="hero-actions">
-        ${arcBuyButton}
-        <a href="${ARC_SIGN_IN}" class="btn btn-outline">${site.arcTrackerSales ? 'Member Sign In' : 'Have A Key? Sign In'}</a>
-      </div>
-      <p class="hero-note">${site.arcTrackerSales ? 'Built for your phone first.' : `Not on sale yet. <a href="${links.substack}subscribe" data-subscribe style="color:var(--accent);">Join the newsletter</a> to hear when it opens.`}</p>
-    </div>
-    <div class="arc-faces">
-      ${starters.map(a => `<img class="arc-face" ${ring(a)} src="/assets/avatars/${a.key}.png" alt="${esc(a.title)}" width="200" height="200" loading="lazy">`).join('\n      ')}
-    </div>
-  </div>
-</header>
-
-<section class="alt">
+<section class="alt" id="arc-tracker">
   <div class="wrap">
     <div class="section-head center">
-      <span class="eyebrow">How It Works</span>
+      <span class="eyebrow">The Arc Tracker</span>
       <h2>Three Habits. One Shadow. <span class="accent">One Arc.</span></h2>
-      <p>No twenty-item checklists. You pick what matters, log it honestly, and the tracker does the math.</p>
+      <p>The habit tracker built on the Anime Mindset. Pick your archetype, commit to three habits, and earn your rank one full-clear day at a time.</p>
     </div>
     <div class="branch-grid">
       <div class="branch-card">
-        <div class="icon">3️⃣</div>
         <div class="k">Habits</div>
         <h3>Three habits, max</h3>
         <p>One Non-Negotiable plus two supporting habits, each stacked onto something you already do: "After I pour my coffee, I will read one page."</p>
       </div>
       <div class="branch-card">
-        <div class="icon">🌗</div>
         <div class="k">Shadow-Check</div>
         <h3>Face your shadow</h3>
         <p>Every archetype has a failure mode. Your shadow-check works against it and is tracked on its own, with badges at 10, 25 and 50 check-ins.</p>
       </div>
       <div class="branch-card">
-        <div class="icon">🏆</div>
-        <div class="k">Ranks</div>
-        <h3>Earn your rank</h3>
-        <p>Ranks come from full-clear days, when all three habits land on the same day. Time on the calendar doesn't count.</p>
+        <div class="k">Proof</div>
+        <h3>Show your work</h3>
+        <p>A habit only counts once you upload a photo or video of it. Clear all three and the day celebrates itself.</p>
       </div>
     </div>
   </div>
 </section>
 
 <section>
-  <div class="wrap">
-    <div class="section-head center">
-      <span class="eyebrow">Choose Your Character</span>
-      <h2>Twelve Archetypes, Twelve Arcs</h2>
-      <p>Each one has its own painted avatar, its own colour, its own strengths and shadow, and its own five-step rank ladder.</p>
-    </div>
-    <div class="arc-grid">
-      ${starters.map(a => `<div class="arc-tile" ${ring(a)}>
-        <img class="arc-face" src="/assets/avatars/${a.key}.png" alt="" width="200" height="200" loading="lazy">
-        <h3>${esc(a.title)}</h3>
-        <p class="q">"${esc(a.quote)}"</p>
-        <p class="top">Final rank: <b>${esc(a.ranks[a.ranks.length - 1].name)}</b></p>
-      </div>`).join('\n      ')}
-    </div>
-  </div>
-</section>
-
-<section class="alt">
   <div class="wrap split">
     <div>
       <span class="eyebrow">The Rank Ladder</span>
@@ -529,25 +502,18 @@ export const arcTrackerLanding = all => {
         <li>A five-minute weekly review to adjust your habits</li>
         <li>Day Cleared and Rank Up celebrations in your archetype's colours</li>
       </ul>
-      ${arcBuyButton}
+      <div class="hero-actions">
+        ${arcBuyButton}
+        <a href="${ARC_SIGN_IN}" class="btn btn-outline">${site.arcTrackerSales ? 'Member Sign In' : 'Have A Key? Sign In'}</a>
+      </div>
+      ${site.arcTrackerSales ? '' : `<p class="hero-note">Not on sale yet. <a href="${links.substack}subscribe" data-subscribe style="color:var(--accent);">Join the newsletter</a> to hear when it opens.</p>`}
     </div>
-    <div class="arc-ladder" ${ring(sample)}>
+    <div class="arc-ladder" style="--hue:${sample.hue}">
       <div class="arc-ladder-head"><img class="arc-face" src="/assets/avatars/${sample.key}.png" alt="" width="200" height="200" loading="lazy"><div><b>${esc(sample.title)}</b><span>Example ladder</span></div></div>
       ${sample.ranks.map((r, i) => `<div class="arc-step" style="--lvl:${i}"><span class="n">${i + 1}</span><b>${esc(r.name)}</b><span class="ms">${r.ms} full-clear days</span></div>`).join('\n      ')}
     </div>
   </div>
-</section>
-
-<div class="shock">
-  <div class="wrap">
-    <h2>Your Arc Starts With One Cleared Day.</h2>
-    <p>Pick your archetype, name three habits, and log today.</p>
-    <div class="shock-actions">
-      ${arcBuyButton}
-      <a href="${links.quiz}" target="_blank" rel="noopener" class="btn btn-outline">Find Your Archetype First</a>
-    </div>
-  </div>
-</div>`;
+</section>`;
 };
 
 /* ---------- ARC TRACKER (the app itself lives in src/arc-tracker.js + src/arc-tracker.css) ---------- */
@@ -576,6 +542,7 @@ export const arcTracker = () => `
     </header>
 
     <nav class="tabs">
+      <button data-tab="guide">Start Here</button>
       <button data-tab="today" class="active">Today</button>
       <button data-tab="progress">Progress</button>
       <button data-tab="archetypes">Archetypes</button>
@@ -583,6 +550,7 @@ export const arcTracker = () => `
     </nav>
 
     <div class="arc-main">
+      <section class="tab" id="tab-guide"></section>
       <section class="tab active" id="tab-today"></section>
       <section class="tab" id="tab-progress"></section>
       <section class="tab" id="tab-archetypes"></section>

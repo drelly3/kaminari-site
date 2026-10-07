@@ -25,6 +25,11 @@
       ],
       "destination": "https://www.joinkaminari.com/:path*",
       "permanent": true
+    },
+    {
+      "source": "/arc-tracker",
+      "destination": "/arc-tracker/app",
+      "permanent": false
     }
   ]
 }

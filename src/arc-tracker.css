@@ -321,3 +321,15 @@
 .arc-root .proof-link{appearance:none;background:none;border:none;padding:0;margin:0;font-family:var(--font-body);font-size:12.5px;font-weight:600;color:var(--text-dim);text-decoration:underline;cursor:pointer;display:inline;}
 .arc-root .proof-link:hover{color:var(--text);}
 .arc-root .proof-error{margin-top:10px;font-size:12.5px;color:var(--danger);}
+
+/* Start Here guide */
+.arc-root .guide h2.section-title{margin:26px 0 10px;}
+.arc-root .guide h2.section-title:first-of-type{margin-top:18px;}
+.arc-root .guide ol, .arc-root .guide ul{margin:0;padding-left:20px;font-size:13.5px;line-height:1.6;color:var(--text-dim);}
+.arc-root .guide ol li{margin-bottom:9px;}
+.arc-root .guide ol li:last-child{margin-bottom:0;}
+.arc-root .guide li b, .arc-root .guide .guide-p b{color:var(--text);}
+.arc-root .guide ul{margin-top:5px;}
+.arc-root .guide .guide-p{font-size:13.5px;line-height:1.6;color:var(--text-dim);margin:0 0 14px;}
+.arc-root .banner.note{background:var(--surface-2);border:1px solid var(--border);color:var(--text);}
+.arc-root .guide .banner{line-height:1.6;}

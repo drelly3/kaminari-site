@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" href="/favicon.jpg" type="image/jpeg">
+<link rel="canonical" href="https://www.joinkaminari.com/quiz">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kaminari — Which Anime Archetype Are You?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --blue:#00C0F9;--blue-bright:#5CD6FF;--navy:#0B0B0F;--navy-mid:#131317;--navy-light:#1C1C22;
+  --bolt:#00C0F9;--magenta:#00C0F9;
+  --red:#FF6B6B;
+  --w80:rgba(255,255,255,.82);--w50:rgba(255,255,255,.55);--w20:rgba(255,255,255,.22);
+  --w10:rgba(255,255,255,.1);--w06:rgba(255,255,255,.06);
+  --border:rgba(0,192,249,.22);--border-hi:rgba(0,192,249,.5);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{background:var(--navy);min-height:100vh}
+body{font-family:'Inter',sans-serif;font-weight:500;font-size:16px;line-height:1.6;background:
+    radial-gradient(circle at 0% 0%, rgba(0,192,249,.18), transparent 42%),
+    radial-gradient(circle at 100% 10%, rgba(0,192,249,.13), transparent 46%),
+    var(--navy);background-attachment:fixed;color:#fff;min-height:100vh;display:flex;justify-content:center}
+.app{width:100%;max-width:560px;min-height:100vh}
+.screen{display:none}.screen.active{display:block}
+.btn-primary{width:100%;padding:17px;background:var(--blue);color:#0B0B0F;border:none;border-radius:11px;font-family:'Inter',sans-serif;font-weight:700;font-size:15px;letter-spacing:.05em;text-transform:uppercase;cursor:pointer;box-shadow:0 0 24px rgba(0,192,249,.4);transition:box-shadow .2s,background .2s,transform .1s}
+.btn-primary:hover{background:var(--blue-bright);box-shadow:0 0 34px rgba(0,192,249,.6)}.btn-primary:active{transform:scale(.98)}
+a.btn-primary{display:block;text-align:center;text-decoration:none}
+.btn-ghost{width:100%;padding:15px;background:transparent;color:var(--w80);border:.5px solid var(--w20);border-radius:11px;font-family:'Inter',sans-serif;font-weight:600;font-size:15px;cursor:pointer;transition:background .15s;margin-top:12px}
+.btn-ghost:hover{background:var(--w06)}
+.divider{border:none;border-top:.5px solid var(--border);margin:24px 0}
+.s-lbl{font-size:12.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--w50);margin-bottom:14px}
+.hero{background:radial-gradient(circle at 50% 0%, rgba(0,192,249,.22), transparent 62%), var(--navy-mid);border-bottom:1px solid var(--border-hi);box-shadow:0 1px 0 rgba(0,192,249,.25);padding:48px 34px 38px;text-align:center}
+.hero-bolt{font-size:54px;display:block;margin-bottom:12px;filter:drop-shadow(0 0 14px rgba(0,192,249,.55));animation:flicker 3s infinite}
+@keyframes flicker{0%,95%,100%{opacity:1}96%{opacity:.6}97%{opacity:1}98%{opacity:.7}}
+.hero h1{font-family:'Inter',sans-serif;font-size:36px;font-weight:800;letter-spacing:.06em;color:#fff;margin-bottom:8px;text-shadow:0 0 18px rgba(0,192,249,.5)}
+.hero h1 span{color:var(--blue)}
+.hero p{font-size:15px;color:var(--w50);letter-spacing:.03em}
+.form-body{padding:34px}
+.form-intro{font-size:16.5px;color:var(--w80);line-height:1.6;margin-bottom:28px;border-left:3px solid var(--blue);padding-left:16px}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px}
+.fg{margin-bottom:20px}
+.fg label{display:block;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--w50);margin-bottom:9px}
+.fg input,.two-col input{width:100%;padding:14px 16px;background:var(--navy-light);border:.5px solid var(--border);border-radius:9px;color:#fff;font-family:'Inter',sans-serif;font-weight:600;font-size:16px;outline:none;transition:border-color .2s}
+.fg input:focus,.two-col input:focus{border-color:var(--blue)}
+.fg input::placeholder,.two-col input::placeholder{color:var(--w20)}
+.two-col-label{display:block;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--w50);margin-bottom:9px}
+.check-group{background:var(--navy-light);border:.5px solid var(--border);border-radius:11px;overflow:hidden;margin-bottom:24px}
+.check-row{display:flex;gap:14px;align-items:flex-start;padding:16px 18px}
+.check-row+.check-row{border-top:.5px solid var(--border)}
+.check-row input[type=checkbox]{width:20px;height:20px;flex-shrink:0;margin-top:1px;accent-color:var(--blue);cursor:pointer}
+.check-row label{font-size:15px;color:var(--w80);line-height:1.55;cursor:pointer}
+.err-msg{font-size:13.5px;color:#FF6B6B;margin-bottom:14px;display:none}
+.intro-wrap{padding:48px 34px}
+.intro-big{font-family:'Inter',sans-serif;font-size:26px;font-weight:700;color:#fff;line-height:1.4;margin-bottom:18px;letter-spacing:.01em}
+.intro-big span{color:var(--blue)}
+.intro-sub{font-size:16px;color:var(--w80);line-height:1.65}
+.intro-rule{background:var(--navy-mid);border:.5px solid var(--border);border-left:3px solid var(--blue);border-radius:0 9px 9px 0;padding:16px 18px;margin:22px 0 30px}
+.intro-rule p{font-size:15.5px;color:var(--w80);line-height:1.6;font-style:italic}
+.prog-bar-wrap{padding:24px 34px 0;display:flex;align-items:center;gap:14px}
+.prog-track{flex:1;height:4px;background:var(--w10);border-radius:2px;overflow:hidden}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--blue),var(--blue-bright));border-radius:2px;box-shadow:0 0 10px rgba(0,192,249,.7);transition:width .4s cubic-bezier(.4,0,.2,1)}
+.prog-label{font-size:13px;font-weight:700;color:var(--w50);white-space:nowrap;letter-spacing:.04em}
+.q-card{margin:20px 26px 24px;background:var(--navy-mid);border:.5px solid var(--border);border-radius:16px;overflow:hidden}
+.q-top{background:var(--blue);padding:12px 20px}
+.q-top span{font-family:'Inter',sans-serif;font-size:13px;font-weight:700;letter-spacing:.1em;color:#0B0B0F;text-transform:uppercase}
+.q-text{font-size:20px;font-weight:700;color:#fff;padding:22px 20px 16px;line-height:1.45}
+.opts{padding:0 14px 16px}
+.opt{width:100%;text-align:left;padding:15px 16px;margin-bottom:10px;background:var(--navy);border:.5px solid var(--border);border-radius:10px;color:var(--w80);font-family:'Inter',sans-serif;font-weight:600;font-size:16px;line-height:1.45;cursor:pointer;display:flex;gap:13px;align-items:flex-start;transition:border-color .15s,background .15s,color .15s}
+.opt:last-child{margin-bottom:0}
+.opt:hover{border-color:var(--blue);background:var(--navy-light);color:#fff;box-shadow:0 0 0 1px var(--blue),0 0 16px rgba(0,192,249,.22)}
+.opt-letter{font-family:'Inter',sans-serif;font-size:15px;font-weight:700;color:var(--blue);flex-shrink:0;min-width:19px;margin-top:1px}
+.loading-wrap{text-align:center;padding:90px 34px}
+.loading-bolt{font-size:62px;display:block;margin-bottom:22px;filter:drop-shadow(0 0 18px rgba(0,192,249,.55));animation:lpulse .8s infinite alternate}
+@keyframes lpulse{from{opacity:.3}to{opacity:1}}
+.loading-msg{font-family:'Inter',sans-serif;font-size:17px;font-weight:600;letter-spacing:.05em;color:#fff;margin-bottom:26px;text-transform:uppercase}
+.dots{display:flex;justify-content:center;gap:8px}
+.dots span{width:9px;height:9px;border-radius:50%;background:var(--blue);animation:dot 1.2s infinite}
+.dots span:nth-child(2){animation-delay:.2s}
+.dots span:nth-child(3){animation-delay:.4s}
+@keyframes dot{0%,80%,100%{opacity:.15}40%{opacity:1}}
+.result-hero{background:radial-gradient(circle at 50% 0%, rgba(0,192,249,.25), transparent 65%), var(--navy-mid);border-bottom:1px solid var(--border-hi);box-shadow:0 1px 0 rgba(0,192,249,.25);padding:44px 34px 32px;text-align:center}
+.result-emoji{font-size:60px;display:block;margin-bottom:14px;filter:drop-shadow(0 0 16px rgba(0,192,249,.4))}
+.result-badge{display:inline-block;background:var(--w10);border:.5px solid var(--w20);color:var(--w80);font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:5px 14px;border-radius:99px;margin-bottom:14px}
+.result-name{font-family:'Inter',sans-serif;font-size:29px;font-weight:800;letter-spacing:.01em;color:#fff;margin-bottom:10px;line-height:1.18;text-shadow:0 0 16px rgba(0,192,249,.42)}
+.result-root{font-size:12px;font-weight:700;color:var(--w50);letter-spacing:.08em;text-transform:uppercase;margin-bottom:14px}
+.result-tagline{font-size:16.5px;color:var(--blue);font-style:italic;line-height:1.5}
+.result-body{padding:30px 34px 48px}
+.identity-pull{border-left:3px solid var(--blue);padding:16px 20px;border-radius:0 6px 6px 0;margin-bottom:26px;background:var(--navy-light)}
+.identity-pull p{font-family:'Inter',sans-serif;font-size:21px;font-weight:700;color:#fff;font-style:italic;line-height:1.4}
+.result-desc{font-size:16.5px;color:var(--w80);line-height:1.7;margin-bottom:26px}
+.char-card{background:var(--navy-light);border:.5px solid var(--border);border-left:3px solid var(--border-hi);border-radius:11px;padding:17px 19px;margin-bottom:14px}
+.char-card:last-child{margin-bottom:0}
+.char-name{font-family:'Inter',sans-serif;font-size:18px;font-weight:700;color:var(--blue);letter-spacing:.01em;margin-bottom:5px}
+.char-series{font-size:12.5px;font-weight:600;color:var(--w50);margin-bottom:9px;letter-spacing:.02em}
+.char-desc{font-size:14.5px;color:var(--w80);line-height:1.6}
+.shadow-box{background:rgba(255,107,107,.07);border:.5px solid rgba(255,107,107,.35);border-left:3px solid var(--red);border-radius:11px;padding:19px;margin-bottom:16px}
+.shadow-head{font-family:'Inter',sans-serif;font-size:15px;font-weight:700;letter-spacing:.06em;color:var(--red);text-transform:uppercase;margin-bottom:11px}
+.shadow-demon{font-size:16px;color:#fff;line-height:1.6;margin-bottom:12px;font-weight:600}
+.shadow-int{font-size:15px;color:var(--w80);line-height:1.6}
+.cta-box{background:linear-gradient(180deg,var(--navy-mid),var(--navy-light));border:1px solid var(--blue);border-radius:13px;padding:24px 20px;margin-bottom:16px;text-align:center;box-shadow:0 0 26px rgba(0,192,249,.15)}
+.cta-head{font-family:'Inter',sans-serif;font-size:16px;font-weight:700;letter-spacing:.03em;color:#fff;margin-bottom:14px;text-transform:uppercase;line-height:1.4}
+.cta-pitch{font-size:15.5px;color:var(--w80);line-height:1.65;margin-bottom:18px;text-align:left}
+.cta-pitch strong{color:#fff}
+.nl-box{background:var(--navy-light);border:.5px solid var(--border);border-radius:11px;padding:19px;margin-bottom:16px}
+.nl-head{font-family:'Inter',sans-serif;font-size:15px;font-weight:700;letter-spacing:.06em;color:var(--blue);text-transform:uppercase;margin-bottom:9px}
+.nl-box p.nl-copy{font-size:15px;color:var(--w80);line-height:1.6;margin-bottom:16px}
+.substack-frame{width:100%;border-radius:8px;background:#fff;display:block}
+.discord-box{background:var(--navy-light);border:1px solid var(--blue);border-radius:13px;overflow:hidden;margin-bottom:22px}
+.discord-head{background:var(--blue);padding:16px 18px}
+.discord-head p{font-family:'Inter',sans-serif;font-size:15px;font-weight:700;letter-spacing:.02em;color:#0B0B0F;text-transform:uppercase}
+.discord-head small{font-family:'Inter',sans-serif;font-size:13px;color:rgba(11,11,15,.75);font-weight:600;display:block;margin-top:3px}
+.discord-body{padding:18px}
+.discord-pitch{font-size:15px;color:var(--w80);line-height:1.6;margin-bottom:18px}
+.discord-features{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px}
+.feat-card{background:var(--navy-mid);border:.5px solid var(--border);border-radius:9px;padding:14px 12px}
+.feat-icon{font-size:22px;display:block;margin-bottom:7px}
+.feat-title{font-family:'Inter',sans-serif;font-size:14px;font-weight:700;color:#fff;letter-spacing:.02em;margin-bottom:5px}
+.feat-desc{font-size:12.5px;color:var(--w50);line-height:1.5}
+.discord-check{display:flex;gap:12px;align-items:flex-start;padding:14px 16px;background:var(--navy-mid);border:.5px solid var(--border-hi);border-radius:9px}
+.discord-check input[type=checkbox]{width:20px;height:20px;flex-shrink:0;margin-top:1px;accent-color:var(--blue);cursor:pointer}
+.discord-check label{font-size:15px;color:var(--w80);line-height:1.5;cursor:pointer}
+.endgame-note{text-align:center;font-size:13.5px;color:var(--w50);line-height:1.65;margin:24px 0 8px;padding:0 4px}
+.endgame-note strong{color:var(--w80)}
+.privacy-note{font-size:12.5px;color:var(--w50);line-height:1.5;margin-top:16px;text-align:center}
+/* newsletter popup modal */
+.nl-modal-overlay{display:none;position:fixed;inset:0;background:rgba(11,11,15,.88);z-index:200;align-items:center;justify-content:center;padding:20px}
+.nl-modal-overlay.open{display:flex}
+.nl-modal{background:var(--navy-mid);border:1px solid var(--border-hi);border-radius:16px;padding:28px 24px 24px;max-width:520px;width:100%;position:relative;box-shadow:0 0 40px rgba(0,192,249,.2)}
+.nl-modal-head{font-family:'Inter',sans-serif;font-size:16px;font-weight:700;letter-spacing:.03em;color:#fff;text-transform:uppercase;margin-bottom:6px}
+.nl-modal-sub{font-size:14px;color:var(--w50);margin-bottom:18px;line-height:1.5}
+.nl-modal-close{position:absolute;top:14px;right:16px;background:none;border:none;color:var(--w50);font-size:22px;cursor:pointer;line-height:1;transition:color .15s}
+.nl-modal-close:hover{color:#fff}
+.nl-modal iframe{border-radius:8px;display:block;width:100%}
+.hero-share{margin-top:16px;display:inline-block;background:rgba(0,192,249,.12);border:.5px solid var(--border-hi);color:#fff;font-family:'Inter',sans-serif;font-weight:700;font-size:14px;letter-spacing:.02em;padding:9px 18px;border-radius:99px;cursor:pointer;transition:background .15s}
+.hero-share:hover{background:rgba(0,192,249,.22)}
+.share-box{text-align:center;margin:8px 0 22px}
+canvas.share-card{width:100%;max-width:320px;border-radius:14px;border:.5px solid var(--border-hi);box-shadow:0 0 26px rgba(0,192,249,.28);display:block;margin:0 auto 14px}
+.share-row{display:flex;gap:10px;max-width:320px;margin:0 auto}
+.share-row .btn-primary,.share-row .btn-ghost{margin-top:0}
+.copied{color:var(--blue-bright)}
+@media (max-width:600px){
+  .hero{padding:42px 22px 32px}
+  .hero h1{font-size:30px}
+  .hero-bolt{font-size:48px}
+  .form-body,.intro-wrap,.result-body{padding-left:22px;padding-right:22px}
+  .prog-bar-wrap,.loading-wrap{padding-left:22px;padding-right:22px}
+  .q-card{margin-left:16px;margin-right:16px}
+  .q-text{font-size:18px}
+  .intro-big{font-size:23px}
+  .result-hero{padding-left:22px;padding-right:22px}
+  .result-name{font-size:24px}
+  .identity-pull p{font-size:19px}
+}
+@media (min-width:601px){
+  .hero{padding:56px 40px 44px}
+  .result-hero{padding:52px 40px 38px}
+  .form-body,.intro-wrap{padding:44px 40px}
+  .prog-bar-wrap{padding:30px 40px 0}
+  .loading-wrap{padding:104px 40px}
+  .q-card{margin:28px 30px 30px}
+  .q-text{padding:26px 24px 18px}
+  .opts{padding:0 16px 18px}
+  .opt{padding:17px 18px;margin-bottom:12px}
+  .result-body{padding:38px 40px 56px}
+  .divider{margin:30px 0}
+  .s-lbl{margin-bottom:18px}
+  .identity-pull{padding:18px 22px;margin-bottom:32px}
+  .result-desc{margin-bottom:32px}
+  .char-card{padding:18px 20px;margin-bottom:16px}
+  .shadow-box{padding:22px;margin-bottom:20px}
+  .cta-box{padding:28px 24px;margin-bottom:20px}
+  .nl-box{padding:22px;margin-bottom:20px}
+  .discord-box{margin-bottom:24px}
+  .discord-body{padding:22px}
+  .discord-head{padding:18px 22px}
+  .endgame-note{margin:30px 0 10px}
+  .fg{margin-bottom:22px}
+  .check-group{margin-bottom:28px}
+  /* slightly larger type on desktop */
+  body{font-size:17.5px}
+  .hero h1{font-size:40px}
+  .hero p{font-size:16px}
+  .intro-big{font-size:28px}
+  .intro-sub{font-size:17px}
+  .intro-rule p{font-size:16.5px}
+  .form-intro{font-size:18px}
+  .q-text{font-size:22px}
+  .opt{font-size:17.5px}
+  .loading-msg{font-size:18px}
+  .result-name{font-size:32px}
+  .result-tagline{font-size:18px}
+  .identity-pull p{font-size:23px}
+  .result-desc{font-size:18px}
+  .char-name{font-size:19px}
+  .char-desc{font-size:15.5px}
+  .shadow-demon{font-size:17px}
+  .shadow-int{font-size:16.5px}
+  .cta-pitch{font-size:17px}
+  .nl-box p.nl-copy{font-size:16.5px}
+  .discord-pitch{font-size:16.5px}
+  .feat-title{font-size:15px}
+  .feat-desc{font-size:13px}
+  .check-row label,.discord-check label{font-size:16.5px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+<div class="screen active" id="s-info">
+  <div class="hero">
+    <h1>KAMI<span>NARI</span></h1>
+    <p>Which anime archetype are you?</p>
+  </div>
+  <div class="intro-wrap">
+    <p class="intro-big">Which anime archetype<br><span>are you?</span></p>
+    <p class="intro-sub">12 quick questions. No wrong answers, just honest ones. Takes under 5 minutes, and your demon is waiting at the end.</p>
+    <div class="intro-rule">
+      <p>This isn't a personality test. It's a mirror. Answer based on who you actually are, not who you want to be.</p>
+    </div>
+    <button class="btn-primary" onclick="show('s-gate')">Start the quiz</button>
+  </div>
+</div>
+
+<div class="screen" id="s-quiz">
+  <div class="prog-bar-wrap">
+    <div class="prog-track"><div class="prog-fill" id="pfill" style="width:0%"></div></div>
+    <span class="prog-label" id="plbl">1 of 12</span>
+  </div>
+  <div class="q-card">
+    <div class="q-top"><span id="q-step">Question 1 of 12</span></div>
+    <p class="q-text" id="q-text"></p>
+    <div class="opts" id="opts"></div>
+  </div>
+</div>
+
+<div class="screen" id="s-loading">
+  <div class="loading-wrap">
+    <p class="loading-msg" id="l-msg">Analyzing your archetype...</p>
+    <div class="dots" aria-hidden="true"><span></span><span></span><span></span></div>
+  </div>
+</div>
+
+<div class="screen" id="s-gate">
+  <div class="hero">
+    <h1>KAMI<span>NARI</span></h1>
+    <p>Your archetype is locked in.</p>
+  </div>
+  <div class="form-body">
+    <p class="form-intro">Your result is ready. Tell us where to send the full breakdown and we'll reveal which of the 9 you are.</p>
+    <div class="two-col">
+      <div>
+        <span class="two-col-label">First name</span>
+        <input type="text" id="fn" placeholder="Naruto"/>
+      </div>
+      <div>
+        <span class="two-col-label">Last name</span>
+        <input type="text" id="ln" placeholder="Uzumaki"/>
+      </div>
+    </div>
+    <div class="fg">
+      <label for="em">Email address</label>
+      <input type="email" id="em" placeholder="you@example.com"/>
+    </div>
+    <div class="fg">
+      <label for="ph">Phone <span style="opacity:.5;text-transform:none;letter-spacing:0;font-size:10px">(optional)</span></label>
+      <input type="tel" id="ph" placeholder="+1 (555) 000-0000"/>
+    </div>
+    <div class="fg">
+      <label for="du">Discord username <span style="opacity:.5;text-transform:none;letter-spacing:0;font-size:10px">(optional)</span></label>
+      <input type="text" id="du" placeholder="yourname#0000"/>
+    </div>
+    <div class="check-group" style="margin-bottom:24px">
+      <div class="check-row">
+        <input type="checkbox" id="c-nl"/>
+        <label for="c-nl">Add me to the Kaminari newsletter — weekly anime mindset drops every Wednesday</label>
+      </div>
+    </div>
+    <p class="err-msg" id="err">Please enter your first name and email to see your result.</p>
+    <button class="btn-primary" onclick="gateSubmit()">Discover your archetype ⚡</button>
+    <p class="privacy-note">No spam, unsubscribe anytime.</p>
+  </div>
+</div>
+
+<!-- Newsletter popup modal -->
+<div class="nl-modal-overlay" id="nl-modal">
+  <div class="nl-modal">
+    <button class="nl-modal-close" onclick="closeNlModal()" aria-label="Close">✕</button>
+    <p class="nl-modal-head">⚡ Join the newsletter</p>
+    <p class="nl-modal-sub">Every Wednesday: anime characters broken down to their mindset, their arc, their lesson.</p>
+    <iframe src="https://joinkaminari.substack.com/embed" width="480" height="320" style="border:1px solid #EEE;background:white" frameborder="0" scrolling="no" title="Subscribe to Kaminari"></iframe>
+  </div>
+</div>
+
+<div class="screen" id="s-result">
+  <div id="result-out"></div>
+</div>
+
+</div>
+<script>
+/* ============================================================
+   CONFIG — drop the Gumroad link here once you have it.
+   A single store link is fine for launch; can be made
+   per-archetype later via a {archetypeName: url} map.
+   ============================================================ */
+const GUMROAD_URL = "#"; // TODO: replace with the Kaminari Gumroad templates link
+const SUBSTACK_EMBED = "https://joinkaminari.substack.com/embed";
+
+/* ============================================================
+   ARCHETYPE INDEX (must match the weights in Q below)
+   0 Lone Wolf · 1 Strategist · 2 Relentless · 3 Prodigy
+   4 Reborn · 5 Beacon · 6 Social Commander · 7 Visionary
+   8 Believer · 9 Underdog · 10 Devoted · 11 Free Spirit
+   (Balanced Master = the endgame, not a quiz outcome)
+   ============================================================ */
+
+const Q=[
+  {q:"You just crushed a goal you'd been chasing for months. What's your first instinct?",opts:[
+    {t:"Lock onto the next level. I'm already chasing who I could become.",w:{3:1}},
+    {t:"Reverse-engineer what worked so I can repeat it on purpose.",w:{1:1}},
+    {t:"Barely break stride. The next rep is already waiting.",w:{2:1}},
+    {t:"Bring my people in. A win feels hollow if I celebrate it alone.",w:{5:1,10:.5}},
+    {t:"Actually celebrate. Soak it up before chasing the next thing.",w:{11:1}},
+    {t:"Sit with how far I've come from where I started.",w:{9:1,4:.5}}
+  ]},
+  {q:"Someone tells you you're not built for what you're chasing. What happens inside you?",opts:[
+    {t:"Nothing. Their opinion doesn't reach the room where I work.",w:{0:1}},
+    {t:"Good. Counting me out is the exact story I love to flip.",w:{9:1}},
+    {t:"I've been written off before. I already know how this arc ends.",w:{4:1}},
+    {t:"I say nothing and let the work bury the doubt.",w:{2:1,0:.5}},
+    {t:"I laugh it off. I'm not handing them that much power.",w:{11:1}}
+  ]},
+  {q:"A free night, nobody watching, nothing due. What are you doing?",opts:[
+    {t:"Deep in something personal, quietly, with no audience.",w:{0:1}},
+    {t:"Thinking three moves ahead, mapping the angle.",w:{1:1}},
+    {t:"Building or sketching something that doesn't exist yet.",w:{7:1}},
+    {t:"Training. A quiet night is just uninterrupted reps.",w:{2:1,3:.5}},
+    {t:"Pouring into the person or the craft I'm devoted to.",w:{10:1}}
+  ]},
+  {q:"What actually recharges you?",opts:[
+    {t:"Fun with no agenda. Laughing until the weight lifts.",w:{11:1}},
+    {t:"Solitude. Quiet is where I get myself back.",w:{0:1}},
+    {t:"Time with my people, making sure they're good.",w:{5:1}},
+    {t:"Reconnecting with why any of this matters to me.",w:{8:1}},
+    {t:"Being close to who and what I love.",w:{10:1,5:.5}}
+  ]},
+  {q:"Which line hits closest to a core truth about you?",opts:[
+    {t:"Keep the faith, keep showing up, and it works out.",w:{8:1}},
+    {t:"Effort without a plan is just busy exhaustion.",w:{1:1}},
+    {t:"Staying the same feels worse to me than failing.",w:{3:1}},
+    {t:"I go all in on what and who I love, every time.",w:{10:1}},
+    {t:"If I'm winning, the people around me should be too.",w:{5:1}},
+    {t:"The day I lose the joy is the day I've actually lost.",w:{11:1}}
+  ]},
+  {q:"Your group is stuck with no direction. What do you naturally do?",opts:[
+    {t:"Step up, call the play, and get everyone moving.",w:{6:1}},
+    {t:"Quietly find the smartest angle, then point everyone to it.",w:{1:1}},
+    {t:"Paint the picture of what we could build together.",w:{7:1,8:.5}},
+    {t:"Remind everyone why it matters and keep morale up.",w:{8:1}},
+    {t:"Break the tension so people can actually think.",w:{11:1}},
+    {t:"Just start grinding and let the example pull them.",w:{2:1,0:.5}}
+  ]},
+  {q:"When motivation runs dry, what keeps you moving?",opts:[
+    {t:"Discipline. My feelings don't get a vote.",w:{2:1}},
+    {t:"The people depending on me. I won't let them down.",w:{10:1}},
+    {t:"How far I've come. Quitting would betray that climb.",w:{4:1,9:.5}},
+    {t:"The vision. I can see it too clearly to stop.",w:{7:1}},
+    {t:"Faith that it pays off if I keep showing up.",w:{8:1}},
+    {t:"Wanting it more than the version of me that wants to quit.",w:{3:1}}
+  ]},
+  {q:"How do you want people to feel around you?",opts:[
+    {t:"Barely noticed, but quietly respected for the work.",w:{0:1}},
+    {t:"Like they're in capable hands and someone's steering.",w:{6:1}},
+    {t:"Safer and stronger, like someone's truly in their corner.",w:{5:1}},
+    {t:"Like proof that someone ordinary can actually pull it off.",w:{9:1}},
+    {t:"Deeply seen, like they matter because they matter to me.",w:{10:1}},
+    {t:"Like living proof that a person can completely change.",w:{4:1}}
+  ]},
+  {q:"Someone close to you wins big. What's your honest first reaction?",opts:[
+    {t:"Pure pride. Their win feels like a shared one.",w:{5:1}},
+    {t:"Inspired, and a little fired up to raise my own game.",w:{3:1,9:.5}},
+    {t:"Hype them loudly. I love rallying people around a win.",w:{6:1}},
+    {t:"Proof it's possible for people like us. It fuels me.",w:{9:1}},
+    {t:"Throw the celebration. Joy is better shared.",w:{11:1}},
+    {t:"I'm in their corner harder than anyone.",w:{10:1}}
+  ]},
+  {q:"If you could build one thing and know it would matter, it would be...",opts:[
+    {t:"Something brand new the world hasn't seen yet.",w:{7:1}},
+    {t:"A system that runs for decades after me.",w:{1:1}},
+    {t:"Something that gives people hope to keep going.",w:{8:1,5:.5}},
+    {t:"A team or movement that outlives my involvement.",w:{6:1}},
+    {t:"A second-chance path for people rewriting their story.",w:{4:1}},
+    {t:"A place where people are cared for and grow.",w:{5:1}}
+  ]},
+  {q:"Be honest about the hardest inner battle you're fighting right now.",opts:[
+    {t:"Letting people in instead of carrying it all alone.",w:{0:1}},
+    {t:"Actually committing instead of planning forever.",w:{1:1}},
+    {t:"Forgiving the person I used to be.",w:{4:1}},
+    {t:"Pouring into myself, not just everyone else.",w:{5:1}},
+    {t:"Shipping the vision instead of only dreaming it.",w:{7:1}},
+    {t:"Keeping faith when the proof is slow to show up.",w:{8:1}}
+  ]},
+  {q:"Last one. Which demon do you catch yourself fighting most?",opts:[
+    {t:"Burnout. I don't know how to stop, even when I should.",w:{2:1}},
+    {t:"Never enough. No win ever feels like it counts.",w:{3:1}},
+    {t:"Ego. I start needing the spotlight more than the result.",w:{6:1}},
+    {t:"Playing small so I never have to risk standing out.",w:{9:1}},
+    {t:"Losing myself completely in what I love.",w:{10:1}},
+    {t:"Dodging the hard stuff with a joke.",w:{11:1}}
+  ]}
+];
+const LETTERS=["A","B","C","D","E","F"];
+const NQ=Q.length;
+
+const DISCORD_FEATURES=[
+  {icon:"⚡",title:"Study Hall",desc:"1-hour deep focus sessions. Check in, finish strong. Accountability in real time."},
+  {icon:"🎯",title:"Goal Polls",desc:"Every week the community picks a goal to chase together. One focus. Full momentum."},
+  {icon:"👁",title:"Watch Parties",desc:"Scheduled group watches with live reaction chat. Anime with people who get it."},
+  {icon:"📖",title:"Book Club",desc:"Manga, light novels, self-development reads. Level up your mind with the crew."},
+  {icon:"📺",title:"What Are You Watching?",desc:"Share your current watch, get recs. Your next obsession is one message away."},
+  {icon:"📰",title:"Newsletter First Looks",desc:"Early access to Kaminari drops. Discord members always see it first."}
+];
+
+/* The canonical 12 — index order matters (matches weights above). */
+const A=[
+  { /* 0 */
+    emoji:"🐺",name:"The Lone Wolf",root:"Sage",
+    tagline:"While everyone else is performing, you're becoming.",
+    identity:"I move in silence. My results make the noise.",
+    desc:"You don't need an audience to stay committed. No applause, no announcements, no outside validation — just focus, consistency, and quiet execution. While others narrate what they're going to do, you build until the results speak for you.",
+    demon:"Isolation. You push people away and call it strength — until detachment quietly becomes a cage.",
+    integration:"Let people in without losing your edge. Solitude is a tool, not a hiding place.",
+    momentum:"You don't need a hype crowd — you need a system that runs in silence. That's exactly what the Lone Wolf habit template is built for.",
+    chars:[
+      {name:"Itachi Uchiha",series:"Naruto Shippuden",desc:"Carried the weight of an entire village in silence. Never sought praise, never explained himself. His results — and his sacrifice — spoke volumes long after he was gone."},
+      {name:"Levi Ackerman",series:"Attack on Titan",desc:"No speeches, no privilege, no backstory of ease. Just relentless, quiet excellence — the most dangerous soldier alive because he never stopped sharpening when no one was watching."}
+    ],
+    nl:"Every Wednesday, Kaminari breaks down characters to their mindset, their arc, their lesson. No filler — just the jolt that keeps you sharp."
+  },
+  { /* 1 */
+    emoji:"🧠",name:"The Strategist",root:"Magician",
+    tagline:"Most people react to life. You position yourself ahead of it.",
+    identity:"I don't chase outcomes. I position myself for them.",
+    desc:"You don't rely on raw effort — you think ahead. Patterns, timing, leverage. While others stay busy reacting emotionally, you move with intention on the decisions that actually shift the board. Grinding without strategy isn't discipline — it's just exhaustion with better branding.",
+    demon:"Analysis paralysis. You plan so thoroughly you never commit — and a strategy you never run is just a fantasy with footnotes.",
+    integration:"A plan only counts when it moves. Decide, execute, adjust.",
+    momentum:"You don't need more theory — you need a system that turns the plan into reps. The Strategist template does the executing for you.",
+    chars:[
+      {name:"Shikamaru Nara",series:"Naruto Shippuden",desc:"Never the strongest in the room — always the most dangerous. While others trained harder, he studied patterns and won battles before they started."},
+      {name:"L",series:"Death Note",desc:"Relentlessly calculated, ten moves ahead at all times. A reminder, too: brilliance without values is its own trap — strategy must serve something worth building."}
+    ],
+    nl:"Kaminari is built for people who want smarter execution, not just harder work. Every Wednesday we break down the frameworks and mental models behind real results."
+  },
+  { /* 2 */
+    emoji:"🔥",name:"The Relentless",root:"Hero",
+    tagline:"This isn't balance. This is a season of war.",
+    identity:"I don't stop when I'm tired. I stop when I'm done.",
+    desc:"This isn't a mood — it's a contract. You've chosen intensity over comfort, deliberately and completely. Discipline, courage, the willingness to suffer for something big enough to justify it. Not forever. But right now? All of it.",
+    demon:"Burnout. When your whole worth is output, you can't rest — and the grind that built you starts breaking you.",
+    integration:"Rest is part of the contract. The grind is a season, not your identity.",
+    momentum:"Intensity without a system just burns you out faster. The Relentless template makes the grind sustainable enough to actually finish the arc.",
+    chars:[
+      {name:"Guts",series:"Berserk",desc:"Born into nothing, fought against fate itself. Guts doesn't grind because it's fun — he grinds because stopping means death. A contract you make when the stakes are real."},
+      {name:"Eren Yeager",series:"Attack on Titan (early arc)",desc:"Raw, relentless, willing to bleed for what he wanted. Before the ideology — just pure, uncompromising refusal to quit no matter the cost."}
+    ],
+    nl:"Kaminari was built for seasons like yours. Every Wednesday — real stories from characters who chose intensity when it would've been easy to stop."
+  },
+  { /* 3 */
+    emoji:"⚡",name:"The Prodigy",root:"Explorer",
+    tagline:"Average effort creates average results. Mastery belongs to the obsessed.",
+    identity:"I'm not competing with others. I'm competing with who I was yesterday.",
+    desc:"You're obsessed with improvement — studying faster, adapting faster, refusing every ceiling. While others repeat the same level, you deliberately push past it. Not because it's easy, but because staying average genuinely is not an option for you.",
+    demon:"Never enough. Your identity is fused to the next achievement, so you can't enjoy the win you just earned.",
+    integration:"Learn to land, not just launch. Let a win actually be a win.",
+    momentum:"Obsession needs a track to run on. The Prodigy template turns 'beat yesterday' into a measurable daily system.",
+    chars:[
+      {name:"Rock Lee",series:"Naruto",desc:"No talent for ninjutsu, no shortcuts — just a decision that mastery was worth any price, and the obsessive work to prove it. Outworked everyone until talent became irrelevant."},
+      {name:"Izuku Midoriya",series:"My Hero Academia",desc:"Born without power in a world built on it. Responded with obsessive study, documentation, and a refusal to accept his ceiling as permanent."}
+    ],
+    nl:"Every Wednesday, Kaminari breaks down characters who refused to stay at their level — what they studied, how they adapted, what going all-in actually looked like."
+  },
+  { /* 4 */
+    emoji:"🌊",name:"The Reborn",root:"Outlaw / Rebel",
+    tagline:"You didn't fall apart. You shed a version of yourself that no longer served you.",
+    identity:"My past is not my prison. It's my proof.",
+    desc:"You're in one of the hardest arcs there is — becoming someone new. Not because you had to, but because you refused to stay who you were. You've carried weight, made mistakes, maybe lost yourself for a while. And you kept going anyway.",
+    demon:"Stuck in the rebellion. You can't forgive your old self, so you burn every bridge — including the ones you'll need.",
+    integration:"You don't have to hate who you were to love who you're becoming.",
+    momentum:"Transformation slips back without scaffolding. The Reborn template gives the new you a daily structure to stand on.",
+    chars:[
+      {name:"Zuko",series:"Avatar: The Last Airbender",desc:"The greatest redemption arc in animation. Every reason to stay bitter and defined by his worst moments — and he chose, slowly and painfully, to become someone entirely different."},
+      {name:"Vegeta",series:"Dragon Ball Z",desc:"Pride reforged into purpose. Spent his arc shedding the version of himself he started as, proving the past is a launchpad, not a sentence."}
+    ],
+    nl:"Kaminari was made for people in the middle of their arc. Every Wednesday we break down what transformation actually cost — and what it built."
+  },
+  { /* 5 */
+    emoji:"🕯️",name:"The Beacon",root:"Caregiver",
+    tagline:"You don't just rise. You bring people with you.",
+    identity:"My success is loudest when the people around me are winning too.",
+    desc:"Your growth was never just about you. You lead by example, build rooms for others to grow in, and when you level up your instinct is to turn around and pull someone with you. That's one of the rarest kinds of strength — the kind that multiplies.",
+    demon:"Martyrdom. You pour into everyone but yourself until there's nothing left, and quiet resentment creeps in.",
+    integration:"You can't pour from an empty cup. Protect your own arc first.",
+    momentum:"You take care of everyone — let something take care of you. The Beacon template keeps your own growth on the board, not just everyone else's.",
+    chars:[
+      {name:"Whitebeard",series:"One Piece",desc:"The most powerful man in the world — and he used every ounce of it to protect others. His identity was built on loyalty and legacy, never dominance."},
+      {name:"All Might",series:"My Hero Academia",desc:"Chose, at every point, to be a symbol — not for glory but because people needed something to believe in. His growth and everyone else's were never separate."}
+    ],
+    nl:"Kaminari is built for people who think about impact and legacy. Every Wednesday — characters who chose to lift as they climbed, and what we learn from how."
+  },
+  { /* 6 */
+    emoji:"🎯",name:"The Social Commander",root:"Ruler",
+    tagline:"People don't follow titles. They follow conviction.",
+    identity:"People remember how you made them feel.",
+    desc:"You set the standard in any room. Presence, charisma, decisiveness — you make people believe and you make them move. Leadership isn't a role you were handed; it's the gravity you naturally carry.",
+    demon:"Control and ego. You start needing the spotlight, choosing image over substance and command over trust.",
+    integration:"Real authority serves the room. Lead so others can lead too.",
+    momentum:"A leader with no system is just charisma running on fumes. The Social Commander template gives your standard a structure everyone can follow.",
+    chars:[
+      {name:"Erwin Smith",series:"Attack on Titan",desc:"Led people into hell and made them believe it mattered. Carried the weight of every life he spent, and never let the room see him waver."},
+      {name:"Lelouch vi Britannia",series:"Code Geass",desc:"Bent the world through sheer will, vision, and presence. Proof that command is a kind of power — and a kind of burden."}
+    ],
+    nl:"Kaminari is for people who set the standard. Every Wednesday — the leaders, tacticians, and figureheads of anime, broken down to how they actually led."
+  },
+  { /* 7 */
+    emoji:"🔮",name:"The Visionary",root:"Creator",
+    tagline:"You move like the future already exists.",
+    identity:"I build the future before it exists.",
+    desc:"You see what isn't there yet and feel compelled to build it. Imagination, conviction, the drive to make something the world didn't have before you. Where others see constraints, you see a blank canvas.",
+    demon:"You live in the vision and never ship — or the ends start justifying any means.",
+    integration:"A vision unbuilt is just a daydream. Ground it in the daily work.",
+    momentum:"Big vision dies in the gap between idea and execution. The Visionary template closes that gap one day at a time.",
+    chars:[
+      {name:"Senku Ishigami",series:"Dr. Stone",desc:"Rebuilt all of civilization from first principles — because he could see the future clearly enough to drag everyone toward it, one experiment at a time."},
+      {name:"Hange Zoë",series:"Attack on Titan",desc:"Relentless curiosity that refused the limits everyone else accepted. The kind of mind that builds the thing the world insisted couldn't exist."}
+    ],
+    nl:"Kaminari is for people building what isn't there yet. Every Wednesday — the dreamers and builders of anime, and the work behind the vision."
+  },
+  { /* 8 */
+    emoji:"✨",name:"The Believer",root:"Innocent",
+    tagline:"Hope isn't naive. It's the engine.",
+    identity:"The dream is worth believing in — so I do, fully.",
+    desc:"You carry a faith most people lost somewhere along the way: that the dream is worth it, that effort matters, that it works out for those who keep showing up. Your optimism isn't weakness — it's contagious, and it pulls people forward.",
+    demon:"Naivety. You lean on hope instead of action and deny the hard truths that need facing.",
+    integration:"Faith with your eyes open. Believe — and prepare.",
+    momentum:"Belief needs reps behind it or it stays a wish. The Believer template turns 'I know it'll work' into proof you can see.",
+    chars:[
+      {name:"Monkey D. Luffy",series:"One Piece",desc:"Unshakeable faith in his crew and his dream. He doesn't out-think the world — he out-believes it, and somehow that's enough to bend it."},
+      {name:"Tanjiro Kamado",series:"Demon Slayer",desc:"Kindness and belief that never broke, no matter how dark it got. Proof that hope, backed by relentless effort, is its own kind of unstoppable."}
+    ],
+    nl:"Kaminari is for people who still believe the dream is worth it. Every Wednesday — the characters who kept the faith and made it real."
+  },
+  { /* 9 */
+    emoji:"🌱",name:"The Underdog",root:"Everyman",
+    tagline:"You started with nothing special. That's exactly why you'll prove it.",
+    identity:"I started with nothing special. That's why I'll prove it.",
+    desc:"No head start, no special talent, no silver spoon — just grit and a refusal to stay where you started. You're grounded, relatable, and you rise from behind. People root for you because your story is the one they recognize in themselves.",
+    demon:"Victim mentality. You play small, hide behind 'I'm just average,' and fear actually standing out.",
+    integration:"Humble and hungry. Don't let 'ordinary' become the excuse.",
+    momentum:"The comeback needs a system, not just heart. The Underdog template is the daily structure that turns 'behind' into 'unrecognizable.'",
+    chars:[
+      {name:"Krillin",series:"Dragon Ball Z",desc:"Human in a world of gods and monsters — and he never stopped showing up. Proof that 'ordinary' is a starting line, not a ceiling."},
+      {name:"Yuji Itadori",series:"Jujutsu Kaisen",desc:"An ordinary kid handed an impossible weight, who carried it anyway with heart and grit. The everyman who refuses to break."}
+    ],
+    nl:"Kaminari is for the ones who started from behind. Every Wednesday — the underdogs of anime, and exactly how they closed the gap."
+  },
+  { /* 10 */
+    emoji:"❤️‍🔥",name:"The Devoted",root:"Lover",
+    tagline:"You don't do anything halfway. You do it with your whole chest.",
+    identity:"I give everything to what — and who — I love.",
+    desc:"Passion is your fuel. When you care, you care completely — about your people, your craft, your mission. That devotion is a force; it makes you fight for things long after others would have let go.",
+    demon:"You lose yourself in the thing. Obsession, jealousy, and a collapse when it's gone.",
+    integration:"Love from wholeness, not from need. Stay rooted in yourself.",
+    momentum:"All that passion needs a channel or it burns sideways. The Devoted template points your whole heart at a system that loves you back.",
+    chars:[
+      {name:"Asta",series:"Black Clover",desc:"Pure, screaming devotion to his dream and his people. No magic, no talent — just a heart so loud it refuses to be told no."},
+      {name:"Natsu Dragneel",series:"Fairy Tail",desc:"Family is the whole fight. Every ounce of his power comes from who he's protecting — devotion turned into raw, unstoppable force."}
+    ],
+    nl:"Kaminari is for people who go all-in on what they love. Every Wednesday — the characters who turned devotion into their greatest strength."
+  },
+  { /* 11 */
+    emoji:"🎭",name:"The Free Spirit",root:"Jester",
+    tagline:"You refuse to let the weight steal the joy.",
+    identity:"I refuse to let the grind steal the joy.",
+    desc:"You move through life light — humor, presence, the ability to keep your head up when everything says don't. That lightness isn't avoidance; it's resilience. You lift the room and you outlast the heaviness.",
+    demon:"Avoidance. You deflect pain with a joke, never go deep, and run from anything that asks for commitment.",
+    integration:"Joy is strength; escape is not. Let yourself feel it first — then laugh.",
+    momentum:"Fun without follow-through fizzles. The Free Spirit template keeps the joy and adds just enough structure to actually finish.",
+    chars:[
+      {name:"Gintoki Sakata",series:"Gintama",desc:"Carries real weight behind every joke and never lets it harden him. Proof that humor can be a discipline, not just a dodge."},
+      {name:"Bon Clay",series:"One Piece",desc:"Joy, loyalty, and theatrics turned into raw strength. The one who lightens the room and then lays down everything for the people in it."}
+    ],
+    nl:"Kaminari is for people who keep the joy in the grind. Every Wednesday — the characters who proved lightness is its own kind of power."
+  }
+];
+
+let scores=new Array(12).fill(0),qIdx=0,answers=[],currentR=null;
+const SUPA_URL="https://ppossuiqnkoqhjncgsle.supabase.co";
+const SUPA_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBwb3NzdWlxbmtvcWhqbmNnc2xlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUyMDA3ODYsImV4cCI6MjEwMDc3Njc4Nn0.lLkyuhKZc4sq9xpGylU1nc7FFeq8glebLBxrdtjjPCY";
+const LEAD={};
+function supaInsert(row){
+  return fetch(SUPA_URL+"/rest/v1/quiz_submissions",{
+    method:"POST",
+    headers:{
+      "apikey":SUPA_KEY,
+      "Authorization":"Bearer "+SUPA_KEY,
+      "Content-Type":"application/json",
+      "Prefer":"return=minimal"
+    },
+    body:JSON.stringify(row)
+  }).catch(function(e){console.error("supa insert failed",e);});
+}
+
+function show(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+}
+function gateSubmit(){
+  const fn=document.getElementById('fn').value.trim();
+  const em=document.getElementById('em').value.trim();
+  const err=document.getElementById('err');
+  if(!fn||!em){err.style.display='block';return;}
+  err.style.display='none';
+  LEAD.first_name=fn;
+  LEAD.last_name=document.getElementById('ln').value.trim();
+  LEAD.email=em;
+  const ph=document.getElementById('ph').value.trim();
+  if(ph)LEAD.phone=ph;
+  const du=document.getElementById('du').value.trim();
+  if(du)LEAD.discord_username=du;
+  supaInsert(Object.assign({stage:'lead'},LEAD));
+  startQuiz();
+}
+function openNlModal(){document.getElementById('nl-modal').classList.add('open');}
+function closeNlModal(){document.getElementById('nl-modal').classList.remove('open');}
+document.addEventListener('DOMContentLoaded',function(){
+  var cnl=document.getElementById('c-nl');
+  if(cnl)cnl.addEventListener('change',function(){if(cnl.checked)openNlModal();});
+  document.getElementById('nl-modal').addEventListener('click',function(e){if(e.target===this)closeNlModal();});
+});
+function startQuiz(){scores=new Array(12).fill(0);qIdx=0;answers=[];renderQ();show('s-quiz');}
+function renderQ(){
+  const q=Q[qIdx];
+  document.getElementById('pfill').style.width=Math.round((qIdx/NQ)*100)+'%';
+  document.getElementById('plbl').textContent=(qIdx+1)+' of '+NQ;
+  document.getElementById('q-step').textContent='Question '+(qIdx+1)+' of '+NQ;
+  document.getElementById('q-text').textContent=q.q;
+  const ol=document.getElementById('opts');ol.innerHTML='';
+  q.opts.forEach((o,i)=>{
+    const b=document.createElement('button');
+    b.className='opt';
+    b.innerHTML='<span class="opt-letter">'+LETTERS[i]+'</span><span>'+o.t+'</span>';
+    b.onclick=()=>pick(i);
+    ol.appendChild(b);
+  });
+}
+function pick(i){
+  answers[qIdx]=LETTERS[i];
+  const w=Q[qIdx].opts[i].w;
+  for(const k in w){scores[k]+=w[k];}
+  qIdx++;
+  if(qIdx<NQ)renderQ();else showLoading();
+}
+function showLoading(){
+  show('s-loading');
+  const msgs=["Analyzing your archetype...","Consulting the lightning scrolls...","Reading your shadow...","The strike is forming...","Almost there..."];
+  let mi=0;
+  const iv=setInterval(()=>{mi++;if(mi<msgs.length)document.getElementById('l-msg').textContent=msgs[mi];},800);
+  setTimeout(()=>{clearInterval(iv);buildResult();},3200);
+}
+function buildResult(){
+  // argmax with random tie-break so no archetype wins ties by index position
+  [0,7,10].forEach(function(i){scores[i]=-1;});
+  let max=Math.max.apply(null,scores);
+  let tied=[];scores.forEach((s,i)=>{if(s===max)tied.push(i);});
+  const idx=tied[Math.floor(Math.random()*tied.length)];
+  const r=A[idx];currentR=r;
+  supaInsert(Object.assign({},LEAD,{stage:'complete',archetype:r.name,archetype_emoji:r.emoji,answers:answers,scores:scores}));
+  const charHTML=r.chars.map(c=>`
+    <div class="char-card">
+      <p class="char-name">${c.name}</p>
+      <p class="char-series">${c.series}</p>
+      <p class="char-desc">${c.desc}</p>
+    </div>`).join('');
+  const featHTML=DISCORD_FEATURES.map(f=>`
+    <div class="feat-card">
+      <span class="feat-icon">${f.icon}</span>
+      <p class="feat-title">${f.title}</p>
+      <p class="feat-desc">${f.desc}</p>
+    </div>`).join('');
+  document.getElementById('result-out').innerHTML=`
+    <div class="result-hero">
+      <span class="result-emoji">${r.emoji}</span>
+      <div class="result-badge">Your archetype</div>
+      <div class="result-name">${r.name}</div>
+      <div class="result-root">Jungian root · ${r.root}</div>
+      <div class="result-tagline">"${r.tagline}"</div>
+      <button class="hero-share" onclick="shareResult()">📸 Share your archetype</button>
+    </div>
+    <div class="result-body">
+      <div class="identity-pull"><p>"${r.identity}"</p></div>
+      <p class="result-desc">${r.desc}</p>
+      <hr class="divider">
+      <p class="s-lbl" style="margin-bottom:12px">Your anime counterparts</p>
+      ${charHTML}
+      <hr class="divider">
+      <div class="shadow-box">
+        <p class="shadow-head">🩸 Your demon</p>
+        <p class="shadow-demon">${r.demon}</p>
+        <p class="shadow-int"><strong style="color:#fff">Chop the head off.</strong> ${r.integration}</p>
+      </div>
+      <div class="cta-box">
+        <p class="cta-head">⚡ How you chop the head off</p>
+        <p class="cta-pitch">${r.momentum} <strong>Every archetype has a demon, and a way to chop it.</strong> We built a gamified habit-tracker template tuned to exactly how the ${r.name} operates, so you stop white-knuckling motivation and start stacking momentum against your demon.</p>
+        ${GUMROAD_URL && GUMROAD_URL!=="#"
+          ? `<a class="btn-primary" href="${GUMROAD_URL}" target="_blank" rel="noopener">Get the ${r.name} template →</a>`
+          : `<button class="btn-primary" style="opacity:.6;cursor:default" disabled>${r.name} template, dropping soon ⚡</button>`}
+      </div>
+      <div class="nl-box">
+        <p class="nl-head">⚡ Your Wednesday newsletter</p>
+        <p class="nl-copy">${r.nl}</p>
+        <iframe class="substack-frame" src="${SUBSTACK_EMBED}" width="100%" height="150" style="border:none" frameborder="0" scrolling="no" title="Subscribe to Kaminari"></iframe>
+      </div>
+      <div class="discord-box">
+        <div class="discord-head">
+          <p>⚡ Your accountability crew</p>
+          <small>Kaminari Discord. Waitlist open now.</small>
+        </div>
+        <div class="discord-body">
+          <p class="discord-pitch">Momentum is easier when you're not doing it alone. The Kaminari Discord is the room where people chasing the same thing keep each other honest. Here's what's inside.</p>
+          <div class="discord-features">${featHTML}</div>
+          <div class="discord-check">
+            <input type="checkbox" id="dc-r"/>
+            <label for="dc-r">Yes, add me to the Kaminari Discord waitlist.</label>
+          </div>
+        </div>
+      </div>
+      <div class="share-box">
+        <p class="s-lbl">Show the world your archetype</p>
+        <canvas id="share-canvas" class="share-card" aria-label="${r.name} card"></canvas>
+        <div class="share-row">
+          <button class="btn-primary" onclick="shareResult()">Share ⚡</button>
+          <button class="btn-ghost" onclick="copyLink(this)">Copy link</button>
+        </div>
+      </div>
+      <p class="endgame-note">All 9 archetypes grow toward the same center, <strong>🧘 the Balanced Master</strong>. Chop your demon enough times and that's who's left standing.</p>
+      <button class="btn-ghost" onclick="restart()">Take the quiz again</button>
+    </div>`;
+  var dcr=document.getElementById('dc-r');
+  if(dcr)dcr.addEventListener('change',function(){if(dcr.checked)supaInsert(Object.assign({},LEAD,{stage:'discord',archetype:r.name,discord_opt_in:true}));});
+  (document.fonts&&document.fonts.ready?document.fonts.ready:Promise.resolve()).then(function(){drawCard(r);});
+  show('s-result');
+}
+function wrapText(x,text,cx,cy,maxW,lh){
+  const words=text.split(' ');let line='';let y=cy;
+  for(let i=0;i<words.length;i++){
+    const test=line+words[i]+' ';
+    if(x.measureText(test).width>maxW&&line){x.fillText(line.trim(),cx,y);line=words[i]+' ';y+=lh;}
+    else line=test;
+  }
+  x.fillText(line.trim(),cx,y);return y;
+}
+function drawCard(r){
+  const c=document.getElementById('share-canvas');if(!c||!c.getContext)return;
+  c.width=1080;c.height=1080;const x=c.getContext('2d');
+  const g=x.createLinearGradient(0,0,1080,1080);g.addColorStop(0,'#131317');g.addColorStop(1,'#0B0B0F');
+  x.fillStyle=g;x.fillRect(0,0,1080,1080);
+  let rg=x.createRadialGradient(540,300,0,540,300,760);rg.addColorStop(0,'rgba(0,192,249,.34)');rg.addColorStop(1,'rgba(0,192,249,0)');
+  x.fillStyle=rg;x.fillRect(0,0,1080,1080);
+  let mg=x.createRadialGradient(1000,120,0,1000,120,540);mg.addColorStop(0,'rgba(0,192,249,.20)');mg.addColorStop(1,'rgba(0,192,249,0)');
+  x.fillStyle=mg;x.fillRect(0,0,1080,1080);
+  x.strokeStyle='rgba(0,192,249,.55)';x.lineWidth=6;x.strokeRect(28,28,1024,1024);
+  x.textAlign='center';x.textBaseline='alphabetic';
+  x.fillStyle='#fff';x.font='800 44px Inter, sans-serif';x.fillText('⚡ KAMINARI',540,140);
+  x.fillStyle='rgba(255,255,255,.55)';x.font='700 32px Inter, sans-serif';x.fillText('I AM',540,355);
+  x.font='150px sans-serif';x.fillText(r.emoji,540,545);
+  let fs=86;const name=r.name.toUpperCase();x.font='800 '+fs+'px Inter, sans-serif';
+  while(x.measureText(name).width>900&&fs>38){fs-=4;x.font='800 '+fs+'px Inter, sans-serif';}
+  x.fillStyle='#fff';x.fillText(name,540,668);
+  x.fillStyle='#5CD6FF';x.font='italic 600 38px Inter, sans-serif';
+  wrapText(x,'"'+r.tagline+'"',540,762,920,50);
+  x.fillStyle='rgba(255,255,255,.6)';x.font='600 30px Inter, sans-serif';x.fillText('Which anime archetype are you?',540,975);
+  x.fillStyle='#5CD6FF';x.font='700 27px Inter, sans-serif';x.fillText('joinkaminari.com/quiz',540,1022);
+}
+function shareResult(){
+  if(!currentR)return;drawCard(currentR);
+  const c=document.getElementById('share-canvas');if(!c||!c.toBlob)return;
+  c.toBlob(function(blob){
+    if(!blob)return;
+    const file=new File([blob],'kaminari-archetype.png',{type:'image/png'});
+    const txt="I'm "+currentR.name+" "+currentR.emoji+". Which anime archetype are you?";
+    const url="https://www.joinkaminari.com/quiz";
+    if(navigator.canShare&&navigator.canShare({files:[file]})){
+      navigator.share({files:[file],title:'My Kaminari archetype',text:txt,url:url}).catch(function(){});
+    }else{
+      const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='kaminari-archetype.png';document.body.appendChild(a);a.click();a.remove();
+    }
+  },'image/png');
+}
+function copyLink(btn){
+  const url="https://www.joinkaminari.com/quiz";
+  const done=function(){const o=btn.textContent;btn.textContent='Copied ✓';btn.classList.add('copied');setTimeout(function(){btn.textContent=o;btn.classList.remove('copied');},1600);};
+  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(url).then(done).catch(done);}else{done();}
+}
+function restart(){scores=new Array(12).fill(0);qIdx=0;answers=[];show('s-info');}
+
+</script>
+</body>
+</html>

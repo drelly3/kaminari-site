@@ -21,7 +21,7 @@ export const site = {
 export const links = {
   substack: 'https://joinkaminari.substack.com/',
   substackEmbed: 'https://joinkaminari.substack.com/embed',
-  quiz: 'https://kaminari-archetype-quiz.vercel.app/',
+  quiz: '/quiz', // restyled copy of the original at kaminari-archetype-quiz.vercel.app
   templates: 'https://kaminari4.gumroad.com/l/anime-mindset-system',
   arcTracker: 'https://kaminari4.gumroad.com/l/huotdg',
   discord: 'https://discord.gg/6H5KAp3edZ',
@@ -34,7 +34,6 @@ export const nav = [
   { label: 'Newsletter', href: '/newsletter' },
   { label: 'Community', href: '/#community' },
   { label: 'Anime Mindset', href: '/anime-mindset' },
-  ...(site.arcTrackerPublic ? [{ label: 'Arc Tracker', href: '/arc-tracker' }] : []),
 ];
 
 export const authors = {
@@ -69,18 +68,17 @@ export const quotes = [
   'Stop waiting for a rival to force your growth. Be your own trial arc.',
 ];
 
+// [emoji, name, quote, Jungian root, what drives them, their demon, avatar file, colour hue]
 export const archetypes = [
-  ['🎭', 'The Free Spirit', 'You refuse to let the weight steal the joy.', 'Jester', 'Moves through life light. Humor and presence as real resilience that outlasts the heaviness.', 'Avoidance'],
-  ['❤️‍🔥', 'The Devoted', 'You do it with your whole chest.', 'Lover', 'Passion as fuel. Cares completely about their people, their craft, their mission.', 'Losing yourself'],
-  ['🌱', 'The Underdog', "You started with nothing special. That's why you'll prove it.", 'Everyman', 'No head start, no shortcuts, just grit. Rises from behind and makes people root for them.', 'Victim mentality'],
-  ['✨', 'The Believer', "Hope isn't naive. It's the engine.", 'Innocent', "Keeps the faith most people lost. Optimism that's contagious and pulls people forward.", 'Naivety'],
-  ['🔮', 'The Visionary', 'You move like the future already exists.', 'Creator', "Sees what isn't there yet and is compelled to build it. Constraints look like a blank canvas.", 'Never shipping'],
-  ['🎯', 'The Social Commander', 'People follow conviction, not titles.', 'Ruler', 'Sets the standard in any room. Presence, charisma, and decisiveness that makes people move.', 'Control & ego'],
-  ['🕯️', 'The Beacon', "You don't just rise. You bring people with you.", 'Caregiver', 'Leads by example and builds rooms for others. The kind of strength that multiplies.', 'Martyrdom'],
-  ['🌊', 'The Reborn', 'You shed a version of yourself that no longer served you.', 'Outlaw / Rebel', 'Becoming someone new on purpose. The past is proof, not a prison.', 'Stuck in rebellion'],
-  ['⚡', 'The Prodigy', 'Mastery belongs to the obsessed.', 'Explorer', 'Obsessed with improvement. Competing with who they were yesterday, refusing every ceiling.', 'Never enough'],
-  ['🔥', 'The Relentless', "This isn't balance. This is a season of war.", 'Hero', 'Chooses intensity over comfort, on purpose. Disciplined and all-in, for a season, not forever.', 'Burnout'],
-  ['🧠', 'The Strategist', 'Most people react to life. You position ahead of it.', 'Magician', 'Thinks ahead: patterns, timing, leverage. Moves on the decisions that actually shift the board.', 'Analysis paralysis'],
+  ['🎭', 'The Free Spirit', 'You refuse to let the weight steal the joy.', 'Jester', 'Moves through life light. Humor and presence as real resilience that outlasts the heaviness.', 'Avoidance', 'free-spirit', 300],
+  ['🌱', 'The Underdog', "You started with nothing special. That's why you'll prove it.", 'Everyman', 'No head start, no shortcuts, just grit. Rises from behind and makes people root for them.', 'Victim mentality', 'underdog', 132],
+  ['✨', 'The Believer', "Hope isn't naive. It's the engine.", 'Innocent', "Keeps the faith most people lost. Optimism that's contagious and pulls people forward.", 'Naivety', 'believer', 50],
+  ['🎯', 'The Social Commander', 'People follow conviction, not titles.', 'Ruler', 'Sets the standard in any room. Presence, charisma, and decisiveness that makes people move.', 'Control & ego', 'social-commander', 340],
+  ['🕯️', 'The Beacon', "You don't just rise. You bring people with you.", 'Caregiver', 'Leads by example and builds rooms for others. The kind of strength that multiplies.', 'Martyrdom', 'beacon', 42],
+  ['🌊', 'The Reborn', 'You shed a version of yourself that no longer served you.', 'Outlaw / Rebel', 'Becoming someone new on purpose. The past is proof, not a prison.', 'Stuck in rebellion', 'reborn', 24],
+  ['⚡', 'The Prodigy', 'Mastery belongs to the obsessed.', 'Explorer', 'Obsessed with improvement. Competing with who they were yesterday, refusing every ceiling.', 'Never enough', 'prodigy', 45],
+  ['🔥', 'The Relentless', "This isn't balance. This is a season of war.", 'Hero', 'Chooses intensity over comfort, on purpose. Disciplined and all-in, for a season, not forever.', 'Burnout', 'demon-grind', 14],
+  ['🧠', 'The Strategist', 'Most people react to life. You position ahead of it.', 'Magician', 'Thinks ahead: patterns, timing, leverage. Moves on the decisions that actually shift the board.', 'Analysis paralysis', 'strategist', 255],
 ];
 
 // Blog categories are derived from the slug (the Webflow "Category" field was empty).

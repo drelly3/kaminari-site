@@ -376,3 +376,8 @@ footer{ padding:72px 0 36px; }
 .arc-step b{ font-size:15px; }
 .arc-step .ms{ margin-left:auto; font-size:12.5px; color:var(--muted); }
 .btn-soon{ background:var(--accent-soft); color:var(--accent); border-color:rgba(0,192,249,0.45); cursor:default; }
+
+/* ANIME MINDSET: idea emblems + avatars in the archetype table */
+.idea-emblem{ width:64px; height:64px; border-radius:50%; display:flex; align-items:center; justify-content:center; margin-bottom:20px; color:hsl(var(--hue) 85% 66%); background:radial-gradient(circle at 50% 40%, hsla(var(--hue),80%,45%,0.28), hsla(var(--hue),70%,20%,0.35)); border:2px solid hsl(var(--hue) 85% 58%); box-shadow:0 0 22px hsla(var(--hue),90%,55%,0.35); }
+.arch-row .who{ display:flex; align-items:center; gap:14px; }
+.arch-row .who .arc-face{ width:52px; flex-shrink:0; }

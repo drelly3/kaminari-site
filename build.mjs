@@ -41,6 +41,7 @@ fs.copyFileSync('src/main.js', path.join(DIST, 'main.js'));
 fs.copyFileSync('src/arc-tracker.css', path.join(DIST, 'arc-tracker.css'));
 fs.copyFileSync('src/arc-tracker.js', path.join(DIST, 'arc-tracker.js'));
 fs.copyFileSync('src/arc-gate.js', path.join(DIST, 'arc-gate.js'));
+fs.copyFileSync('src/quiz.html', path.join(DIST, 'quiz.html')); // the archetype quiz is a self-contained page
 
 const routes = [];
 function write(route, opts) {
@@ -72,19 +73,13 @@ write('/newsletter', { title: 'Your Ultimate Anime Newsletter | Kaminari Newslet
 write('/anime-mindset', {
   title: 'The Anime Mindset | Kaminari',
   description: 'Stop watching growth and start living it. Find your archetype, name your demon, and build a daily system from the anime you love.',
-  body: pages.animeMindset(),
+  body: pages.animeMindset(arcArchetypes),
 });
 write('/privacy-policy', { title: 'Privacy Policy | Kaminari', body: pages.privacy(fs.readFileSync('src/content/privacy-policy.html', 'utf8')) });
 write('/blog', {
   title: 'Blog | Kaminari — Anime Lessons, Watch Orders, Filler Lists & Quotes',
   description: 'Anime lessons, watch orders, filler lists, character quotes, and recommendations from the Kaminari universe.',
   body: pages.blogIndex(posts),
-});
-// public page that sells the tracker
-if (site.arcTrackerPublic) write('/arc-tracker', {
-  title: 'Arc Tracker | Kaminari',
-  description: 'Pick your archetype, commit to three habits, and earn your rank one full-clear day at a time.',
-  body: pages.arcTrackerLanding(arcArchetypes),
 });
 // the tracker itself (members only once sign-in and payment are connected)
 write('/arc-tracker/app', {
