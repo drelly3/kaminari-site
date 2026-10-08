@@ -156,7 +156,7 @@ function iconSVG(arche, size){
 /* ---------------- Storage ---------------- */
 const LS = {profile:'arc_profile',habits:'arc_habits',log:'arc_log',weekly:'arc_weekly',reminder:'arc_reminder',secondWinds:'arc_second_winds'};
 function load(k,fb){ try{ const r=localStorage.getItem(k); return r?JSON.parse(r):fb; }catch(e){ return fb; } }
-function persist(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} }
+function persist(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} if(SYNCED.includes(k)) scheduleSync(); }
 
 let profile = load(LS.profile,{name:'',archetypeKey:''});
 let habits  = load(LS.habits,{h1:{cue:'',habit:''},h2:{cue:'',habit:''},h3:{cue:'',habit:''},sc:{cue:'',habit:''}});
@@ -164,6 +164,108 @@ let log     = load(LS.log,[]);
 let weekly  = load(LS.weekly,[]);
 let reminder= load(LS.reminder,{enabled:false,time:'08:00',lastFired:''});
 let secondWinds= load(LS.secondWinds,[]); // [{missed, on, cost}]: each Second Wind: an XP-paid streak repair
+
+/* ---------------- Cloud backup: the arc is saved under the member's licence key ---------------- */
+// Every change is sent a couple of seconds after it's made; the server merges it with the backup and
+// sends the merged arc back, so a second phone picks up days logged on the first. See api/arc-sync.js.
+// Proof photos stay on the device.
+const SYNCED = [LS.profile, LS.habits, LS.log, LS.weekly, LS.secondWinds];
+const SYNC_DELAY = 2500;
+let sync = load('arc_sync', {at:0, owner:'', resetAt:0}); // last good backup, whose key the local arc belongs to
+let syncStatus = 'idle', syncTimer = null, syncBusy = false, syncAgain = false, applyingSync = false, renderWhenIdle = false, syncRestored = false;
+const blankProfile = ()=>({name:'',archetypeKey:''});
+const blankHabits = ()=>({h1:{cue:'',habit:''},h2:{cue:'',habit:''},h3:{cue:'',habit:''},sc:{cue:'',habit:''}});
+function licenceKey(){ try{ return localStorage.getItem('arc_license')||''; }catch(e){ return ''; } }
+function scheduleSync(){
+  if(applyingSync) return;
+  clearTimeout(syncTimer);
+  syncTimer = setTimeout(()=>{ syncTimer=null; syncNow(); }, SYNC_DELAY);
+}
+async function syncNow(opts){
+  opts = opts || {};
+  const key = licenceKey();
+  if(!key) return;
+  if(syncBusy){ syncAgain = true; return; }
+  // a different key on this device means the local arc is someone else's: start from their backup instead
+  if(sync.owner && sync.owner !== key){
+    profile=blankProfile(); habits=blankHabits(); log=[]; weekly=[]; secondWinds=[];
+    applyingSync = true;
+    persist(LS.profile,profile); persist(LS.habits,habits); persist(LS.log,log); persist(LS.weekly,weekly); persist(LS.secondWinds,secondWinds);
+    applyingSync = false;
+    if(proofDb) proofTx('readwrite', s=>s.clear()).catch(()=>{});
+    sync = {at:0, owner:key, resetAt:0};
+  }
+  syncBusy = true; setSyncStatus('busy');
+  const wasEmpty = !log.length && !profile.archetypeKey;
+  try{
+    const res = await fetch('/api/arc-sync', {method:'POST', headers:{'Content-Type':'application/json'}, keepalive:!!opts.keepalive,
+      body: JSON.stringify({key, reset:!!opts.reset, state:{profile, habits, log, weekly, secondWinds, resetAt:sync.resetAt||0}})});
+    const out = await res.json().catch(()=>({ok:false}));
+    if(out.ok){
+      applyBackup(out.state);
+      sync = {at:Date.now(), owner:key, resetAt:out.state.resetAt||0};
+      try{ localStorage.setItem('arc_sync', JSON.stringify(sync)); }catch(e){}
+      setSyncStatus('ok');
+      if(wasEmpty && (log.length || profile.archetypeKey) && !syncRestored){ syncRestored = true; showToast('Welcome back. Your arc is restored.'); }
+    } else setSyncStatus(out.reason==='no_access' ? 'denied' : 'error');
+  }catch(e){ setSyncStatus('offline'); }
+  syncBusy = false;
+  if(syncAgain){ syncAgain = false; scheduleSync(); }
+}
+// takes the merged arc from the server; redraws unless the member is mid-typing
+function applyBackup(st){
+  const next = {
+    profile: st.profile || blankProfile(), habits: st.habits || blankHabits(),
+    log: st.log || [], weekly: st.weekly || [], secondWinds: st.secondWinds || []
+  };
+  const changed = JSON.stringify(next) !== JSON.stringify({profile, habits, log, weekly, secondWinds});
+  if(!changed) return;
+  const hadArchetype = !!getArchetype(profile.archetypeKey);
+  profile=next.profile; habits=next.habits; log=next.log; weekly=next.weekly; secondWinds=next.secondWinds;
+  applyingSync = true;
+  persist(LS.profile,profile); persist(LS.habits,habits); persist(LS.log,log); persist(LS.weekly,weekly); persist(LS.secondWinds,secondWinds);
+  applyingSync = false;
+  const a = document.activeElement;
+  if(a && /^(INPUT|TEXTAREA)$/.test(a.tagName) && a.type!=='checkbox' && a.type!=='file') renderWhenIdle = true;
+  else renderAll();
+  // a restored arc opens on Today, not on the setup guide shown to brand-new members
+  if(!hadArchetype && getArchetype(profile.archetypeKey) && document.getElementById('tab-guide').classList.contains('active')) showTab('today');
+}
+document.addEventListener('focusout', ()=>{ if(renderWhenIdle){ setTimeout(()=>{ const a=document.activeElement; if(!(a && /^(INPUT|TEXTAREA)$/.test(a.tagName))){ renderWhenIdle=false; renderAll(); } }, 50); } });
+// leaving the app: send anything still waiting
+function flushSync(){ if(syncTimer){ clearTimeout(syncTimer); syncTimer=null; syncNow({keepalive:true}); } }
+document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='hidden') flushSync(); else syncNow(); });
+window.addEventListener('pagehide', flushSync);
+window.addEventListener('online', ()=>syncNow());
+function setSyncStatus(st){ syncStatus = st; const el=document.getElementById('syncBox'); if(el){ el.innerHTML = syncBoxHtml(); wireSyncBox(); } }
+function syncBoxHtml(){
+  const ago = sync.at ? timeAgo(sync.at) : '';
+  const line = {
+    busy: 'Backing up…',
+    ok: 'Backed up '+ago+'.',
+    offline: 'You’re offline. Changes are saved on this phone and back up when you reconnect.',
+    denied: 'Your key no longer has access, so backups are paused.',
+    error: 'Couldn’t reach the backup just now. It will try again.',
+    idle: sync.at ? 'Last backed up '+ago+'.' : 'Not backed up yet.'
+  }[syncStatus] || '';
+  const good = syncStatus==='ok' || (syncStatus==='idle' && sync.at);
+  return '<div class="sync-line'+(good?' good':'')+'">'+line+'</div><button type="button" class="btn ghost" id="syncNowBtn"'+(syncStatus==='busy'?' disabled':'')+'>Back up now</button>';
+}
+function wireSyncBox(){ const b=document.getElementById('syncNowBtn'); if(b) b.addEventListener('click', ()=>syncNow()); }
+function timeAgo(ms){
+  const m = Math.round((Date.now()-ms)/60000);
+  if(m<1) return 'just now';
+  if(m<60) return m+' min ago';
+  const h = Math.round(m/60);
+  if(h<24) return h+(h===1?' hour':' hours')+' ago';
+  return 'on '+new Date(ms).toLocaleDateString(undefined,{month:'short',day:'numeric'});
+}
+function showToast(text){
+  const root=document.querySelector('.arc-root'); if(!root) return;
+  const el=document.createElement('div'); el.className='arc-toast'; el.setAttribute('role','status'); el.textContent=text;
+  root.appendChild(el);
+  setTimeout(()=>el.classList.add('out'), 3200); setTimeout(()=>el.remove(), 3700);
+}
 
 // The "Preview the animations" section is a demo tool, not something members should play with:
 // it only appears when the address ends in ?demo
@@ -231,9 +333,9 @@ function useSecondWind(){
   const stats=computeStats(), cb=secondWindState(stats);
   if(!cb || cb.nextOn || !cb.cleared || !cb.afford) return;
   const i=log.findIndex(e=>e.date===cb.missed);
-  if(i>=0) log[i].repaired=true;
-  else log.push({date:cb.missed,h1:false,h2:false,h3:false,sc:false,note:'',repaired:true});
-  secondWinds.push({missed:cb.missed, on:todayStr(), cost:SECOND_WIND_COST});
+  if(i>=0){ log[i].repaired=true; log[i].t=Date.now(); }
+  else log.push({date:cb.missed,h1:false,h2:false,h3:false,sc:false,note:'',repaired:true,t:Date.now()});
+  secondWinds.push({missed:cb.missed, on:todayStr(), cost:SECOND_WIND_COST, t:Date.now()});
   persist(LS.log, log); persist(LS.secondWinds, secondWinds);
   const arche=getArchetype(profile.archetypeKey);
   const streak=computeStats().currentStreak;
@@ -554,8 +656,10 @@ function commitDay(){
     h3: box('f_h3','h3'),
     sc: box('f_sc','sc'),
     note: noteEl ? noteEl.value.slice(0,280) : (existing?existing.note:''),
-    proof: {h1:!!dayProof.h1}
+    proof: {h1:!!dayProof.h1},
+    t: Date.now()
   };
+  if(existing && existing.repaired) entry.repaired = true; // editing a repaired day keeps its Second Wind
   const idx = log.findIndex(e=>e.date===d);
   if(idx>=0) log[idx]=entry; else log.push(entry);
   persist(LS.log, log);
@@ -894,6 +998,8 @@ function wireWeeklyReview(){
   if(!btn) return;
   btn.addEventListener('click',()=>{
     weekly.push({
+      id: Date.now().toString(36),
+      t: Date.now(),
       date: todayStr(),
       went: document.getElementById('wr_went').value.slice(0,400),
       wins: document.getElementById('wr_wins').value.slice(0,400),
@@ -932,6 +1038,7 @@ function renderArchetypes(){
   el.querySelectorAll('[data-pick]').forEach(btn=>{
     btn.addEventListener('click',()=>{
       profile.archetypeKey = btn.dataset.pick;
+      profile.t = Date.now();
       persist(LS.profile, profile);
       if(pushState==='on') pushSync().catch(()=>{});
             renderAll();
@@ -1001,6 +1108,9 @@ function renderSetup(){
 
   html += '<button class="btn" id="saveHabitsBtn" style="margin-top:6px;">Save character & habits</button>';
 
+  html += '<h2 class="section-title" style="font-size:16px;margin-top:30px;">Backup</h2><p class="section-sub">Your arc is saved to your licence key. Sign in with the same key on a new phone and everything comes back: habits, log, streaks, XP and reviews. Proof photos stay on this phone.</p>';
+  html += '<div class="card" id="syncBox">'+syncBoxHtml()+'</div>';
+
   html += '<h2 class="section-title" style="font-size:16px;margin-top:30px;">Daily reminder</h2><p class="section-sub">Get a notification on this device if you haven\u2019t cleared today by your reminder time. It arrives even when Arc Tracker is closed.</p>';
   html += '<div class="card"><label for="r_time">Reminder time</label><input type="time" id="r_time" value="'+(reminder.time||'08:00')+'">';
   html += '<div id="pushBox">'+pushBoxHtml()+'</div></div>';
@@ -1022,7 +1132,7 @@ function renderSetup(){
   }
 
   html += '<h2 class="section-title" style="font-size:16px;margin-top:30px;">Reset</h2>';
-  html += '<div class="card"><p class="section-sub" style="margin-bottom:12px;">Clears your log, habits, and character on this device.</p><button class="btn danger" id="resetBtn">Reset all local data</button></div>';
+  html += '<div class="card"><p class="section-sub" style="margin-bottom:12px;">Clears your log, habits, character and proof, here and in your backup.</p><button class="btn danger" id="resetBtn">Reset my arc</button></div>';
 
   el.innerHTML = html;
 
@@ -1058,6 +1168,7 @@ function renderSetup(){
     if(document.getElementById('sc_cue')){
       habits.sc = {cue:document.getElementById('sc_cue').value.trim(), habit:document.getElementById('sc_habit').value.trim()};
     }
+    profile.t = habits.t = Date.now();
     persist(LS.profile, profile);
     persist(LS.habits, habits);
         renderAll();
@@ -1102,6 +1213,7 @@ function renderSetup(){
     if(pushState==='on') pushSync().catch(()=>{});
   });
   wirePushBox();
+  wireSyncBox();
 
   if(DEMO){
   document.getElementById('previewRankUpBtn').addEventListener('click', ()=>{
@@ -1118,13 +1230,14 @@ function renderSetup(){
   }
 
   document.getElementById('resetBtn').addEventListener('click',()=>{
-    if(!confirm('Reset all local Arc Tracker data on this device? This can\u2019t be undone.')) return;
+    if(!confirm('Reset your whole arc? This clears your log, habits, character and proof on this device, and your backup too, so other devices signed in with your key are reset as well. This can\u2019t be undone.')) return;
     if(proofDb){ proofTx('readwrite', s=>s.clear()).catch(()=>{}); }
     Object.keys(dayProof).forEach(k=>URL.revokeObjectURL(dayProof[k].url)); dayProof={}; proofError='';
     profile={name:'',archetypeKey:''}; habits={h1:{cue:'',habit:''},h2:{cue:'',habit:''},h3:{cue:'',habit:''},sc:{cue:'',habit:''}}; log=[]; weekly=[];
     secondWinds=[];
     persist(LS.profile,profile); persist(LS.habits,habits); persist(LS.log,log); persist(LS.weekly,weekly); persist(LS.secondWinds,secondWinds);
     renderAll();
+    syncNow({reset:true});
   });
 }
 
@@ -1239,7 +1352,7 @@ function renderGuide(){
     step(named===3,'Name 3 habits, max','In <b>Setup</b>: one non-negotiable plus two supporting habits. Size each one to the <b>two-minute rule</b>: “open the book,” not “read 30 pages.” Your archetype has ideas you can tap to fill in.', named===3?'':go('setup','Open Setup'))+
     step(!!(habits.sc && habits.sc.habit),'Pick one shadow-check','Also in <b>Setup</b>. It’s separate from your 3 habits and works against your archetype’s specific failure mode.')+
     step(!!(habits.h1 && habits.h1.cue),'Stack each habit on something you already do','Fill the “After I…” box for each habit: your morning coffee, sitting down at your desk, brushing your teeth. <i>After I pour my coffee, I will open my book and read one page.</i>')+
-    step(IS_STANDALONE,'Add Arc Tracker to your Home Screen','On iPhone: tap Share, then <b>Add to Home Screen</b>. On Android: the browser menu, then <b>Install app</b>. It opens full screen, can send reminders, and your phone is far less likely to clear your progress.')+
+    step(IS_STANDALONE,'Add Arc Tracker to your Home Screen','On iPhone: tap Share, then <b>Add to Home Screen</b>. On Android: the browser menu, then <b>Install app</b>. It opens full screen and can send reminders. Your arc is backed up to your key, so a new phone picks up where you left off.')+
     step(pushState==='on','Turn on your daily reminder','In <b>Setup</b>, pick a time. If you haven’t cleared the day by then, you get a nudge.')+
   `</ol>
   <div class="banner note"><div>If setup is taking longer than 15 minutes, you’re overbuilding it. Three habits and one shadow-check. That’s the whole system.</div></div>
@@ -1282,6 +1395,7 @@ renderAll();
 // someone who hasn't picked an archetype yet lands on the setup guide first
 if(!getArchetype(profile.archetypeKey)) showTab('guide');
 pushInit();
+syncNow();
 // opened from a quote notification: play the reveal
 if(location.hash==='#quote'){
   history.replaceState(null, '', location.pathname + location.search);

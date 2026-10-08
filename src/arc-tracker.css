@@ -447,3 +447,10 @@ body.app main{display:block;}
 .arc-root .wallet b{color:var(--gold);font-family:var(--font-display);font-size:15px;}
 .arc-root .heatgrid .cell[data-lvl="r"]{background:transparent;box-shadow:inset 0 0 0 1.5px var(--gold);}
 .arc-root .cel-hint{display:inline-block;margin-top:8px;color:hsl(var(--hue) 95% 75%);font-weight:600;}
+
+/* Backup card in Setup */
+.arc-root .sync-line{font-size:13.5px;color:var(--text-dim);margin-bottom:12px;}
+.arc-root .sync-line.good{color:var(--success);}
+/* a short message at the bottom of the screen, above the tab bar */
+.arc-root .arc-toast{position:fixed;left:0;right:0;margin:0 auto;width:fit-content;bottom:calc(80px + env(safe-area-inset-bottom));z-index:250;max-width:calc(100% - 32px);text-align:center;background:var(--surface-2);border:1px solid var(--accent);color:var(--text);font-size:13.5px;font-weight:600;padding:10px 16px;border-radius:8px;box-shadow:0 8px 30px rgba(0,0,0,.4);animation:riseIn .3s ease both;transition:opacity .4s;}
+.arc-root .arc-toast.out{opacity:0;}
