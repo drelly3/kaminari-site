@@ -449,6 +449,7 @@ function commitToday(){
       queueCelebration(done=>showRankUpModal(arche2, afterRank.cur, beforeRank.cur, done));
     }
   }
+  pushReportCleared();
   renderAll();
 }
 
@@ -761,17 +762,9 @@ function renderSetup(){
 
   html += '<button class="btn" id="saveHabitsBtn" style="margin-top:6px;">Save character & habits</button>';
 
-  html += '<h2 class="section-title" style="font-size:16px;margin-top:30px;">Daily reminder</h2><p class="section-sub">Runs in this browser tab \u2014 it fires while Arc Tracker is open, not as a push notification after you close it.</p>';
+  html += '<h2 class="section-title" style="font-size:16px;margin-top:30px;">Daily reminder</h2><p class="section-sub">Get a notification on this device if you haven\u2019t cleared today by your reminder time. It arrives even when Arc Tracker is closed.</p>';
   html += '<div class="card"><label for="r_time">Reminder time</label><input type="time" id="r_time" value="'+(reminder.time||'08:00')+'">';
-  if(!('Notification' in window)){
-    html += '<div class="banner warn">This browser doesn\u2019t support notifications here. The streak flame and the Never Miss Twice banner are your backup.</div>';
-  } else {
-    html += '<div class="row" style="gap:8px;">';
-    html += '<button class="btn" id="enableReminderBtn">'+(reminder.enabled?'Reminder is on':'Enable reminder')+'</button>';
-    if(reminder.enabled) html += '<button class="btn ghost" id="disableReminderBtn">Turn off</button>';
-    html += '</div>';
-  }
-  html += '</div>';
+  html += '<div id="pushBox">'+pushBoxHtml()+'</div></div>';
 
   // Calendar reminder: a repeating daily event in the user's own calendar, which then notifies
   // them on every device that calendar is on. Uses the reminder time picked above.
@@ -864,27 +857,12 @@ function renderSetup(){
     setTimeout(()=>URL.revokeObjectURL(a.href),1000);
   });
 
-  const er=document.getElementById('enableReminderBtn');
-  if(er) er.addEventListener('click',()=>{
-    reminder.time = document.getElementById('r_time').value || '08:00';
-    Notification.requestPermission().then(perm=>{
-      reminder.enabled = perm==='granted';
-      persist(LS.reminder, reminder);
-      if(reminder.enabled) startReminderTimer();
-      renderAll();
-    });
-  });
-  const dr=document.getElementById('disableReminderBtn');
-  if(dr) dr.addEventListener('click',()=>{
-    reminder.enabled=false;
-    persist(LS.reminder, reminder);
-    if(reminderTimer){ clearInterval(reminderTimer); reminderTimer=null; }
-    renderAll();
-  });
   document.getElementById('r_time').addEventListener('change',(e)=>{
     reminder.time = e.target.value;
     persist(LS.reminder, reminder);
+    if(pushState==='on') pushSync().catch(()=>{});
   });
+  wirePushBox();
 
   if(DEMO){
   document.getElementById('previewRankUpBtn').addEventListener('click', ()=>{
@@ -910,20 +888,97 @@ function renderSetup(){
   });
 }
 
-function startReminderTimer(){
-  if(reminderTimer) return;
-  reminderTimer=setInterval(checkReminder, 20000);
-  checkReminder();
+/* ---------------- Push notifications ---------------- */
+// A daily reminder sent by the server, so it arrives with the tracker closed. The device registers
+// itself with /api/arc-push (see api/arc-push.js); public/arc-sw.js shows the notification.
+let pushState='off', pushNote=''; // 'unsupported' | 'ios-install' | 'blocked' | 'off' | 'busy' | 'on'
+const PUSH_OK = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+const IS_IOS = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
+const IS_STANDALONE = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone===true;
+function b64ToBytes(s){ const pad='='.repeat((4-s.length%4)%4); const raw=atob((s+pad).replace(/-/g,'+').replace(/_/g,'/')); return Uint8Array.from(raw, c=>c.charCodeAt(0)); }
+function clearedToday(){ const e=log.find(x=>x.date===todayStr()); return !!(e&&e.h1&&e.h2&&e.h3); }
+async function pushApi(action, body){
+  const r=await fetch('/api/arc-push/'+action,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  return r.json();
 }
-function checkReminder(){
-  if(!reminder.enabled || !('Notification' in window) || Notification.permission!=='granted') return;
-  const now=new Date();
-  const cur=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
-  if(cur===reminder.time && reminder.lastFired!==todayStr()){
-    try{ new Notification('Arc Tracker', {body:'Log today\u2019s arc before you close the tab.'}); }catch(e){}
-    reminder.lastFired=todayStr();
-    persist(LS.reminder, reminder);
-  }
+async function currentSub(){
+  const reg=await navigator.serviceWorker.getRegistration('/arc-tracker/');
+  return reg ? reg.pushManager.getSubscription() : null;
+}
+// (re)register this device with the current reminder time, time zone and today's status
+async function pushSync(){
+  const sub=await currentSub(); if(!sub) return {ok:false};
+  let key=''; try{ key=localStorage.getItem('arc_license')||''; }catch(e){}
+  return pushApi('subscribe',{key, endpoint:sub.endpoint, subscription:sub.toJSON(), time:reminder.time||'08:00',
+    tz:Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC', clearedToday:clearedToday()});
+}
+async function pushInit(){
+  if(!PUSH_OK){ pushState=(IS_IOS && !IS_STANDALONE)?'ios-install':'unsupported'; return refreshPushBox(); }
+  if(Notification.permission==='denied'){ pushState='blocked'; return refreshPushBox(); }
+  try{ const sub=await currentSub(); pushState=(sub && Notification.permission==='granted')?'on':'off'; }catch(e){ pushState='off'; }
+  refreshPushBox();
+  if(pushState==='on') pushSync().catch(()=>{});
+}
+async function pushEnable(){
+  pushState='busy'; pushNote=''; refreshPushBox();
+  try{
+    const perm=await Notification.requestPermission();
+    if(perm!=='granted'){ pushState=perm==='denied'?'blocked':'off'; return refreshPushBox(); }
+    await navigator.serviceWorker.register('/arc-sw.js',{scope:'/arc-tracker/'});
+    const reg=await navigator.serviceWorker.ready;
+    const keyRes=await (await fetch('/api/arc-push/key')).json();
+    if(!keyRes.publicKey) throw new Error('not configured');
+    const sub=await reg.pushManager.getSubscription() || await reg.pushManager.subscribe({userVisibleOnly:true, applicationServerKey:b64ToBytes(keyRes.publicKey)});
+    const res=await pushSync();
+    if(!res.ok){
+      await sub.unsubscribe().catch(()=>{});
+      pushState='off';
+      pushNote=res.reason==='no_access'?'Notifications need an active Arc Tracker key.':'Couldn\u2019t turn notifications on. Try again in a moment.';
+      return refreshPushBox();
+    }
+    pushState='on'; reminder.enabled=true; persist(LS.reminder, reminder);
+  }catch(e){ pushState='off'; pushNote='Couldn\u2019t turn notifications on. Try again in a moment.'; }
+  refreshPushBox();
+}
+async function pushDisable(){
+  try{
+    const sub=await currentSub();
+    if(sub){ await pushApi('unsubscribe',{endpoint:sub.endpoint}).catch(()=>{}); await sub.unsubscribe(); }
+  }catch(e){}
+  pushState='off'; pushNote=''; reminder.enabled=false; persist(LS.reminder, reminder);
+  refreshPushBox();
+}
+async function pushTest(){
+  const sub=await currentSub(); if(!sub) return;
+  pushNote='Sending\u2026'; refreshPushBox();
+  const r=await pushApi('test',{endpoint:sub.endpoint}).catch(()=>({ok:false}));
+  pushNote=r.ok?'Sent. It should arrive within a few seconds.':'Couldn\u2019t send a test right now.';
+  refreshPushBox();
+}
+// tell the server when today is cleared (or un-cleared) so it knows whether to remind
+function pushReportCleared(){
+  if(pushState!=='on') return;
+  currentSub().then(s=>s && pushApi('cleared',{endpoint:s.endpoint, cleared:clearedToday()})).catch(()=>{});
+}
+function pushBoxHtml(){
+  const note=pushNote?'<div class="helptext" style="margin:10px 0 0;">'+escapeHtml(pushNote)+'</div>':'';
+  if(pushState==='on') return '<div class="proof-ok" style="margin-bottom:10px;">Notifications are on for this device.</div>'+
+    '<div class="row" style="gap:8px;"><button class="btn" id="pushTestBtn">Send a test notification</button><button class="btn ghost" id="pushOffBtn">Turn off</button></div>'+note;
+  if(pushState==='busy') return '<button class="btn" disabled>Turning on\u2026</button>';
+  if(pushState==='blocked') return '<div class="banner warn" style="margin:0;"><div>Notifications are blocked for this site in your browser settings. Allow them there, then reload this page.</div></div>';
+  if(pushState==='ios-install') return '<div class="banner info" style="margin:0;"><div><b>On iPhone and iPad, add Arc Tracker to your Home Screen first.</b> Tap the Share button, choose <b>Add to Home Screen</b>, then open Arc Tracker from the new icon and turn notifications on here.</div></div>';
+  if(pushState==='unsupported') return '<div class="banner warn" style="margin:0;"><div>This browser doesn\u2019t support notifications. Use the calendar option below.</div></div>';
+  return '<button class="btn" id="pushOnBtn">Turn on notifications</button>'+note;
+}
+function wirePushBox(){
+  const on=document.getElementById('pushOnBtn'), off=document.getElementById('pushOffBtn'), test=document.getElementById('pushTestBtn');
+  if(on) on.addEventListener('click', pushEnable);
+  if(off) off.addEventListener('click', pushDisable);
+  if(test) test.addEventListener('click', pushTest);
+}
+function refreshPushBox(){
+  const el=document.getElementById('pushBox');
+  if(el){ el.innerHTML=pushBoxHtml(); wirePushBox(); }
 }
 
 /* ---------------- Start Here tab (the setup guide, from the Notion "Arc Tracker" page) ---------------- */
@@ -1012,7 +1067,7 @@ function renderAll(){
 renderAll();
 // someone who hasn't picked an archetype yet lands on the setup guide first
 if(!getArchetype(profile.archetypeKey)) document.querySelector('nav.tabs button[data-tab="guide"]').click();
-if(reminder.enabled) startReminderTimer();
+pushInit();
 // load today's proof, then draw again so habits with proof show as done
 openProofDb().then(db=>{ proofDb=db; return loadTodayProof(); }).then(()=>{ renderToday(); pruneProof(); }).catch(()=>{});
 })();

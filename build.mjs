@@ -85,7 +85,7 @@ write('/blog', {
 write('/arc-tracker/app', {
   title: 'Arc Tracker | Kaminari',
   description: 'Your Arc Tracker.',
-  head: `<meta name="robots" content="noindex">\n<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">\n<link rel="stylesheet" href="/arc-tracker.css">`,
+  head: `<meta name="robots" content="noindex">\n<link rel="manifest" href="/arc-tracker.webmanifest">\n<meta name="theme-color" content="#0A0D13">\n<meta name="mobile-web-app-capable" content="yes">\n<meta name="apple-mobile-web-app-capable" content="yes">\n<meta name="apple-mobile-web-app-title" content="Arc Tracker">\n<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">\n<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">\n<link rel="stylesheet" href="/arc-tracker.css">`,
   tracking: false, // habit logs are private: no analytics on this page unless Drelly says otherwise
   listed: false,
   body: pages.arcTracker(),
