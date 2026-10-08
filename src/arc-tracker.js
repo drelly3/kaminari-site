@@ -154,7 +154,7 @@ function iconSVG(arche, size){
 }
 
 /* ---------------- Storage ---------------- */
-const LS = {profile:'arc_profile',habits:'arc_habits',log:'arc_log',weekly:'arc_weekly',reminder:'arc_reminder',comebacks:'arc_comebacks'};
+const LS = {profile:'arc_profile',habits:'arc_habits',log:'arc_log',weekly:'arc_weekly',reminder:'arc_reminder',secondWinds:'arc_second_winds'};
 function load(k,fb){ try{ const r=localStorage.getItem(k); return r?JSON.parse(r):fb; }catch(e){ return fb; } }
 function persist(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} }
 
@@ -163,7 +163,7 @@ let habits  = load(LS.habits,{h1:{cue:'',habit:''},h2:{cue:'',habit:''},h3:{cue:
 let log     = load(LS.log,[]);
 let weekly  = load(LS.weekly,[]);
 let reminder= load(LS.reminder,{enabled:false,time:'08:00',lastFired:''});
-let comebacks= load(LS.comebacks,[]); // [{missed, on, cost}]: each XP-paid streak repair
+let secondWinds= load(LS.secondWinds,[]); // [{missed, on, cost}]: each Second Wind: an XP-paid streak repair
 
 // The "Preview the animations" section is a demo tool, not something members should play with:
 // it only appears when the address ends in ?demo
@@ -177,7 +177,7 @@ function fmtDate(s){ return dfs(s).toLocaleDateString(undefined,{month:'short',d
 
 function getArchetype(key){ return ARCHETYPES.find(a=>a.key===key); }
 
-// A day keeps a streak going if its non-negotiable was done or it was repaired with a comeback.
+// A day keeps a streak going if its non-negotiable was done or it was repaired with a Second Wind.
 // Only done days add to the count: a repaired day bridges the gap without padding the number.
 function streakEndingAt(d, byDate){
   let n=0;
@@ -194,8 +194,8 @@ function computeStats(){
     const pf=e.proof||{};
     xp += (e.h1?10:0)+(e.h2?5:0)+(e.h3?5:0)+(e.sc?5:0)+((e.note||'').trim()?2:0)+PROOF_SLOTS.filter(k=>e[k]&&pf[k]).length*PROOF_XP;
   });
-  // XP is earned for good (it sets your level) and spent on comebacks (it fills your wallet)
-  const spent = comebacks.reduce((n,c)=>n+(c.cost||0),0);
+  // XP is earned for good (it sets your level) and spent on secondWinds (it fills your wallet)
+  const spent = secondWinds.reduce((n,c)=>n+(c.cost||0),0);
   // today only counts once its non-negotiable is done; until then the streak runs to yesterday
   const t=todayStr();
   const currentStreak = (byDate[t] && byDate[t].h1) ? streakEndingAt(t,byDate) : streakEndingAt(shiftDay(t,-1),byDate);
@@ -212,44 +212,44 @@ function computeStats(){
   return {totalDays:sorted.length, fullClear, xp, spent, wallet:xp-spent, currentStreak, longest, shadowTotal, shadowStreak, sorted, byDate};
 }
 
-/* ---------------- Comeback: spend XP to repair yesterday ---------------- */
+/* ---------------- Second Wind: spend XP to repair yesterday ---------------- */
 // Miss a day, then clear all three today, and you can spend XP to repair yesterday so your streak
 // survives. Once a week at most, only for yesterday, and the repaired day never counts as a full
 // clear, so rank stays earned. Two misses in a row can't be repaired: never miss twice.
-const COMEBACK_COST = 50, COMEBACK_EVERY = 7;
-function comebackState(stats){
+const SECOND_WIND_COST = 50, SECOND_WIND_EVERY = 7;
+function secondWindState(stats){
   const t=todayStr(), y=shiftDay(t,-1), by=stats.byDate;
   if(by[y] && (by[y].h1 || by[y].repaired)) return null;
   const saved = streakEndingAt(shiftDay(t,-2), by);
   if(!saved) return null;
-  const last = comebacks.length ? comebacks[comebacks.length-1].on : '';
-  const nextOn = last && dayGap(last,t) < COMEBACK_EVERY ? shiftDay(last,COMEBACK_EVERY) : '';
+  const last = secondWinds.length ? secondWinds[secondWinds.length-1].on : '';
+  const nextOn = last && dayGap(last,t) < SECOND_WIND_EVERY ? shiftDay(last,SECOND_WIND_EVERY) : '';
   const te = by[t];
-  return {missed:y, saved, nextOn, cleared:!!(te && te.h1 && te.h2 && te.h3), wallet:stats.wallet, afford:stats.wallet>=COMEBACK_COST};
+  return {missed:y, saved, nextOn, cleared:!!(te && te.h1 && te.h2 && te.h3), wallet:stats.wallet, afford:stats.wallet>=SECOND_WIND_COST};
 }
-function useComeback(){
-  const stats=computeStats(), cb=comebackState(stats);
+function useSecondWind(){
+  const stats=computeStats(), cb=secondWindState(stats);
   if(!cb || cb.nextOn || !cb.cleared || !cb.afford) return;
   const i=log.findIndex(e=>e.date===cb.missed);
   if(i>=0) log[i].repaired=true;
   else log.push({date:cb.missed,h1:false,h2:false,h3:false,sc:false,note:'',repaired:true});
-  comebacks.push({missed:cb.missed, on:todayStr(), cost:COMEBACK_COST});
-  persist(LS.log, log); persist(LS.comebacks, comebacks);
+  secondWinds.push({missed:cb.missed, on:todayStr(), cost:SECOND_WIND_COST});
+  persist(LS.log, log); persist(LS.secondWinds, secondWinds);
   const arche=getArchetype(profile.archetypeKey);
   const streak=computeStats().currentStreak;
-  queueCelebration(done=>showComeback(arche, streak, done));
+  queueCelebration(done=>showSecondWind(arche, streak, done));
   renderAll();
 }
-function comebackCard(stats){
-  const cb=comebackState(stats);
+function secondWindCard(stats){
+  const cb=secondWindState(stats);
   if(!cb) return '';
-  const head='<div class="card comeback"><div class="card-kicker">Comeback</div>';
-  const lead='<p class="comeback-lead">You missed yesterday. Your <b>\u{1F525} '+cb.saved+'-day streak</b> can still be saved.</p>';
-  if(cb.nextOn) return head+lead+'<p class="card-note">You’ve used your comeback this week. The next one unlocks '+fmtDate(cb.nextOn)+'. Clear today and start the next run. Never miss twice.</p></div>';
-  if(!cb.afford) return head+lead+'<p class="card-note">A comeback costs '+COMEBACK_COST+' XP and you have '+cb.wallet+' to spend. Clear today and start the next run. Never miss twice.</p></div>';
-  if(!cb.cleared) return head+lead+'<p class="card-note">Clear all three habits today first. Then you can spend '+COMEBACK_COST+' XP to repair yesterday. You have '+cb.wallet+' XP.</p></div>';
-  return head+lead+'<p class="card-note">You came straight back and cleared today. Spend '+COMEBACK_COST+' of your '+cb.wallet+' XP to repair yesterday. It keeps the streak alive but doesn’t count as a full clear.</p>'+
-    '<button type="button" class="btn comeback-btn" id="comebackBtn">Use comeback · '+COMEBACK_COST+' XP</button></div>';
+  const head='<div class="card second-wind"><div class="card-kicker">Second Wind</div>';
+  const lead='<p class="second-wind-lead">You missed yesterday. Your <b>\u{1F525} '+cb.saved+'-day streak</b> can still be saved.</p>';
+  if(cb.nextOn) return head+lead+'<p class="card-note">You’ve used your Second Wind this week. The next one unlocks '+fmtDate(cb.nextOn)+'. Clear today and start the next run. Never miss twice.</p></div>';
+  if(!cb.afford) return head+lead+'<p class="card-note">A Second Wind costs '+SECOND_WIND_COST+' XP and you have '+cb.wallet+' to spend. Clear today and start the next run. Never miss twice.</p></div>';
+  if(!cb.cleared) return head+lead+'<p class="card-note">Clear all three habits today first. Then you can spend '+SECOND_WIND_COST+' XP to repair yesterday. You have '+cb.wallet+' XP.</p></div>';
+  return head+lead+'<p class="card-note">You came straight back and cleared today. Spend '+SECOND_WIND_COST+' of your '+cb.wallet+' XP to repair yesterday. It keeps the streak alive but doesn’t count as a full clear.</p>'+
+    '<button type="button" class="btn second-wind-btn" id="secondWindBtn">Use Second Wind · '+SECOND_WIND_COST+' XP</button></div>';
 }
 
 const SHADOW_BADGES=[{name:'Shadow Aware',n:10},{name:'Shadow Tamed',n:25},{name:'Shadow Integrated',n:50}];
@@ -414,10 +414,10 @@ function showDayCleared(archetype, streak, habitNames, onDone, hint){
   setTimeout(()=>spawnConfetti(archetype?archetype.hue:45,{center:false}), 700);
 }
 
-// Comeback: XP spent to repair yesterday
-function showComeback(archetype, streak, onDone){
+// Second Wind: XP spent to repair yesterday
+function showSecondWind(archetype, streak, onDone){
   const inner = avatarStage(archetype, '')+
-    '<div class="cel-kicker">COMEBACK</div>'+
+    '<div class="cel-kicker">SECOND WIND</div>'+
     '<div class="cel-title">Streak saved.</div>'+
     '<div class="cel-streak">\uD83D\uDD25 '+streak+'-day streak</div>'+
     '<p class="cel-sub">You missed one and came straight back. That\u2019s the whole rule.</p>'+
@@ -461,8 +461,8 @@ function renderToday(){
   if(!arche){
     html += '<div class="banner info"><div>Pick your archetype and name your three habits before you start logging. It takes about a minute. <button type="button" class="linkbtn" data-goto="guide">Start here</button></div></div>';
   }
-  const comeback = viewDay==='today' ? comebackCard(stats) : '';
-  if(comeback) html += comeback;
+  const secondWind = viewDay==='today' ? secondWindCard(stats) : '';
+  if(secondWind) html += secondWind;
   else if(viewDay==='today' && yEntry && !yEntry.h1 && !yEntry.repaired && stats.currentStreak===0 && stats.totalDays>0){
     html += '<div class="banner warn"><span>⚠️</span><div><b>Never miss twice.</b> Yesterday’s non-negotiable didn’t happen. One miss is an accident — the only rule now is don’t miss today too. Did it and forgot to log? Switch to <b>Yesterday</b> below.</div></div>';
   }
@@ -532,7 +532,7 @@ function renderToday(){
   ['f_h1','f_h2','f_h3','f_sc'].forEach(id=>{ const c=document.getElementById(id); if(c) c.addEventListener('change', commitDay); });
   el.querySelectorAll('[data-proof]').forEach(inp=>inp.addEventListener('change',()=>{ if(inp.files && inp.files[0]) addProof(inp.dataset.proof, inp.files[0]); }));
   el.querySelectorAll('[data-proof-remove]').forEach(b=>b.addEventListener('click',()=>removeProof(b.dataset.proofRemove)));
-  const cbBtn=document.getElementById('comebackBtn'); if(cbBtn) cbBtn.addEventListener('click', useComeback);
+  const cbBtn=document.getElementById('secondWindBtn'); if(cbBtn) cbBtn.addEventListener('click', useSecondWind);
   const note=document.getElementById('f_note');
   note.addEventListener('change', commitDay);
   document.getElementById('saveDayBtn').addEventListener('click', commitDay);
@@ -565,8 +565,8 @@ function commitDay(){
   if(nowFull && !wasFull){
     const names=[habits.h1.habit||'Non-negotiable', habits.h2.habit||'Habit 2', habits.h3.habit||'Habit 3'];
     const streakNow=computeStats().currentStreak;
-    const cb = d===todayStr() ? comebackState(computeStats()) : null;
-    const hint = cb && !cb.nextOn && cb.afford ? 'Your '+cb.saved+'-day streak can still be saved. Use your comeback on the Today tab.' : '';
+    const cb = d===todayStr() ? secondWindState(computeStats()) : null;
+    const hint = cb && !cb.nextOn && cb.afford ? 'Your '+cb.saved+'-day streak can still be saved. Use your Second Wind on the Today tab.' : '';
     queueCelebration(done=>showDayCleared(arche2, streakNow, names, done, hint));
   }
   if(arche2 && arche2.ranks){
@@ -833,8 +833,8 @@ function renderProgress(){
   html += '<div class="card"><div class="level-head"><span>Level '+level+'</span><span>'+stats.xp+' XP earned</span></div>';
   html += '<div class="xpbar-outer"><div class="xpbar-inner" style="width:'+inLevel+'%;"></div></div>';
   html += '<div class="card-note">'+(100-inLevel)+' XP to level '+(level+1)+'. Non-negotiable 10 · habits 2 and 3: 5 each · shadow-check 5 · proof of your non-negotiable +'+PROOF_XP+' · win line 2.</div>'+
-    '<div class="wallet"><span><b>'+stats.wallet+' XP</b> to spend</span><span>Comeback: '+COMEBACK_COST+' XP</span></div>'+
-    '<div class="card-note">Spending XP never lowers your level. A comeback repairs a missed day so your streak survives, once a week.</div></div>';
+    '<div class="wallet"><span><b>'+stats.wallet+' XP</b> to spend</span><span>Second Wind: '+SECOND_WIND_COST+' XP</span></div>'+
+    '<div class="card-note">Spending XP never lowers your level. A Second Wind repairs a missed day so your streak survives, once a week.</div></div>';
 
   if(arche && arche.shadowOptions){
     html += '<div class="card"><div class="card-kicker gold">Shadow-check</div>';
@@ -866,7 +866,7 @@ function renderProgress(){
       const d = new Date(t); d.setDate(d.getDate()-i);
       const key = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
       const lvl = map[key]||0;
-      out += '<div class="cell" data-lvl="'+lvl+'" title="'+key+' \u00b7 '+(lvl==='r'?'repaired with a comeback':lvl+'/3')+'"></div>';
+      out += '<div class="cell" data-lvl="'+lvl+'" title="'+key+' \u00b7 '+(lvl==='r'?'repaired with a Second Wind':lvl+'/3')+'"></div>';
     }
     return out;
   }
@@ -1122,8 +1122,8 @@ function renderSetup(){
     if(proofDb){ proofTx('readwrite', s=>s.clear()).catch(()=>{}); }
     Object.keys(dayProof).forEach(k=>URL.revokeObjectURL(dayProof[k].url)); dayProof={}; proofError='';
     profile={name:'',archetypeKey:''}; habits={h1:{cue:'',habit:''},h2:{cue:'',habit:''},h3:{cue:'',habit:''},sc:{cue:'',habit:''}}; log=[]; weekly=[];
-    comebacks=[];
-    persist(LS.profile,profile); persist(LS.habits,habits); persist(LS.log,log); persist(LS.weekly,weekly); persist(LS.comebacks,comebacks);
+    secondWinds=[];
+    persist(LS.profile,profile); persist(LS.habits,habits); persist(LS.log,log); persist(LS.weekly,weekly); persist(LS.secondWinds,secondWinds);
     renderAll();
   });
 }
@@ -1258,7 +1258,7 @@ function renderGuide(){
   <div class="card"><ol>
     <li><b>Rank</b> is earned by <b>full-clear days</b> (all 3 habits on the same day), not by time on the calendar. Coasting doesn’t move you up. Every archetype has five ranks, at 0, 10, 25, 50 and 100 full clears.</li>
     <li><b>XP</b> is what you spend. Non-negotiable 10 · habits 2 and 3: 5 each · shadow-check 5 · proof of your non-negotiable +${PROOF_XP} · win line 2. Every 100 XP you earn is a new level, and spending never lowers it.</li>
-    <li><b>Comeback:</b> miss a day, then clear all three the next day, and you can spend <b>${COMEBACK_COST} XP</b> to repair the miss and keep your streak. Once every ${COMEBACK_EVERY} days, only for yesterday. The repaired day doesn’t count as a full clear, so rank stays earned. Two misses in a row can’t be repaired.</li>
+    <li><b>Second Wind:</b> miss a day, then clear all three the next day, and you can spend <b>${SECOND_WIND_COST} XP</b> to repair the miss and keep your streak. Once every ${SECOND_WIND_EVERY} days, only for yesterday. The repaired day doesn’t count as a full clear, so rank stays earned. Two misses in a row can’t be repaired.</li>
     <li><b>Shadow badges</b> unlock at 10, 25 and 50 shadow-checks, tracked separately from rank.</li>
   </ol></div>
 
