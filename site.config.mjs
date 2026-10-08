@@ -15,7 +15,7 @@ export const site = {
   // false = the buy buttons read "Coming Soon" and can't be clicked. true = they open the Gumroad checkout.
   arcTrackerSales: false,
   email: 'joinkaminari@gmail.com',
-  advertiseEmail: 'joinkaminari@gmail.com',
+  advertiseEmail: 'contact@joinkaminari.com',
 };
 
 export const links = {
