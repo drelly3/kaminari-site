@@ -1,4 +1,5 @@
 // Builds the whole site into dist/. No dependencies: `node build.mjs`
+import { QUOTES } from './api/arc-quotes.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import { site, kinds, authors } from './site.config.mjs';
@@ -39,7 +40,8 @@ fs.cpSync('public', DIST, { recursive: true });
 fs.copyFileSync('src/styles.css', path.join(DIST, 'styles.css'));
 fs.copyFileSync('src/main.js', path.join(DIST, 'main.js'));
 fs.copyFileSync('src/arc-tracker.css', path.join(DIST, 'arc-tracker.css'));
-fs.copyFileSync('src/arc-tracker.js', path.join(DIST, 'arc-tracker.js'));
+// the tracker script, with the daily quotes list added on top
+fs.writeFileSync(path.join(DIST, 'arc-tracker.js'), 'window.ARC_QUOTES=' + JSON.stringify(QUOTES) + ';\n' + fs.readFileSync('src/arc-tracker.js', 'utf8'));
 fs.copyFileSync('src/arc-gate.js', path.join(DIST, 'arc-gate.js'));
 fs.copyFileSync('src/quiz.html', path.join(DIST, 'quiz.html')); // the archetype quiz is a self-contained page
 

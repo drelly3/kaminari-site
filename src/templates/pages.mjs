@@ -521,7 +521,7 @@ export const arcTracker = () => `
 <div class="arc-root">
   <div id="arc-gate" class="arc-gate" hidden>
     <form class="arc-gate-card" id="arc-gate-form" novalidate>
-      <div class="arc-gate-icon" aria-hidden="true">⚡</div>
+      <div class="arc-gate-icon" aria-hidden="true"><img src="/assets/kaminari-bolt.png" alt="" width="30" height="38"></div>
       <h1>Unlock Arc Tracker</h1>
       <p>${site.arcTrackerSales ? 'Enter the licence key from your Gumroad receipt email.' : 'Enter your access key.'}</p>
       <label for="arc-key">Licence key</label>
@@ -537,16 +537,16 @@ export const arcTracker = () => `
   </div>
   <div id="arc-app" hidden>
     <header class="top">
-      <div class="brand"><span class="bolt">⚡</span><span class="word">ARC TRACKER</span></div>
+      <div class="brand"><span class="word">ARC TRACKER</span></div>
       <div class="headline-badge" id="headerBadge">Set up your character in Setup →</div>
     </header>
 
     <nav class="tabs">
       <button data-tab="guide">Start Here</button>
+      <button data-tab="setup">Setup</button>
+      <button data-tab="archetypes">Archetypes</button>
       <button data-tab="today" class="active">Today</button>
       <button data-tab="progress">Progress</button>
-      <button data-tab="archetypes">Archetypes</button>
-      <button data-tab="setup">Setup</button>
     </nav>
 
     <div class="arc-main">

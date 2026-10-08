@@ -39,7 +39,6 @@
     padding:22px 0 14px; border-bottom:1px solid var(--border); gap:12px; flex-wrap:wrap;
   }
   .arc-root .brand{display:flex;align-items:center;gap:9px;}
-  .arc-root .brand .bolt{font-size:22px;line-height:1;filter:drop-shadow(0 0 6px var(--accent-soft));}
   .arc-root .brand .word{font-family:var(--font-display);font-weight:700;font-size:19px;letter-spacing:0.5px;}
   .arc-root .headline-badge{
     display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-dim);
@@ -295,7 +294,12 @@
 .arc-root [hidden]{display:none !important;}
 .arc-root .arc-gate{display:flex;align-items:center;justify-content:center;min-height:70vh;padding:48px 16px;}
 .arc-root .arc-gate-card{background:var(--surface);border:1px solid var(--accent);border-radius:10px;padding:32px 28px;max-width:400px;width:100%;text-align:center;box-shadow:0 0 40px var(--accent-soft);}
-.arc-root .arc-gate-icon{font-size:30px;line-height:1;margin-bottom:10px;}
+.arc-root .arc-gate-icon{line-height:1;margin-bottom:10px;}
+.arc-root .arc-gate-icon img{height:38px;width:auto;display:inline-block;filter:drop-shadow(0 0 8px var(--accent-soft));}
+.arc-root img.kbolt{height:1em;width:auto;display:inline-block;vertical-align:-0.12em;}
+.arc-root .daily-quote{border-left:3px solid var(--accent);background:var(--surface);border-radius:0 8px 8px 0;padding:14px 16px;margin:0 0 22px;}
+.arc-root .daily-quote .q{font-size:15.5px;line-height:1.5;color:var(--text);margin:0;}
+.arc-root .daily-quote .by{font-size:12.5px;color:var(--text-dim);margin-top:6px;}
 .arc-root .arc-gate-card h1{font-family:var(--font-display);font-weight:700;font-size:23px;letter-spacing:normal;line-height:1.2;margin:0 0 6px;}
 .arc-root .arc-gate-card p{color:var(--text-dim);font-size:13.5px;margin:0 0 20px;}
 .arc-root .arc-gate-card label{text-align:left;}

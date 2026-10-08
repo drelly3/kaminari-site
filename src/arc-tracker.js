@@ -102,11 +102,20 @@ const ARCHETYPES = [
 
 const ARCHETYPE_ICONS = {"lone-wolf": "<path d=\"M24 44 L17.5 37 L11 31 L9.5 20 L12.5 6.5 L19.5 14.5 H28.5 L35.5 6.5 L38.5 20 L37 31 L30.5 37 Z\" fill=\"currentColor\" fill-opacity=\".16\"/> <path d=\"M12.5 6.5 L15 17 M35.5 6.5 L33 17\" stroke-opacity=\".6\"/> <path d=\"M24 14.5 V25\" stroke-opacity=\".5\"/> <path d=\"M15.5 22.5 L21 25.5 M32.5 22.5 L27 25.5\"/> <circle cx=\"19.3\" cy=\"24.5\" r=\".9\" fill=\"currentColor\"/><circle cx=\"28.7\" cy=\"24.5\" r=\".9\" fill=\"currentColor\"/> <path d=\"M21 31 L24 34.5 L27 31 Z\" fill=\"currentColor\"/> <path d=\"M24 34.5 V38.5\" stroke-opacity=\".6\"/> <path d=\"M9.5 27 L14.5 29 M38.5 27 L33.5 29 M11 31 L15.5 33.5 M37 31 L32.5 33.5\" stroke-opacity=\".55\"/>", "social-commander": "<path d=\"M13.5 23 L15 12.5 L20 18 L24 9.5 L28 18 L33 12.5 L34.5 23 Z\" fill=\"currentColor\" fill-opacity=\".18\"/> <rect x=\"13\" y=\"23\" width=\"22\" height=\"3.5\" rx=\"1\"/> <circle cx=\"15\" cy=\"12\" r=\"1.3\" fill=\"currentColor\"/><circle cx=\"24\" cy=\"9\" r=\"1.5\" fill=\"currentColor\"/><circle cx=\"33\" cy=\"12\" r=\"1.3\" fill=\"currentColor\"/> <circle cx=\"24\" cy=\"24.7\" r=\".9\" fill=\"currentColor\"/> <path d=\"M22 42 C15 41 10 36 9 28\"/><path d=\"M26 42 C33 41 38 36 39 28\"/> <path d=\"M10.2 33 c-2.4-.4-3.8-2-4-4 c2.2 0 3.7 1.4 4 4z\" fill=\"currentColor\" fill-opacity=\".45\"/> <path d=\"M13.3 38 c-2.4.3-4.2-.8-5-2.6 c2.1-.5 4 .5 5 2.6z\" fill=\"currentColor\" fill-opacity=\".45\"/> <path d=\"M18 41.3 c-2 1.2-4.1 1-5.4-.3 c1.8-1.1 3.9-1 5.4.3z\" fill=\"currentColor\" fill-opacity=\".45\"/> <path d=\"M37.8 33 c2.4-.4 3.8-2 4-4 c-2.2 0-3.7 1.4-4 4z\" fill=\"currentColor\" fill-opacity=\".45\"/> <path d=\"M34.7 38 c2.4.3 4.2-.8 5-2.6 c-2.1-.5-4 .5-5 2.6z\" fill=\"currentColor\" fill-opacity=\".45\"/> <path d=\"M30 41.3 c2 1.2 4.1 1 5.4-.3 c-1.8-1.1-3.9-1-5.4.3z\" fill=\"currentColor\" fill-opacity=\".45\"/>", "demon-grind": "<path d=\"M11 27 H36 C36 30.5 32.5 32 29 32 V35.5 H32.5 V40 H14.5 V35.5 H18 V32 C14 32 12 30 11 27 Z\" fill=\"currentColor\" fill-opacity=\".18\"/> <path d=\"M11 27 C8 27 5.5 25.5 4 23.5 C6.5 23.5 9 24.5 11 25.5\"/> <path d=\"M11 25.5 V27\"/> <path d=\"M27 21.5 L39 7.5\"/> <path d=\"M34.5 4.5 L42.5 11.5 L40 14.3 L32 7.3 Z\" fill=\"currentColor\" fill-opacity=\".35\"/> <path d=\"M24 22 L22 16\"/><path d=\"M20 23 L15 19\"/><path d=\"M28 23.5 L31.5 21\"/><path d=\"M18 25 L13 24\"/> <circle cx=\"21\" cy=\"12.5\" r=\".9\" fill=\"currentColor\"/><circle cx=\"12.5\" cy=\"17\" r=\".8\" fill=\"currentColor\"/> <path d=\"M21 35.5 C19.5 33.5 21 32 22.5 31 C22.5 32.5 24 33 25.5 32 C26 34 25 35.5 24 35.5\" fill=\"currentColor\" fill-opacity=\".5\"/>", "prodigy": "<path d=\"M5 18 H18.5\"/><path d=\"M29.5 18 H43\"/> <path d=\"M18.5 18 L16 14.5\"/><path d=\"M18.5 18 L15.5 21\"/><path d=\"M29.5 18 L32.5 14.5\"/><path d=\"M29.5 18 L32 21.5\"/> <path d=\"M13 12 l1.5-2.5\"/><path d=\"M35 11.5 l-1.2-2.8\"/> <path d=\"M24 41 V9\"/> <path d=\"M17.5 14 L24 5 L30.5 14 Z\" fill=\"currentColor\" fill-opacity=\".35\"/> <path d=\"M5 43 H12 V38 H18 V33 H22\"/> <path d=\"M26 33 H30 V38 H36 V43 H43\" stroke-opacity=\".45\"/> <circle cx=\"39\" cy=\"28\" r=\".9\" fill=\"currentColor\"/><circle cx=\"9\" cy=\"28\" r=\".9\" fill=\"currentColor\"/>", "strategist": "<circle cx=\"24\" cy=\"24\" r=\"17\"/> <circle cx=\"24\" cy=\"24\" r=\"12.5\" stroke-opacity=\".45\"/> <path d=\"M24 5 V9 M24 39 V43 M5 24 H9 M39 24 H43\" /> <path d=\"M11 11 l2.5 2.5 M37 11 l-2.5 2.5 M11 37 l2.5-2.5 M37 37 l-2.5-2.5\" stroke-opacity=\".6\"/> <path d=\"M24 12 L28 24 L24 36 L20 24 Z\"/> <path d=\"M24 12 L28 24 L20 24 Z\" fill=\"currentColor\" fill-opacity=\".5\"/> <circle cx=\"24\" cy=\"24\" r=\"1.6\" fill=\"currentColor\"/>", "reborn": "<path d=\"M24 34 C21 30 21 24 24 19 C27 24 27 30 24 34 Z\" fill=\"currentColor\" fill-opacity=\".3\"/> <circle cx=\"24\" cy=\"16\" r=\"2.2\"/> <path d=\"M22.5 22 C18 17 11 17 5 10 C7 17 12 22 19 25\"/> <path d=\"M25.5 22 C30 17 37 17 43 10 C41 17 36 22 29 25\"/> <path d=\"M10 14.5 C13 17 16 18 19 19\" stroke-opacity=\".55\"/><path d=\"M38 14.5 C35 17 32 18 29 19\" stroke-opacity=\".55\"/> <path d=\"M17 43 C14 39 16 35 19 34 C18.5 37 21 38 22 36 C23 39 25 39 26 36 C27 38 29.5 37 29 34 C32 35 34 39 31 43 Z\" fill=\"currentColor\" fill-opacity=\".45\"/>", "beacon": "<path d=\"M19 42 L21 18 H27 L29 42 Z\" fill=\"currentColor\" fill-opacity=\".18\"/> <path d=\"M20.2 32 H27.8 M19.7 37 H28.3 M20.7 26 H27.3\" stroke-opacity=\".7\"/> <path d=\"M20 18 H28 V14 H20 Z\"/> <path d=\"M21 14 C21 11 22.5 9.5 24 9.5 C25.5 9.5 27 11 27 14\"/> <circle cx=\"24\" cy=\"16\" r=\"1.2\" fill=\"currentColor\"/> <path d=\"M18 15 L7 11 M18 16.5 L6 18\" /><path d=\"M30 15 L41 11 M30 16.5 L42 18\"/> <path d=\"M13 42 H35\"/>", "visionary": "<path d=\"M9 30 L30 18 L32.5 22.5 L11.5 34.5 Z\" fill=\"currentColor\" fill-opacity=\".2\"/> <path d=\"M30 18 L33.5 16 L36.5 21 L32.5 22.5\"/> <path d=\"M19 28 L16 42 M21.5 27 L24 42 M20.3 27.5 L20.3 42\" /> <path d=\"M39 5 L40.4 8.6 L44 10 L40.4 11.4 L39 15 L37.6 11.4 L34 10 L37.6 8.6 Z\" fill=\"currentColor\" fill-opacity=\".55\"/> <circle cx=\"30\" cy=\"7\" r=\".9\" fill=\"currentColor\"/><circle cx=\"44\" cy=\"20\" r=\".8\" fill=\"currentColor\"/>", "believer": "<path d=\"M13 33 A11 11 0 0 1 35 33 Z\" fill=\"currentColor\" fill-opacity=\".3\"/> <path d=\"M6 33 H42\"/><path d=\"M12 38 H36\" stroke-opacity=\".55\"/><path d=\"M18 42.5 H30\" stroke-opacity=\".3\"/> <path d=\"M24 8 V16 M11.5 13.5 L16.5 19 M36.5 13.5 L31.5 19 M5 24 L11.5 26.5 M43 24 L36.5 26.5\"/>", "underdog": "<path d=\"M6 32 H42 V42 H6 Z\" fill=\"currentColor\" fill-opacity=\".15\"/> <path d=\"M24 32 L21.5 36 L25 38.5 L22.5 42\"/> <path d=\"M11 36 L15 37 M32 38 L37 36\" stroke-opacity=\".5\"/> <path d=\"M24 32 C24 26 24 20 24 14\"/> <path d=\"M24 22 C19 22 14.5 19 14 13 C19.5 13.5 23.5 17 24 22 Z\" fill=\"currentColor\" fill-opacity=\".4\"/> <path d=\"M24 17 C28 16 33 12 33 6 C28 6.5 24.5 10.5 24 17 Z\" fill=\"currentColor\" fill-opacity=\".4\"/>", "devoted": "<path d=\"M24 41 C12 33 6 26 6 18 C6 12 10 8 15.5 8 C19.5 8 22.5 10.5 24 13.5 C25.5 10.5 28.5 8 32.5 8 C38 8 42 12 42 18 C42 26 36 33 24 41 Z\"/> <path d=\"M24 33 C19.5 30.5 18.5 25.5 21 21.5 C21.5 24 23 24.5 24 23 C23.5 20 25 17 27.5 15.5 C27 19 30 21 29.5 25.5 C29 29.5 27 32 24 33 Z\" fill=\"currentColor\" fill-opacity=\".45\"/>", "free-spirit": "<path d=\"M13 37 C13 25 22 13 37 8 C35 21 27 32 13 37 Z\" fill=\"currentColor\" fill-opacity=\".2\"/> <path d=\"M13 37 L30 16\"/> <path d=\"M18.5 30.5 L16 26 M22 26 L20 20.5 M25.5 22 L24.5 16 M20 29 L25 30 M23.5 25 L29 25.5 M27 20.5 L32.5 20\"/> <path d=\"M6 42 C12 42 13 38 18 38 C23 38 23 42 29 42\" stroke-opacity=\".6\"/> <path d=\"M30 36 C33 36 34 33.5 37 33.5 C40 33.5 40.5 36 43 36\" stroke-opacity=\".4\"/>", "balanced-master": "<path d=\"M38.5 13 A17 17 0 1 0 41 24\" stroke-width=\"2.6\"/> <path d=\"M24 34 C20 30 20 23 24 17 C28 23 28 30 24 34 Z\" fill=\"currentColor\" fill-opacity=\".35\"/> <path d=\"M23 34 C18 33 14 29 13 23 C17 24 20 27 22 31\"/> <path d=\"M25 34 C30 33 34 29 35 23 C31 24 28 27 26 31\"/> <path d=\"M14 36 H34\" stroke-opacity=\".5\"/>"};
 const ARCHETYPE_ART = Object.fromEntries(ARCHETYPES.map(a => [a.key, '/assets/avatars/' + a.key + '.png']));
+// One quote a day for the member's archetype. The list comes from api/arc-quotes.js (build.mjs adds
+// it to the top of this file as ARC_QUOTES); the pick matches quoteFor() there, so the notification agrees.
+function dailyQuote(arche, dateStr){
+  const list = arche && window.ARC_QUOTES && window.ARC_QUOTES[arche.key];
+  if(!list || !list.length) return null;
+  const p = dateStr.split('-').map(Number);
+  const day = Math.floor(Date.UTC(p[0], p[1]-1, p[2]) / 86400000);
+  return list[((day % list.length) + list.length) % list.length];
+}
 function iconSVG(arche, size){
   if(arche && ARCHETYPE_ART[arche.key]){
     return '<img class="avatar" src="'+ARCHETYPE_ART[arche.key]+'" alt="" width="'+size+'" height="'+size+'" style="width:'+size+'px;height:'+size+'px;">';
   }
-  if(!arche || !ARCHETYPE_ICONS[arche.key]) return '\u26A1';
+  if(!arche || !ARCHETYPE_ICONS[arche.key]) return '<img class="kbolt" src="/assets/kaminari-bolt.png" alt="" width="12" height="16">';
   const hue = (arche.hue!=null)?arche.hue:170;
   return '<svg class="aicon" viewBox="0 0 48 48" width="'+size+'" height="'+size+'" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="color:hsl('+hue+' 78% 55%);display:inline-block;vertical-align:middle;flex-shrink:0;" aria-hidden="true">'+ARCHETYPE_ICONS[arche.key]+'</svg>';
 }
@@ -353,6 +362,8 @@ function renderToday(){
     html += '<div class="banner warn"><span>\u26A0\uFE0F</span><div><b>Never miss twice.</b> Yesterday\u2019s non-negotiable didn\u2019t happen. One miss is an accident \u2014 the only rule now is don\u2019t miss today too.</div></div>';
   }
 
+  const dq = dailyQuote(arche, t);
+  if(dq) html += '<div class="daily-quote"><p class="q">\u201c'+escapeHtml(dq.q)+'\u201d</p><div class="by">'+escapeHtml(dq.c)+' energy \u00b7 '+escapeHtml(arche.title)+'</div></div>';
   html += '<h2 class="section-title">Today \u00b7 '+fmtDate(t)+'</h2>';
   html += '<p class="section-sub">A habit counts once you upload proof: a photo or a short video. No proof, no check.</p>';
 
@@ -695,6 +706,7 @@ function renderArchetypes(){
     btn.addEventListener('click',()=>{
       profile.archetypeKey = btn.dataset.pick;
       persist(LS.profile, profile);
+      if(pushState==='on') pushSync().catch(()=>{});
             renderAll();
     });
   });
@@ -909,7 +921,7 @@ async function currentSub(){
 async function pushSync(){
   const sub=await currentSub(); if(!sub) return {ok:false};
   let key=''; try{ key=localStorage.getItem('arc_license')||''; }catch(e){}
-  return pushApi('subscribe',{key, endpoint:sub.endpoint, subscription:sub.toJSON(), time:reminder.time||'08:00',
+  return pushApi('subscribe',{key, endpoint:sub.endpoint, subscription:sub.toJSON(), time:reminder.time||'08:00', archetype:profile.archetypeKey||'',
     tz:Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC', clearedToday:clearedToday()});
 }
 async function pushInit(){
@@ -1010,7 +1022,7 @@ function renderGuide(){
     <li>Add today’s row in the Daily Log below and check off what you did, <b>even on a miss.</b> An honest empty box keeps your rank real.</li>
     <li>Check <b>Shadow-Check</b> if you did it.</li>
     <li>Write <b>one line</b>: a win or something you’re grateful for (+2 XP).</li>
-    <li>Watch the <b>Status</b> column. All three habits gives you ⚡ Day Cleared.</li>
+    <li>Watch the <b>Status</b> column. All three habits gives you <img class="kbolt" src="/assets/kaminari-bolt.png" alt="" width="12" height="16"> Day Cleared.</li>
   </ol></div>
   <div class="banner warn"><div><b>Never Miss Twice.</b> Missing one day is an accident. Missing two is the start of a new (worse) habit. If you miss a day, the only rule is: don’t miss the next one.</div></div>
   <div class="banner note"><div><b>XP breakdown:</b> Non-Negotiable 10 · Habit 2: 5 · Habit 3: 5 · Shadow-Check 5 · Win line 2. Every 100 XP is a new level.</div></div>

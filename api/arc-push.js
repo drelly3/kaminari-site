@@ -10,6 +10,7 @@
 //
 // Settings on the Worker: ARC_PUSH (KV), VAPID_PUBLIC_KEY, VAPID_PRIVATE_JWK (secret), VAPID_SUBJECT.
 import { verifyLicense } from './arc-verify.js';
+import { quoteFor } from './arc-quotes.js';
 
 const b64url = bytes => btoa(String.fromCharCode(...new Uint8Array(bytes))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 const text = s => new TextEncoder().encode(s);
@@ -109,7 +110,8 @@ export async function handlePush(request, env, pathname) {
       // turning it on after today's reminder time shouldn't fire one straight away
       sent: today.minutes >= minutes ? today.date : '',
     };
-    await env.ARC_PUSH.put(id, JSON.stringify({ endpoint, next: '' }), { metadata: meta });
+    const archetype = String(body.archetype || '').slice(0, 40);
+    await env.ARC_PUSH.put(id, JSON.stringify({ endpoint, next: '', archetype }), { metadata: meta });
     return json(200, { ok: true });
   }
 
@@ -134,7 +136,11 @@ export async function handlePush(request, env, pathname) {
   }
 
   if (action === 'next') { // asked by the device when a push arrives: what should I show?
-    const message = MESSAGES[sub.next] || MESSAGES.reminder;
+    let message = MESSAGES[sub.next] || MESSAGES.reminder;
+    if (message === MESSAGES.reminder) { // the reminder carries today's quote for the member's archetype
+      const quote = quoteFor(sub.archetype, localNow(meta.tz).date);
+      if (quote) message = { title: message.title, body: `“${quote.q}” ${quote.c} energy.` };
+    }
     return json(200, { ok: true, ...message, url: '/arc-tracker/app' });
   }
 
