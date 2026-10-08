@@ -1,8 +1,8 @@
 // Arc Tracker cloud backup (runs on the Cloudflare Worker).
 //
 // A member's arc (character, habits, daily log, weekly reviews, Second Winds) is stored under their
-// licence key, so entering the key on a new phone brings everything back. Proof photos stay on the
-// device for now.
+// licence key, so entering the key on a new phone brings everything back. Proof photos are backed up
+// separately, in R2 (see api/arc-photos.js).
 //
 // Each device sends its whole arc; the server merges it with what's stored and sends the result back.
 // Merging works record by record (one log entry per day, one review, one Second Wind) and the newest
@@ -11,12 +11,13 @@
 //
 // Stored in the ARC_PUSH KV namespace under "arc:" (the arc) and "lic:" (a recent licence check).
 import { verifyLicense } from './arc-verify.js';
+import { wipePhotos } from './arc-photos.js';
 
 const json = (status, body) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
 const MAX_BODY = 2 * 1024 * 1024;
 const LICENCE_CACHE_SECONDS = 6 * 60 * 60;
 
-async function hashKey(key) {
+export async function hashKey(key) {
   const bytes = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(key.trim().toUpperCase()));
   return [...new Uint8Array(bytes)].map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 48);
 }
@@ -46,11 +47,13 @@ export function mergeArc(stored = {}, incoming = {}) {
     log: mergeList('log', e => e.date).sort((x, y) => x.date.localeCompare(y.date)),
     weekly: mergeList('weekly', weeklyId).sort((x, y) => String(x.date).localeCompare(String(y.date))),
     secondWinds: mergeList('secondWinds', s => s.missed).sort((x, y) => String(x.on).localeCompare(String(y.on))),
+    // removed proof photos, so another phone deletes its copy instead of backing it up again
+    proofGone: mergeList('proofGone', g => g.id),
   };
 }
 
 // a licence check costs a call to Gumroad, so a good result is remembered for a few hours
-async function licenceOk(key, env) {
+export async function licenceOk(key, env) {
   const id = 'lic:' + await hashKey(key);
   if (await env.ARC_PUSH.get(id)) return true;
   const out = await verifyLicense(key, env.GUMROAD_PRODUCT_ID || '', env.ARC_TESTER_KEYS || '');
@@ -75,7 +78,7 @@ export async function handleSync(request, env) {
   const before = await env.ARC_PUSH.get(id);
   const stored = before ? JSON.parse(before) : {};
   const incoming = body.state && typeof body.state === 'object' ? body.state : {};
-  if (body.reset) incoming.resetAt = Date.now();
+  if (body.reset) { incoming.resetAt = Date.now(); await wipePhotos(env, key); }
   const merged = mergeArc(stored, incoming);
   const after = JSON.stringify(merged);
   // KV writes are the limited resource, so nothing is written when nothing changed

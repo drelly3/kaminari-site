@@ -21,6 +21,10 @@
   "kv_namespaces": [
     { "binding": "ARC_PUSH", "id": "72b27370d6d847e6a9cec0ddc94b867e" }
   ],
+  // Arc Tracker proof photo backups. Create this bucket in Cloudflare (R2 > Create bucket) before deploying.
+  "r2_buckets": [
+    { "binding": "ARC_PHOTOS", "bucket_name": "kaminari-arc-photos" }
+  ],
   "triggers": { "crons": ["*/5 * * * *"] },
   "vars": {
     // the public half of the notification signing key (the private half is a secret on the Worker)

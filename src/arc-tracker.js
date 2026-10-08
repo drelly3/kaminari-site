@@ -154,7 +154,7 @@ function iconSVG(arche, size){
 }
 
 /* ---------------- Storage ---------------- */
-const LS = {profile:'arc_profile',habits:'arc_habits',log:'arc_log',weekly:'arc_weekly',reminder:'arc_reminder',secondWinds:'arc_second_winds'};
+const LS = {profile:'arc_profile',habits:'arc_habits',log:'arc_log',weekly:'arc_weekly',reminder:'arc_reminder',secondWinds:'arc_second_winds',proofGone:'arc_proof_gone'};
 function load(k,fb){ try{ const r=localStorage.getItem(k); return r?JSON.parse(r):fb; }catch(e){ return fb; } }
 function persist(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} if(SYNCED.includes(k) && !applyingSync){ editSeq++; scheduleSync(); } }
 
@@ -163,13 +163,14 @@ let habits  = load(LS.habits,{h1:{cue:'',habit:''},h2:{cue:'',habit:''},h3:{cue:
 let log     = load(LS.log,[]);
 let weekly  = load(LS.weekly,[]);
 let reminder= load(LS.reminder,{enabled:false,time:'08:00',lastFired:''});
+let proofGone = load(LS.proofGone,[]); // [{id, t}]: proof photos removed, so other phones drop them too
 let secondWinds= load(LS.secondWinds,[]); // [{missed, on, cost}]: each Second Wind: an XP-paid streak repair
 
 /* ---------------- Cloud backup: the arc is saved under the member's licence key ---------------- */
 // Every change is sent a couple of seconds after it's made; the server merges it with the backup and
 // sends the merged arc back, so a second phone picks up days logged on the first. See api/arc-sync.js.
 // Proof photos stay on the device.
-const SYNCED = [LS.profile, LS.habits, LS.log, LS.weekly, LS.secondWinds];
+const SYNCED = [LS.profile, LS.habits, LS.log, LS.weekly, LS.secondWinds, LS.proofGone];
 const SYNC_DELAY = 2500;
 let sync = load('arc_sync', {at:0, owner:'', resetAt:0}); // last good backup, whose key the local arc belongs to
 let editSeq = 0; // bumped on every local change, so a backup reply never overwrites a newer tap
@@ -188,9 +189,9 @@ async function syncNow(opts){
   if(syncBusy){ syncAgain = true; return; }
   // a different key on this device means the local arc is someone else's: start from their backup instead
   if(sync.owner && sync.owner !== key){
-    profile=blankProfile(); habits=blankHabits(); log=[]; weekly=[]; secondWinds=[];
+    profile=blankProfile(); habits=blankHabits(); log=[]; weekly=[]; secondWinds=[]; proofGone=[];
     applyingSync = true;
-    persist(LS.profile,profile); persist(LS.habits,habits); persist(LS.log,log); persist(LS.weekly,weekly); persist(LS.secondWinds,secondWinds);
+    persist(LS.profile,profile); persist(LS.habits,habits); persist(LS.log,log); persist(LS.weekly,weekly); persist(LS.secondWinds,secondWinds); persist(LS.proofGone,proofGone);
     applyingSync = false;
     if(proofDb) proofTx('readwrite', s=>s.clear()).catch(()=>{});
     sync = {at:0, owner:key, resetAt:0};
@@ -200,7 +201,7 @@ async function syncNow(opts){
   const seq = editSeq;
   try{
     const res = await fetch('/api/arc-sync', {method:'POST', headers:{'Content-Type':'application/json'}, keepalive:!!opts.keepalive,
-      body: JSON.stringify({key, reset:!!opts.reset, state:{profile, habits, log, weekly, secondWinds, resetAt:sync.resetAt||0}})});
+      body: JSON.stringify({key, reset:!!opts.reset, state:{profile, habits, log, weekly, secondWinds, proofGone, resetAt:sync.resetAt||0}})});
     const out = await res.json().catch(()=>({ok:false}));
     if(out.ok && editSeq !== seq){ syncAgain = true; setSyncStatus('busy'); } // changed mid-flight: send again, apply that reply
     else if(out.ok){
@@ -209,6 +210,7 @@ async function syncNow(opts){
       try{ localStorage.setItem('arc_sync', JSON.stringify(sync)); }catch(e){}
       setSyncStatus('ok');
       if(wasEmpty && (log.length || profile.archetypeKey) && !syncRestored){ syncRestored = true; showToast('Welcome back. Your arc is restored.'); }
+      syncPhotos();
     } else setSyncStatus(out.reason==='no_access' ? 'denied' : 'error');
   }catch(e){ setSyncStatus('offline'); }
   syncBusy = false;
@@ -218,14 +220,14 @@ async function syncNow(opts){
 function applyBackup(st){
   const next = {
     profile: st.profile || blankProfile(), habits: st.habits || blankHabits(),
-    log: st.log || [], weekly: st.weekly || [], secondWinds: st.secondWinds || []
+    log: st.log || [], weekly: st.weekly || [], secondWinds: st.secondWinds || [], proofGone: st.proofGone || []
   };
-  const changed = JSON.stringify(next) !== JSON.stringify({profile, habits, log, weekly, secondWinds});
+  const changed = JSON.stringify(next) !== JSON.stringify({profile, habits, log, weekly, secondWinds, proofGone});
   if(!changed) return;
   const hadArchetype = !!getArchetype(profile.archetypeKey);
-  profile=next.profile; habits=next.habits; log=next.log; weekly=next.weekly; secondWinds=next.secondWinds;
+  profile=next.profile; habits=next.habits; log=next.log; weekly=next.weekly; secondWinds=next.secondWinds; proofGone=next.proofGone;
   applyingSync = true;
-  persist(LS.profile,profile); persist(LS.habits,habits); persist(LS.log,log); persist(LS.weekly,weekly); persist(LS.secondWinds,secondWinds);
+  persist(LS.profile,profile); persist(LS.habits,habits); persist(LS.log,log); persist(LS.weekly,weekly); persist(LS.secondWinds,secondWinds); persist(LS.proofGone,proofGone);
   applyingSync = false;
   const a = document.activeElement;
   if(a && /^(INPUT|TEXTAREA)$/.test(a.tagName) && a.type!=='checkbox' && a.type!=='file') renderWhenIdle = true;
@@ -251,7 +253,8 @@ function syncBoxHtml(){
     idle: sync.at ? 'Last backed up '+ago+'.' : 'Not backed up yet.'
   }[syncStatus] || '';
   const good = syncStatus==='ok' || (syncStatus==='idle' && sync.at);
-  return '<div class="sync-line'+(good?' good':'')+'">'+line+'</div><button type="button" class="btn ghost" id="syncNowBtn"'+(syncStatus==='busy'?' disabled':'')+'>Back up now</button>';
+  const photos = photoLine();
+  return '<div class="sync-line'+(good?' good':'')+'">'+line+'</div>'+(photos?'<div class="sync-line photos'+(photoStatus.state==='ok'?' good':'')+'">'+photos+'</div>':'')+'<button type="button" class="btn ghost" id="syncNowBtn"'+(syncStatus==='busy'?' disabled':'')+'>Back up now</button>';
 }
 function wireSyncBox(){ const b=document.getElementById('syncNowBtn'); if(b) b.addEventListener('click', ()=>syncNow()); }
 function timeAgo(ms){
@@ -784,12 +787,17 @@ async function addProof(slot, file){
   // proof of a habit means it happened, so it checks the habit off too
   const box=document.getElementById('f_'+slot); if(box) box.checked=true;
   commitDay();
+  syncPhotos();
 }
 async function removeProof(slot){
   proofError = '';
-  if(proofDb){ try{ await proofTx('readwrite', s=>s.delete(viewDate()+':'+slot)); }catch(e){} }
+  const id = viewDate()+':'+slot;
+  if(proofDb){ try{ await proofTx('readwrite', s=>s.delete(id)); }catch(e){} }
+  proofGone = proofGone.filter(g=>g.id!==id).concat({id, t:Date.now()});
+  persist(LS.proofGone, proofGone);
   await loadDayProof();
   commitDay();
+  syncPhotos();
 }
 // videos older than 30 days become their still frame; photos, and the log itself, stay
 async function pruneProof(){
@@ -805,6 +813,85 @@ async function pruneProof(){
       else await proofTx('readwrite', s=>s.delete(k));
     }
   }catch(e){}
+}
+
+/* ---------------- Photo backup: proof photos saved under the licence key too ---------------- */
+// Runs after each backup of the arc and whenever proof is added or removed. Photos this phone has
+// and the backup doesn't are uploaded; photos the backup has and this phone doesn't are downloaded.
+// A removed photo is remembered in proofGone (part of the synced arc), so every phone deletes it
+// instead of uploading it again. Videos are backed up as their still frame. See api/arc-photos.js.
+let photoBusy = false, photoAgain = false, photoStatus = {state:'idle', total:0, left:0};
+const photoUrlId = id => id.replace(':','_');
+function photoApi(path, opts){
+  opts = opts || {};
+  return fetch('/api/arc-photos'+path, {method:opts.method||'GET', body:opts.body,
+    headers:Object.assign({'X-Arc-Key':licenceKey()}, opts.headers||{})});
+}
+function goneAt(id){ const g = proofGone.find(x=>x.id===id); return g ? g.t : -1; }
+async function syncPhotos(){
+  if(!proofDb || !licenceKey()) return;
+  if(photoBusy){ photoAgain = true; return; }
+  photoBusy = true;
+  let changedHere = false;
+  try{
+    const res = await photoApi('');
+    const out = await res.json().catch(()=>({ok:false}));
+    if(!out.ok){ setPhotoStatus(out.reason==='not_configured' ? 'off' : 'error'); return; }
+    const cloud = new Map(out.photos.map(p=>[p.id.replace('_',':'), p]));
+    const keys = (await proofTx('readonly', s=>s.getAllKeys())) || [];
+    const local = new Map();
+    for(const k of keys) local.set(String(k), await proofTx('readonly', s=>s.get(k)));
+    const uploads = [], downloads = [], removes = [];
+    local.forEach((rec, id)=>{
+      if(goneAt(id) >= (rec.addedAt||0)){ removes.push(id); return; }
+      const c = cloud.get(id);
+      if(!c || c.t < (rec.addedAt||0)) uploads.push(id);
+    });
+    cloud.forEach((c, id)=>{
+      if(goneAt(id) >= c.t){ photoApi('/'+photoUrlId(id), {method:'DELETE'}).catch(()=>{}); return; }
+      const rec = local.get(id);
+      if(!rec || (rec.addedAt||0) < c.t) downloads.push(id);
+    });
+    for(const id of removes){ await proofTx('readwrite', s=>s.delete(id)); changedHere = true; }
+    photoStatus = {state:'busy', total:local.size - removes.length + downloads.length, left:uploads.length + downloads.length};
+    setPhotoStatus('busy');
+    for(const id of uploads){
+      const rec = local.get(id);
+      const full = rec.kind==='video' ? rec.still : rec.blob;
+      if(full){
+        const headers = {'X-Arc-T':String(rec.addedAt||0), 'X-Arc-Kind':rec.kind, 'Content-Type':'image/jpeg'};
+        const put = part=>photoApi('/'+photoUrlId(id)+'/'+part, {method:'PUT', body:part==='full'?full:rec.thumb, headers}).then(r=>{ if(!r.ok) throw new Error('upload'); });
+        await put('full');
+        if(rec.thumb) await put('thumb');
+      }
+      photoStatus.left--; setPhotoStatus('busy');
+    }
+    for(const id of downloads){
+      const c = cloud.get(id);
+      const get = part=>photoApi('/'+photoUrlId(id)+'/'+part).then(r=>{ if(!r.ok) throw new Error('download'); return r.blob(); });
+      const blob = await get('full');
+      const thumb = c.parts.includes('thumb') ? await get('thumb').catch(()=>null) : null;
+      await proofTx('readwrite', s=>s.put({blob, thumb, kind:'image', fromVideo:c.kind==='video', addedAt:c.t}, id));
+      changedHere = true;
+      photoStatus.left--; setPhotoStatus('busy');
+    }
+    setPhotoStatus('ok');
+  }catch(e){ setPhotoStatus(navigator.onLine===false ? 'offline' : 'error'); }
+  finally{
+    photoBusy = false;
+    if(changedHere){ await loadDayProof(); renderToday(); renderGallery(); }
+    if(photoAgain){ photoAgain = false; syncPhotos(); }
+  }
+}
+function setPhotoStatus(state){ photoStatus.state = state; setSyncStatus(syncStatus); }
+function photoLine(){
+  const p = photoStatus;
+  if(p.state==='busy' && p.left>0) return 'Backing up photos… '+p.left+' to go.';
+  if(p.state==='ok') return p.total ? 'Photos: all '+p.total+' backed up.' : 'Photos: nothing to back up yet.';
+  if(p.state==='off') return 'Photo backup isn’t switched on yet. Your photos are safe on this phone.';
+  if(p.state==='offline') return 'Photos back up when you’re online.';
+  if(p.state==='error') return 'Some photos didn’t back up. They’ll try again.';
+  return '';
 }
 
 /* ---------------- Look back: the monthly recap and the 30-full-clear reveal ---------------- */
@@ -928,7 +1015,7 @@ async function renderGallery(){
     '<img src="'+x.thumbUrl+'" alt="" loading="lazy">'+(x.rec.kind==='video'?'<span class="gal-play" aria-hidden="true">▶</span>':'')+
     '<span class="gal-date">'+fmtDate(x.date)+'</span></button>').join('')+'</div>';
   if(items.length>shown.length) html += '<button type="button" class="btn ghost" id="galMore" style="margin-top:10px;">Show all '+items.length+'</button>';
-  html += '<p class="card-note">Kept on this phone only. Videos turn into a still after '+VIDEO_KEEP_DAYS+' days to save space.</p>';
+  html += '<p class="card-note">Backed up with your key. Videos turn into a still after '+VIDEO_KEEP_DAYS+' days to save space, and back up as that still.</p>';
   el.innerHTML = html;
   el.querySelectorAll('[data-gal]').forEach(b=>b.addEventListener('click',()=>openViewer(shown, +b.dataset.gal)));
   wireLookBack(el);
@@ -1203,7 +1290,7 @@ function renderSetup(){
 
   html += '<button class="btn" id="saveHabitsBtn" style="margin-top:6px;">Save character & habits</button>';
 
-  html += '<h2 class="section-title" style="font-size:16px;margin-top:30px;">Backup</h2><p class="section-sub">Your arc is saved to your licence key. Sign in with the same key on a new phone and everything comes back: habits, log, streaks, XP and reviews. Proof photos stay on this phone.</p>';
+  html += '<h2 class="section-title" style="font-size:16px;margin-top:30px;">Backup</h2><p class="section-sub">Your arc is saved to your licence key. Sign in with the same key on a new phone and everything comes back: habits, log, streaks, XP, reviews and your proof photos. Videos are backed up as a still frame.</p>';
   html += '<div class="card" id="syncBox">'+syncBoxHtml()+'</div>';
 
   html += '<h2 class="section-title" style="font-size:16px;margin-top:30px;">Daily reminder</h2><p class="section-sub">Get a notification on this device if you haven\u2019t cleared today by your reminder time. It arrives even when Arc Tracker is closed.</p>';
@@ -1329,7 +1416,8 @@ function renderSetup(){
     if(proofDb){ proofTx('readwrite', s=>s.clear()).catch(()=>{}); }
     Object.keys(dayProof).forEach(k=>URL.revokeObjectURL(dayProof[k].url)); dayProof={}; proofError='';
     profile={name:'',archetypeKey:''}; habits={h1:{cue:'',habit:''},h2:{cue:'',habit:''},h3:{cue:'',habit:''},sc:{cue:'',habit:''}}; log=[]; weekly=[];
-    secondWinds=[];
+    secondWinds=[]; proofGone=[];
+    persist(LS.proofGone,proofGone);
     persist(LS.profile,profile); persist(LS.habits,habits); persist(LS.log,log); persist(LS.weekly,weekly); persist(LS.secondWinds,secondWinds);
     renderAll();
     syncNow({reset:true});
@@ -1500,5 +1588,5 @@ if(location.hash==='#quote'){
 if('serviceWorker' in navigator) navigator.serviceWorker.addEventListener('message', (e)=>{ if(e.data && e.data.arc==='quote') showQuoteReveal(); });
 document.addEventListener('click', (e)=>{ if(e.target.closest && e.target.closest('#dailyQuoteBtn')) showQuoteReveal(); });
 // load today's proof, then draw again so habits with proof show as done
-openProofDb().then(db=>{ proofDb=db; return loadDayProof(); }).then(()=>{ renderToday(); pruneProof(); }).catch(()=>{}).then(maybeShowMonthRecap);
+openProofDb().then(db=>{ proofDb=db; return loadDayProof(); }).then(()=>{ renderToday(); pruneProof(); }).catch(()=>{}).then(()=>{ maybeShowMonthRecap(); syncPhotos(); });
 })();
