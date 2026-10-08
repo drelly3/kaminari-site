@@ -6,3 +6,5 @@ node_modules/
 .vercel
 tester-keys.txt
 .tester-keys.env
+meeting/
+.wrangler/

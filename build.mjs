@@ -129,4 +129,10 @@ fs.writeFileSync(path.join(DIST, 'rss.xml'),
   `\n</channel></rss>\n`);
 fs.writeFileSync(path.join(DIST, 'robots.txt'), `User-agent: *\nAllow: /\n\nSitemap: ${site.url}/sitemap.xml\n`);
 
+// ---------- Cloudflare Pages settings (the Vercel equivalents live in vercel.json) ----------
+fs.writeFileSync(path.join(DIST, '_redirects'), '/arc-tracker /arc-tracker/app 302\n');
+fs.writeFileSync(path.join(DIST, '_headers'), '/media/*\n  Cache-Control: public, max-age=31536000, immutable\n');
+// only the licence check runs as server code; every other address is a plain file
+fs.writeFileSync(path.join(DIST, '_routes.json'), JSON.stringify({ version: 1, include: ['/api/*'], exclude: [] }) + '\n');
+
 console.log(`Built ${routes.length + 1} pages (${posts.length} posts) into ${DIST}/`);
