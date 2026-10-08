@@ -435,3 +435,15 @@ body.app main{display:block;}
 .arc-root .cel-proof-label{font-size:10.5px;font-weight:800;letter-spacing:2.5px;text-transform:uppercase;color:hsl(var(--hue) 95% 72%);margin-bottom:8px;}
 .arc-root .cel-proof-row{display:flex;justify-content:center;gap:6px;}
 .arc-root .cel-proof-row img{width:44px;height:44px;border-radius:6px;object-fit:cover;border:1px solid hsla(var(--hue),90%,65%,.5);opacity:0;animation:riseIn .4s ease forwards;}
+
+/* Comeback: repair yesterday with XP */
+.arc-root .card.comeback{border-color:var(--gold);box-shadow:inset 0 0 0 1px var(--gold-soft);background:linear-gradient(180deg,var(--gold-soft),transparent 70%),var(--surface);}
+.arc-root .card.comeback .card-kicker{color:var(--gold);}
+.arc-root .comeback-lead{font-size:14.5px;line-height:1.5;margin:6px 0 0;}
+.arc-root .comeback-lead b{color:var(--gold);}
+.arc-root button.btn.comeback-btn{margin-top:12px;width:100%;border-color:var(--gold);background:var(--gold-soft);color:var(--gold);}
+.arc-root button.btn.comeback-btn:hover{background:var(--gold);color:var(--bg);}
+.arc-root .wallet{display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding:10px 12px;border-radius:6px;background:var(--surface-2);font-size:13px;color:var(--text-dim);}
+.arc-root .wallet b{color:var(--gold);font-family:var(--font-display);font-size:15px;}
+.arc-root .heatgrid .cell[data-lvl="r"]{background:transparent;box-shadow:inset 0 0 0 1.5px var(--gold);}
+.arc-root .cel-hint{display:inline-block;margin-top:8px;color:hsl(var(--hue) 95% 75%);font-weight:600;}
