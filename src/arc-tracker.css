@@ -7,7 +7,7 @@
     --danger:#FF7A70; --success:#59E68C; --radius:8px;
     --font-display:'Space Grotesk', sans-serif; --font-body:'Inter', sans-serif;
   background:var(--bg); color:var(--text); font-family:var(--font-body);
-  -webkit-font-smoothing:antialiased; min-height:70vh; line-height:normal;
+  -webkit-font-smoothing:antialiased; min-height:100vh; min-height:100dvh; line-height:normal;
 }
 /* the prototype's light palette, kept for when light mode is switched on */
 .arc-root[data-theme="light"]{
@@ -31,13 +31,14 @@
 .arc-root img{max-width:none;}
 .arc-root svg{display:inline-block;}
 
-  .arc-root #arc-app{max-width:760px;margin:0 auto;padding:0 16px 64px;}
+  .arc-root #arc-app{max-width:760px;margin:0 auto;padding:0 max(16px, env(safe-area-inset-right)) calc(96px + env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));}
   .arc-root a{color:var(--accent);}
 
   .arc-root header.top{
     display:flex;align-items:center;justify-content:space-between;
-    padding:22px 0 14px; border-bottom:1px solid var(--border); gap:12px; flex-wrap:wrap;
+    padding:calc(14px + env(safe-area-inset-top)) 0 14px; border-bottom:1px solid var(--border); gap:12px; flex-wrap:wrap;
   }
+  .arc-root header.top .kbolt{height:20px;}
   .arc-root .brand{display:flex;align-items:center;gap:9px;}
   .arc-root .brand .word{font-family:var(--font-display);font-weight:700;font-size:19px;letter-spacing:0.5px;}
   .arc-root .headline-badge{
@@ -48,21 +49,25 @@
   .arc-root .headline-badge b{color:var(--text);font-weight:600;}
   .arc-root .flame{color:var(--gold);}
 
+  /* bottom tab bar, like a phone app; sits above the home indicator on iPhone */
   .arc-root nav.tabs{
-    display:flex; gap:2px; overflow-x:auto; margin-top:14px; border-bottom:1px solid var(--border);
-    scrollbar-width:none;
+    position:fixed; left:0; right:0; bottom:0; z-index:100; display:flex; justify-content:center;
+    background:rgba(10,13,19,0.94); -webkit-backdrop-filter:blur(14px); backdrop-filter:blur(14px);
+    border-top:1px solid var(--border); padding:0 max(6px, env(safe-area-inset-left)) env(safe-area-inset-bottom) max(6px, env(safe-area-inset-right));
   }
-  .arc-root nav.tabs::-webkit-scrollbar{display:none;}
+  .arc-root[data-theme="light"] nav.tabs{background:rgba(255,255,255,0.94);}
   .arc-root nav.tabs button{
-    appearance:none;border:none;background:none;color:var(--text-faint);
-    font-family:var(--font-body);font-weight:600;font-size:13.5px;
-    padding:11px 14px 12px;cursor:pointer;white-space:nowrap;
-    border-bottom:2px solid transparent; transition:color .15s ease, border-color .15s ease;
+    appearance:none; border:none; background:none; color:var(--text-faint); cursor:pointer;
+    flex:1 1 0; max-width:120px; min-width:0; padding:8px 2px 7px;
+    display:flex; flex-direction:column; align-items:center; gap:3px;
+    font-family:var(--font-body); font-weight:600; font-size:10.5px; letter-spacing:0.1px; white-space:nowrap;
+    -webkit-tap-highlight-color:transparent; transition:color .15s ease;
   }
-  .arc-root nav.tabs button:hover{color:var(--text);}
-  .arc-root nav.tabs button.active{color:var(--accent);border-bottom-color:var(--accent);}
+  .arc-root nav.tabs button svg{display:block;}
+  .arc-root nav.tabs button:hover{color:var(--text-dim);}
+  .arc-root nav.tabs button.active{color:var(--accent);}
 
-  .arc-root .arc-main{padding-top:22px;}
+  .arc-root .arc-main{padding-top:20px;}
   .arc-root .tab{display:none;}
   .arc-root .tab.active{display:block; animation:fadein .25s ease;}
   @keyframes fadein{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:none;}}
@@ -256,9 +261,9 @@
 
   /* Evolving rank emblem */
 
-  .arc-root .emblem-row{display:flex;flex-wrap:wrap;gap:18px;align-items:flex-end;margin-top:14px;}
-  .arc-root .emblem-wrap{display:flex;flex-direction:column;align-items:center;gap:7px;width:62px;}
-  .arc-root .emblem{position:relative;width:58px;height:58px;}
+  .arc-root .emblem-row{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;align-items:end;margin-top:16px;max-width:440px;}
+  .arc-root .emblem-wrap{display:flex;flex-direction:column;align-items:center;gap:7px;min-width:0;}
+  .arc-root .emblem{position:relative;width:min(58px,100%);aspect-ratio:1;}
   .arc-root .emblem .ring{position:absolute;inset:0;border-radius:50%;border:2px solid hsl(var(--hue,192) 85% 58%);}
   .arc-root .emblem .ring-mid{inset:9px;}
   .arc-root .emblem .glow{position:absolute;inset:-7px;border-radius:50%;background:radial-gradient(circle, hsla(var(--hue,192),90%,60%,var(--glow-a,0)) 0%, transparent 72%);}
@@ -280,10 +285,6 @@
   .arc-root .emblem-name{font-size:10px;font-weight:600;color:var(--text-dim);text-align:center;line-height:1.25;}
   .arc-root .emblem-name.reached{color:var(--text);}
   .arc-root .emblem-name.top{color:var(--gold);}
-  .arc-root .recap-card{position:relative;overflow:hidden;}
-  .arc-root .recap-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent),var(--gold));}
-  .arc-root .recap-card .tag{font-size:10.5px;font-weight:700;letter-spacing:0.6px;color:var(--accent);text-transform:uppercase;margin-bottom:6px;}
-  .arc-root .recap-card p{font-size:13.5px;color:var(--text-dim);line-height:1.6;margin:0;font-style:italic;}
 
   .arc-root .empty{color:var(--text-faint);font-size:13.5px;padding:18px 0;}
   .arc-root .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
@@ -336,13 +337,8 @@
 .arc-root a.btn:hover{background:var(--accent);color:var(--bg-elev);}
 
 /* Proof upload on each habit */
-.arc-root .proof-mark{width:20px;height:20px;margin-top:1px;flex-shrink:0;border-radius:4px;border:1.5px solid var(--text-faint);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--bg);}
-.arc-root .proof-mark.done{background:var(--accent);border-color:var(--accent);}
 .arc-root .proof-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:9px;}
 .arc-root .checkline .txt .proof-row span{display:inline;margin:0;}
-.arc-root .proof-btn{padding:7px 13px;font-size:12.5px;cursor:pointer;margin:0;}
-.arc-root .proof-btn:hover{background:var(--accent);color:var(--bg-elev);}
-.arc-root .proof-hint{font-size:12px;color:var(--text-faint);}
 .arc-root .proof-ok{font-size:12.5px;font-weight:600;color:var(--success);}
 .arc-root .proof-thumb{width:46px;height:46px;border-radius:6px;object-fit:cover;border:1px solid var(--border);display:block;background:var(--surface-2);}
 .arc-root .proof-link{appearance:none;background:none;border:none;padding:0;margin:0;font-family:var(--font-body);font-size:12.5px;font-weight:600;color:var(--text-dim);text-decoration:underline;cursor:pointer;display:inline;}
@@ -360,3 +356,53 @@
 .arc-root .guide .guide-p{font-size:13.5px;line-height:1.6;color:var(--text-dim);margin:0 0 14px;}
 .arc-root .banner.note{background:var(--surface-2);border:1px solid var(--border);color:var(--text);}
 .arc-root .guide .banner{line-height:1.6;}
+
+/* the tracker page has no site header or footer, so the whole page is the app */
+body.app{background:#0A0D13;}
+body.app main{display:block;}
+
+/* small labels and notes inside cards */
+.arc-root .card-kicker{font-size:11px;font-weight:700;letter-spacing:0.6px;text-transform:uppercase;color:var(--accent);line-height:1.3;}
+.arc-root .card-kicker.gold, .arc-root .card.accent > .card-kicker:first-child{color:var(--gold);}
+.arc-root .rank-card > .rank-head .card-kicker{color:var(--accent);}
+.arc-root .card-note{font-size:12.5px;color:var(--text-faint);line-height:1.5;margin:6px 0 0;}
+.arc-root .card.accent > .card-note{margin:4px 0 6px;}
+.arc-root .xp-tag{font-weight:600;color:var(--gold);margin-left:4px;}
+.arc-root .linkbtn{appearance:none;background:none;border:none;padding:0;font:inherit;font-weight:600;color:var(--accent);text-decoration:underline;cursor:pointer;}
+
+/* Today: pick which day you're logging */
+.arc-root .day-switch{display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:4px;margin:0 0 10px;}
+.arc-root .day-switch button{flex:1;appearance:none;border:none;background:none;border-radius:5px;padding:9px 8px;font-family:var(--font-display);font-weight:600;font-size:14px;color:var(--text-dim);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;}
+.arc-root .day-switch button.on{background:var(--accent-soft);color:var(--accent);}
+.arc-root .day-switch .dot{width:7px;height:7px;border-radius:50%;background:var(--gold);display:inline-block;}
+
+/* Today: a habit is a big tap target; proof sits under it */
+.arc-root .checkline .txt{flex:1;min-width:0;}
+.arc-root .checkline .txt label{margin:0;font-size:14.5px;font-weight:400;color:inherit;cursor:pointer;}
+.arc-root .checkline input[type=checkbox]{width:24px;height:24px;margin:0;}
+.arc-root .proof-add{display:inline-block;margin:0;font-size:12.5px;font-weight:600;color:var(--accent);cursor:pointer;}
+.arc-root .proof-add span{color:var(--text-faint);font-weight:500;}
+.arc-root .proof-row{margin-top:7px;}
+.arc-root .note-foot{display:flex;align-items:center;gap:12px;}
+.arc-root .note-foot .helptext{margin:0;color:var(--success);}
+
+/* Progress: rank first, then a short row of numbers */
+.arc-root .rank-head{display:flex;align-items:center;gap:14px;margin-bottom:12px;}
+.arc-root .rank-name{font-family:var(--font-display);font-weight:700;font-size:26px;line-height:1.1;margin-top:2px;}
+.arc-root .rank-card .recap{font-size:13px;color:var(--text-dim);font-style:italic;line-height:1.55;margin:14px 0 0;padding-top:12px;border-top:1px solid var(--border);}
+.arc-root .stat-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:14px;}
+.arc-root .stat-row.inset{grid-template-columns:repeat(2,minmax(0,1fr));margin:10px 0 0;}
+.arc-root .stat-row .stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px;}
+.arc-root .stat-row.inset .stat{background:var(--surface-2);border:none;}
+.arc-root .stat-row .stat .num{font-size:22px;}
+.arc-root .level-head{display:flex;justify-content:space-between;font-size:13px;color:var(--text-dim);}
+
+/* Start Here: setup steps that tick themselves off */
+.arc-root .guide ol.steps{list-style:none;padding:0;margin:0 0 16px;}
+.arc-root .guide ol.steps li{display:flex;gap:12px;padding:14px;margin:0 0 8px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);}
+.arc-root .guide ol.steps li p{margin:3px 0 0;}
+.arc-root .guide ol.steps li.done{opacity:0.6;}
+.arc-root .guide ol.steps li.done b{text-decoration:line-through;text-decoration-color:var(--text-faint);}
+.arc-root .step-mark{flex-shrink:0;width:22px;height:22px;border-radius:50%;border:1.5px solid var(--text-faint);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--bg);margin-top:1px;}
+.arc-root li.done .step-mark{background:var(--success);border-color:var(--success);}
+.arc-root .guide .btn.go{margin-top:10px;padding:7px 12px;font-size:12.5px;}

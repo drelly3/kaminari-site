@@ -182,7 +182,8 @@ function computeStats(){
   sorted.forEach(e=>{
     if(e.h1&&e.h2&&e.h3) fullClear++;
     if(e.sc) shadowTotal++;
-    xp += (e.h1?10:0)+(e.h2?5:0)+(e.h3?5:0)+(e.sc?5:0)+((e.note||'').trim()?2:0);
+    const pf=e.proof||{};
+    xp += (e.h1?10:0)+(e.h2?5:0)+(e.h3?5:0)+(e.sc?5:0)+((e.note||'').trim()?2:0)+PROOF_SLOTS.filter(k=>e[k]&&pf[k]).length*PROOF_XP;
   });
   let currentStreak=0;
   for(let i=sorted.length-1;i>=0;i--){
@@ -217,14 +218,18 @@ function rankInfo(archetype, fullClear){
 }
 
 /* ---------------- Tabs ---------------- */
-document.querySelectorAll('nav.tabs button').forEach(btn=>{
-  btn.addEventListener('click',()=>{
-    document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.remove('active'));
-    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-    btn.classList.add('active');
-    document.getElementById('tab-'+btn.dataset.tab).classList.add('active');
+function showTab(name){
+  document.querySelectorAll('nav.tabs button').forEach(b=>{
+    const on = b.dataset.tab===name;
+    b.classList.toggle('active', on);
+    if(on) b.setAttribute('aria-current','page'); else b.removeAttribute('aria-current');
   });
-});
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.id==='tab-'+name));
+  window.scrollTo(0,0);
+}
+document.querySelectorAll('nav.tabs button').forEach(btn=>btn.addEventListener('click',()=>showTab(btn.dataset.tab)));
+// buttons inside a tab that jump to another one, like "Open Setup" in the guide
+document.addEventListener('click',(e)=>{ const b=e.target.closest && e.target.closest('[data-goto]'); if(b) showTab(b.dataset.goto); });
 
 /* ---------------- Header ---------------- */
 function renderHeader(){
@@ -359,7 +364,7 @@ function showDayCleared(archetype, streak, habitNames, onDone){
     '<div class="cel-title">All three. Done.</div>'+
     (items?'<ul class="cel-list">'+items+'</ul><br>':'')+
     '<div class="cel-streak">\uD83D\uDD25 '+streak+'-day streak</div>'+
-    '<p class="cel-sub">'+(archetype?escapeHtml(archetype.title)+' showed up today.':'You showed up today.')+'</p>'+
+    '<p class="cel-sub">'+(archetype?escapeHtml(archetype.title):'You')+' showed up '+(viewDay==='yesterday'?'yesterday':'today')+'.</p>'+
     '<button class="btn" id="celOk">Keep the arc going</button>';
   mountCelebration(archetype, inner, 7000, onDone, false);
   setTimeout(()=>spawnConfetti(archetype?archetype.hue:45,{center:false}), 700);
@@ -378,104 +383,117 @@ function showRankUpModal(archetype, rank, prevRank, onDone){
 }
 
 /* ---------------- Today tab ---------------- */
+// The Today tab logs today or, for anyone who forgot to log before midnight, yesterday. Nothing
+// further back can be changed, so a streak still has to be earned day by day.
+let viewDay = 'today';
+function shiftDay(s, n){ const d=dfs(s); d.setDate(d.getDate()+n); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function viewDate(){ return viewDay==='yesterday' ? shiftDay(todayStr(),-1) : todayStr(); }
+const PROOF_XP = 2;
+
 function renderToday(){
   const el=document.getElementById('tab-today');
   const arche=getArchetype(profile.archetypeKey);
   const stats=computeStats();
-  const t=todayStr();
-  const existing=log.find(e=>e.date===t);
-  const yesterday=(()=>{ const d=dfs(t); d.setDate(d.getDate()-1); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); })();
+  const t=todayStr(), yesterday=shiftDay(t,-1), d=viewDate();
+  const existing=log.find(e=>e.date===d);
   const yEntry=log.find(e=>e.date===yesterday);
 
   let html='';
   if(!arche){
-    html += '<div class="banner info"><div>Pick your archetype and name your three habits in <b>Setup</b> before you start logging \u2014 takes about a minute.</div></div>';
+    html += '<div class="banner info"><div>Pick your archetype and name your three habits before you start logging. It takes about a minute. <button type="button" class="linkbtn" data-goto="guide">Start here</button></div></div>';
   }
-  if(yEntry && !yEntry.h1 && stats.currentStreak===0 && stats.totalDays>0){
-    html += '<div class="banner warn"><span>\u26A0\uFE0F</span><div><b>Never miss twice.</b> Yesterday\u2019s non-negotiable didn\u2019t happen. One miss is an accident \u2014 the only rule now is don\u2019t miss today too.</div></div>';
+  if(viewDay==='today' && yEntry && !yEntry.h1 && stats.currentStreak===0 && stats.totalDays>0){
+    html += '<div class="banner warn"><span>⚠️</span><div><b>Never miss twice.</b> Yesterday’s non-negotiable didn’t happen. One miss is an accident — the only rule now is don’t miss today too. Did it and forgot to log? Switch to <b>Yesterday</b> below.</div></div>';
   }
 
   const dq = dailyQuote(arche, t);
-  if(dq) html += '<button type="button" class="daily-quote" id="dailyQuoteBtn" title="Replay the reveal"><p class="q">\u201c'+escapeHtml(dq.q)+'\u201d</p><div class="by">Inspired by '+escapeHtml(dq.c)+' \u00b7 '+escapeHtml(arche.title)+' \u00b7 New quote every Monday and Thursday</div></button>';
-  html += '<h2 class="section-title">Today \u00b7 '+fmtDate(t)+'</h2>';
-  html += '<p class="section-sub">A habit counts once you upload proof: a photo or a short video. No proof, no check.</p>';
+  if(dq) html += '<button type="button" class="daily-quote" id="dailyQuoteBtn" title="Replay the reveal"><p class="q">“'+escapeHtml(dq.q)+'”</p><div class="by">Inspired by '+escapeHtml(dq.c)+' · New quote every Monday and Thursday</div></button>';
 
-  html += '<div class="card">';
-  const h1=habits.h1, h2=habits.h2, h3=habits.h3;
+  const yMissing = stats.totalDays>0 && !yEntry;
+  html += '<div class="day-switch" role="group" aria-label="Day to log">'+
+    '<button type="button" data-day="today" class="'+(viewDay==='today'?'on':'')+'">Today · '+fmtDate(t)+'</button>'+
+    '<button type="button" data-day="yesterday" class="'+(viewDay==='yesterday'?'on':'')+'">Yesterday'+(yMissing?' <span class="dot" title="Not logged"></span>':'')+'</button></div>';
+  html += '<p class="section-sub">'+(viewDay==='yesterday'
+    ? 'Forgot to log before midnight? Fix yesterday here. Anything older stays as it is.'
+    : 'Tap a habit when it’s done. Add a photo or video as proof for +'+PROOF_XP+' XP each.')+'</p>';
+
   const vals = existing || {h1:false,h2:false,h3:false,sc:false,note:''};
-  html += proofline('h1',h1,true);
-  html += proofline('h2',h2,false);
-  html += proofline('h3',h3,false);
+  html += '<div class="card">';
+  html += habitLine('h1',habits.h1,vals.h1,true);
+  html += habitLine('h2',habits.h2,vals.h2,false);
+  html += habitLine('h3',habits.h3,vals.h3,false);
   if(proofError) html += '<div class="proof-error" role="alert">'+escapeHtml(proofError)+'</div>';
   html += '</div>';
 
   if(arche && arche.shadowOptions){
     const sc = habits.sc||{cue:'',habit:''};
-    html += '<div class="card accent"><div style="font-size:11.5px;font-weight:700;color:var(--gold);letter-spacing:0.3px;margin-bottom:2px;">SHADOW-CHECK \u2014 separate from your 3 habits</div>';
-    html += '<div class="helptext" style="margin-bottom:8px;">'+arche.title+'\u2019s shadow: '+arche.shadow+'</div>';
-    html += checkline('f_sc','sc',sc,vals.sc,false);
+    html += '<div class="card accent"><div class="card-kicker">Shadow-check</div>';
+    html += '<p class="card-note">Separate from your 3 habits. '+escapeHtml(arche.title)+'’s shadow: '+escapeHtml(arche.shadow)+'</p>';
+    html += checkline('f_sc',sc,vals.sc,'Shadow-check (name it in Setup)');
     html += '</div>';
   }
 
-  html += '<div class="card"><div style="margin-top:0;"><label for="f_note">One line \u2014 a win or something you\u2019re grateful for</label>';
-  html += '<textarea id="f_note" placeholder="Small counts.">'+escapeHtml(vals.note||'')+'</textarea></div>';
-  html += '<button class="btn" id="saveDayBtn">Save note'+(arche && arche.shadowOptions?' and shadow-check':'')+'</button>';
-  html += ' <span class="helptext" style="margin-left:8px;">Habits save on their own when you add proof.</span>';
+  html += '<div class="card"><label for="f_note">One line — a win or something you’re grateful for <span class="xp-tag">+2 XP</span></label>';
+  html += '<textarea id="f_note" placeholder="Small counts." maxlength="280">'+escapeHtml(vals.note||'')+'</textarea>';
+  html += '<div class="note-foot"><button class="btn" id="saveDayBtn">Save note</button><span class="helptext" id="noteSaved" aria-live="polite"></span></div>';
   html += '</div>';
 
   el.innerHTML = html;
 
-  // A habit line has no checkbox to tick: it shows done only while proof for today is attached.
-  function proofline(key, h, nonneg){
+  function habitLine(key, h, checked, nonneg){
     const fallback = key==='h1' ? 'Non-negotiable (name it in Setup)' : 'Habit '+key.slice(1)+' (name it in Setup)';
-    const label = h.habit ? h.habit : fallback;
-    const cue = h.cue ? 'After I '+h.cue : '';
-    const p = todayProof[key];
+    const p = dayProof[key];
     let row;
     if(p){
       const thumb = p.kind==='image' ? '<img class="proof-thumb" src="'+p.url+'" alt="Your proof">' : '<video class="proof-thumb" src="'+p.url+'" muted playsinline preload="metadata"></video>';
-      row = '<a href="'+p.url+'" target="_blank" rel="noopener" title="Open proof">'+thumb+'</a><span class="proof-ok">Proof added</span>'+
+      row = '<a href="'+p.url+'" target="_blank" rel="noopener" title="Open proof">'+thumb+'</a><span class="proof-ok">Proof +'+PROOF_XP+' XP</span>'+
         '<label class="proof-link">Replace<input type="file" accept="image/*,video/*" data-proof="'+key+'" hidden></label>'+
         '<button type="button" class="proof-link" data-proof-remove="'+key+'">Remove</button>';
     } else {
-      row = '<label class="btn proof-btn">Upload proof<input type="file" accept="image/*,video/*" data-proof="'+key+'" hidden></label>'+
-        '<span class="proof-hint">Photo or video</span>';
+      row = '<label class="proof-add">+ Add proof <span>(+'+PROOF_XP+' XP)</span><input type="file" accept="image/*,video/*" data-proof="'+key+'" hidden></label>';
     }
-    return '<div class="checkline'+(nonneg?' nonneg':'')+'"><span class="proof-mark'+(p?' done':'')+'" aria-hidden="true">'+(p?'\u2713':'')+'</span>'+
-      '<div class="txt" style="flex:1;min-width:0;"><b>'+escapeHtml(label)+'</b>'+(cue?'<span>'+escapeHtml(cue)+'</span>':'')+
-      '<div class="proof-row">'+row+'</div></div></div>';
+    return checkline('f_'+key, h, checked, fallback, nonneg, '<div class="proof-row">'+row+'</div>');
   }
-  el.querySelectorAll('[data-proof]').forEach(inp=>inp.addEventListener('change',()=>{ if(inp.files && inp.files[0]) addProof(inp.dataset.proof, inp.files[0]); }));
-  el.querySelectorAll('[data-proof-remove]').forEach(b=>b.addEventListener('click',()=>removeProof(b.dataset.proofRemove)));
-
-  function checkline(id, key, h, checked, nonneg){
-    const fallback = key==='h1' ? 'Non-negotiable (name it in Setup)' : key==='sc' ? 'Shadow-check (name it in Setup)' : 'Habit '+key.slice(1)+' (name it in Setup)';
+  function checkline(id, h, checked, fallback, nonneg, extra){
     const label = h.habit ? h.habit : fallback;
     const cue = h.cue ? 'After I '+h.cue : '';
     return '<div class="checkline'+(nonneg?' nonneg':'')+'"><input type="checkbox" id="'+id+'" '+(checked?'checked':'')+'>'+
-      '<label class="txt" for="'+id+'" style="margin:0;font-size:14.5px;font-weight:400;color:inherit;"><b>'+escapeHtml(label)+'</b>'+(cue?'<span>'+escapeHtml(cue)+'</span>':'')+'</label></div>';
+      '<div class="txt"><label for="'+id+'"><b>'+escapeHtml(label)+'</b>'+(cue?'<span>'+escapeHtml(cue)+'</span>':'')+'</label>'+(extra||'')+'</div></div>';
   }
 
-  document.getElementById('saveDayBtn').addEventListener('click', commitToday);
+  el.querySelectorAll('[data-day]').forEach(b=>b.addEventListener('click',async ()=>{
+    if(viewDay===b.dataset.day) return;
+    viewDay=b.dataset.day; proofError='';
+    await loadDayProof();
+    renderToday();
+  }));
+  ['f_h1','f_h2','f_h3','f_sc'].forEach(id=>{ const c=document.getElementById(id); if(c) c.addEventListener('change', commitDay); });
+  el.querySelectorAll('[data-proof]').forEach(inp=>inp.addEventListener('change',()=>{ if(inp.files && inp.files[0]) addProof(inp.dataset.proof, inp.files[0]); }));
+  el.querySelectorAll('[data-proof-remove]').forEach(b=>b.addEventListener('click',()=>removeProof(b.dataset.proofRemove)));
+  const note=document.getElementById('f_note');
+  note.addEventListener('change', commitDay);
+  document.getElementById('saveDayBtn').addEventListener('click', commitDay);
 }
 
-// Writes today's entry and fires the celebrations. Runs by itself the moment proof is added or
-// removed, so Day Cleared and Rank Up play as soon as the third habit is proven, with no button press.
-function commitToday(){
-  const t = todayStr();
-  const existing = log.find(e=>e.date===t);
+// Writes the logged day straight from the Today tab and fires the celebrations. Runs on every
+// tap, so Day Cleared and Rank Up play the moment the third habit is checked.
+function commitDay(){
+  const d = viewDate();
+  const existing = log.find(e=>e.date===d);
   const before = computeStats().fullClear;
   const wasFull = !!(existing && existing.h1 && existing.h2 && existing.h3);
-  const scEl = document.getElementById('f_sc'), noteEl = document.getElementById('f_note');
+  const box = (id, k)=>{ const c=document.getElementById(id); return c ? c.checked : !!(existing && existing[k]); };
+  const noteEl = document.getElementById('f_note');
   const entry = {
-    date: t,
-    h1: !!todayProof.h1,
-    h2: !!todayProof.h2,
-    h3: !!todayProof.h3,
-    sc: scEl ? scEl.checked : (existing?existing.sc:false),
-    note: noteEl ? noteEl.value.slice(0,280) : (existing?existing.note:'')
+    date: d,
+    h1: box('f_h1','h1'),
+    h2: box('f_h2','h2'),
+    h3: box('f_h3','h3'),
+    sc: box('f_sc','sc'),
+    note: noteEl ? noteEl.value.slice(0,280) : (existing?existing.note:''),
+    proof: {h1:!!dayProof.h1, h2:!!dayProof.h2, h3:!!dayProof.h3}
   };
-  const idx = log.findIndex(e=>e.date===t);
+  const idx = log.findIndex(e=>e.date===d);
   if(idx>=0) log[idx]=entry; else log.push(entry);
   persist(LS.log, log);
   const after = computeStats().fullClear;
@@ -495,12 +513,14 @@ function commitToday(){
   }
   pushReportCleared();
   renderAll();
+  const saved=document.getElementById('noteSaved');
+  if(saved && entry.note.trim()) saved.textContent='Saved';
 }
 
-/* ---------------- Proof: a photo or video per habit, kept on this device ---------------- */
+/* ---------------- Proof: an optional photo or video per habit, kept on this device ---------------- */
 const PROOF_SLOTS = ['h1','h2','h3'];
 const PROOF_MAX_VIDEO = 50*1024*1024;
-let proofDb = null, todayProof = {}, proofError = '';
+let proofDb = null, dayProof = {}, proofError = ''; // dayProof: proof for the day shown on the Today tab
 function openProofDb(){
   return new Promise((res,rej)=>{
     if(!('indexedDB' in window)) return rej(new Error('no indexedDB'));
@@ -519,14 +539,14 @@ function proofTx(mode, fn){
     tx.onabort = ()=>rej(tx.error);
   });
 }
-async function loadTodayProof(){
-  Object.keys(todayProof).forEach(k=>URL.revokeObjectURL(todayProof[k].url));
-  todayProof = {};
+async function loadDayProof(){
+  Object.keys(dayProof).forEach(k=>URL.revokeObjectURL(dayProof[k].url));
+  dayProof = {};
   if(!proofDb) return;
-  const t = todayStr();
+  const d = viewDate();
   for(const slot of PROOF_SLOTS){
-    const rec = await proofTx('readonly', s=>s.get(t+':'+slot));
-    if(rec) todayProof[slot] = {kind:rec.kind, url:URL.createObjectURL(rec.blob)};
+    const rec = await proofTx('readonly', s=>s.get(d+':'+slot));
+    if(rec) dayProof[slot] = {kind:rec.kind, url:URL.createObjectURL(rec.blob)};
   }
 }
 // photos are scaled down before saving so a month of proof doesn't fill the device
@@ -553,16 +573,18 @@ async function addProof(slot, file){
   if(!proofDb){ proofError = 'This browser can’t store proof. Private browsing blocks it.'; return renderToday(); }
   try{
     const blob = isImg ? await shrinkImage(file) : file;
-    await proofTx('readwrite', s=>s.put({blob, kind:isImg?'image':'video', addedAt:Date.now()}, todayStr()+':'+slot));
+    await proofTx('readwrite', s=>s.put({blob, kind:isImg?'image':'video', addedAt:Date.now()}, viewDate()+':'+slot));
   }catch(e){ proofError = 'Couldn’t save that file. Your device may be out of space.'; return renderToday(); }
-  await loadTodayProof();
-  commitToday();
+  await loadDayProof();
+  // proof of a habit means it happened, so it checks the habit off too
+  const box=document.getElementById('f_'+slot); if(box) box.checked=true;
+  commitDay();
 }
 async function removeProof(slot){
   proofError = '';
-  if(proofDb){ try{ await proofTx('readwrite', s=>s.delete(todayStr()+':'+slot)); }catch(e){} }
-  await loadTodayProof();
-  commitToday();
+  if(proofDb){ try{ await proofTx('readwrite', s=>s.delete(viewDate()+':'+slot)); }catch(e){} }
+  await loadDayProof();
+  commitDay();
 }
 // proof older than 30 days is deleted; the log itself (and the rank it earned) stays
 async function pruneProof(){
@@ -600,60 +622,55 @@ function renderProgress(){
   const el=document.getElementById('tab-progress');
   const arche=getArchetype(profile.archetypeKey);
   const stats=computeStats();
-  let html='<h2 class="section-title">Progress</h2><p class="section-sub">No math on you \u2014 this is calculated straight from your daily log.</p>';
+  let html='<h2 class="section-title">Progress</h2><p class="section-sub">Calculated straight from your daily log. No math on you.</p>';
 
-  if(stats.totalDays>0){
-    html += '<div class="card recap-card"><div class="tag">Your arc so far</div><p>'+buildRecap(stats, arche)+'</p></div>';
+  // rank leads: it's the number the whole system is built around
+  if(arche && arche.ranks){
+    const ri = rankInfo(arche, stats.fullClear);
+    html += '<div class="card accent rank-card"><div class="rank-head">'+iconSVG(arche,56)+'<div><div class="card-kicker">'+escapeHtml(arche.title)+'</div><div class="rank-name">'+escapeHtml(ri.cur.name)+'</div></div></div>';
+    if(ri.next){
+      const pct = Math.min(100, Math.round((stats.fullClear-ri.cur.ms)/(ri.next.ms-ri.cur.ms)*100));
+      html += '<div class="xpbar-outer"><div class="xpbar-inner" style="width:'+pct+'%;"></div></div>';
+      html += '<div class="card-note">'+(ri.next.ms-stats.fullClear)+' more full-clear days to reach '+escapeHtml(ri.next.name)+'. Rank is earned by full-clear days, not time on the calendar.</div>';
+    } else {
+      html += '<div class="card-note">Top rank reached. That’s the ceiling for this archetype — the grind now is just staying there.</div>';
+    }
+    html += '<div class="emblem-row">'+arche.ranks.map((r,i)=>{
+      const reached = stats.fullClear>=r.ms;
+      const isTop = i===arche.ranks.length-1;
+      const nameClass = 'emblem-name'+(reached?' reached':'')+(reached&&isTop?' top':'');
+      return '<div class="emblem-wrap"><div class="emblem" data-tier="'+(reached?i:0)+'" style="--hue:'+arche.hue+';">'+
+        '<div class="ring ring-outer"></div><div class="ring ring-mid"></div><div class="glow"></div><div class="icon">'+iconSVG(arche,40)+'</div>'+
+        '</div><div class="'+nameClass+'">'+escapeHtml(r.name)+'</div></div>';
+    }).join('')+'</div>';
+    if(stats.totalDays>0) html += '<p class="recap">'+buildRecap(stats, arche)+'</p>';
+    html += '</div>';
+  } else {
+    html += '<div class="banner info"><div>Pick an archetype to unlock your rank ladder. <button type="button" class="linkbtn" data-goto="archetypes">Choose one</button></div></div>';
   }
 
-  html += '<div class="row" style="margin-bottom:14px;">';
-  html += stat(stats.totalDays,'Days logged');
-  html += stat(stats.currentStreak,'Current streak');
+  html += '<div class="stat-row">';
+  html += stat('\u{1F525} '+stats.currentStreak,'Current streak');
   html += stat(stats.longest,'Longest streak');
-  html += stat(stats.fullClear,'Full-clear days');
+  html += stat(stats.fullClear,'Full clears');
   html += '</div>';
 
   const level = Math.floor(stats.xp/100)+1;
   const inLevel = stats.xp%100;
-  html += '<div class="card"><div style="display:flex;justify-content:space-between;font-size:13px;color:var(--text-dim);"><span>Level '+level+'</span><span>'+stats.xp+' XP total</span></div>';
+  html += '<div class="card"><div class="level-head"><span>Level '+level+'</span><span>'+stats.xp+' XP</span></div>';
   html += '<div class="xpbar-outer"><div class="xpbar-inner" style="width:'+inLevel+'%;"></div></div>';
-  html += '<div class="helptext" style="margin-top:0;">'+(100-inLevel)+' XP to level '+(level+1)+' \u2014 earned from real check-ins (10/5/5 for non-negotiable/habit 2/habit 3, +2 for a reflection line).</div></div>';
+  html += '<div class="card-note">'+(100-inLevel)+' XP to level '+(level+1)+'. Non-negotiable 10 · habits 2 and 3: 5 each · shadow-check 5 · proof +'+PROOF_XP+' per habit · win line 2.</div></div>';
 
-  if(arche && arche.ranks){
-    const ri = rankInfo(arche, stats.fullClear);
-    html += '<div class="card accent"><div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">';
-    html += '<span>'+iconSVG(arche,34)+'</span><div><div style="font-family:var(--font-display);font-weight:700;font-size:17px;">'+ri.cur.name+'</div><div class="helptext" style="margin:0;">'+arche.title+' \u00b7 rank is earned by full-clear days, not time on the calendar</div></div></div>';
-    if(ri.next){
-      const pct = Math.min(100, Math.round((stats.fullClear-ri.cur.ms)/(ri.next.ms-ri.cur.ms)*100));
-      html += '<div class="helptext" style="margin-bottom:4px;">'+(ri.next.ms-stats.fullClear)+' more full-clear days to reach '+ri.next.name+'</div>';
-      html += '<div class="xpbar-outer"><div class="xpbar-inner" style="width:'+pct+'%;"></div></div>';
-    } else {
-      html += '<div class="helptext" style="margin:0;">Top rank reached. That\u2019s the ceiling for this archetype \u2014 the grind now is just staying there.</div>';
-    }
-    html += '<div class="emblem-row">'+arche.ranks.map((r,i)=>{
-      const tier = i; // 0..4, matches milestone index
-      const reached = stats.fullClear>=r.ms;
-      const isTop = i===arche.ranks.length-1;
-      const nameClass = 'emblem-name'+(reached?' reached':'')+(reached&&isTop?' top':'');
-      return '<div class="emblem-wrap"><div class="emblem" data-tier="'+(reached?tier:0)+'" style="--hue:'+arche.hue+';">'+
-        '<div class="ring ring-outer"></div><div class="ring ring-mid"></div><div class="glow"></div><div class="icon">'+iconSVG(arche,40)+'</div>'+
-        '</div><div class="'+nameClass+'">'+escapeHtml(r.name)+'</div></div>';
-    }).join('')+'</div>';
+  if(arche && arche.shadowOptions){
+    html += '<div class="card"><div class="card-kicker gold">Shadow-check</div>';
+    html += '<div class="stat-row inset">'+stat(stats.shadowStreak,'Current streak')+stat(stats.shadowTotal,'Total done')+'</div>';
+    const earnedShadow = SHADOW_BADGES.filter(b=>stats.shadowTotal>=b.n);
+    if(earnedShadow.length) html += '<div class="badgechips">'+earnedShadow.map(b=>'<span class="chip">'+b.name+'</span>').join('')+'</div>';
+    else html += '<div class="card-note">10 shadow-checks unlocks your first badge — tracked separately from your rank.</div>';
     html += '</div>';
-
-    if(arche.shadowOptions){
-      html += '<div class="card"><div style="font-size:11.5px;font-weight:700;color:var(--gold);letter-spacing:0.3px;margin-bottom:6px;">SHADOW-CHECK PROGRESS</div>';
-      html += '<div class="row" style="margin-bottom:8px;">'+stat(stats.shadowStreak,'Current streak')+stat(stats.shadowTotal,'Total completed')+'</div>';
-      const earnedShadow = SHADOW_BADGES.filter(b=>stats.shadowTotal>=b.n);
-      if(earnedShadow.length) html += '<div class="badgechips">'+earnedShadow.map(b=>'<span class="chip">'+b.name+'</span>').join('')+'</div>';
-      else html += '<div class="helptext" style="margin:0;">10 shadow-checks unlocks your first badge \u2014 tracked separately from your rank.</div>';
-      html += '</div>';
-    }
-  } else {
-    html += '<div class="banner info">Pick an archetype in the Archetypes tab to unlock your rank ladder.</div>';
   }
 
-  html += '<div class="card"><div style="font-size:13px;color:var(--text-dim);margin-bottom:6px;">Last 30 days \u2014 darker means more of the three habits landed</div>';
+  html += '<div class="card"><div style="font-size:13px;color:var(--text-dim);margin-bottom:6px;">Last 30 days \u2014 brighter means more of the three habits landed</div>';
   html += '<div class="heatgrid">'+heatCells(30)+'</div></div>';
 
   html += weeklyReviewBlock();
@@ -926,7 +943,7 @@ function renderSetup(){
   document.getElementById('resetBtn').addEventListener('click',()=>{
     if(!confirm('Reset all local Arc Tracker data on this device? This can\u2019t be undone.')) return;
     if(proofDb){ proofTx('readwrite', s=>s.clear()).catch(()=>{}); }
-    Object.keys(todayProof).forEach(k=>URL.revokeObjectURL(todayProof[k].url)); todayProof={}; proofError='';
+    Object.keys(dayProof).forEach(k=>URL.revokeObjectURL(dayProof[k].url)); dayProof={}; proofError='';
     profile={name:'',archetypeKey:''}; habits={h1:{cue:'',habit:''},h2:{cue:'',habit:''},h3:{cue:'',habit:''},sc:{cue:'',habit:''}}; log=[]; weekly=[];
     persist(LS.profile,profile); persist(LS.habits,habits); persist(LS.log,log); persist(LS.weekly,weekly);
     renderAll();
@@ -1024,79 +1041,52 @@ function wirePushBox(){
 function refreshPushBox(){
   const el=document.getElementById('pushBox');
   if(el){ el.innerHTML=pushBoxHtml(); wirePushBox(); }
+  renderGuide(); // its setup checklist ticks off the reminder step
 }
 
-/* ---------------- Start Here tab (the setup guide, from the Notion "Arc Tracker" page) ---------------- */
+/* ---------------- Start Here tab: how the system works and how to set it up in this app ---------------- */
 function renderGuide(){
   const el=document.getElementById('tab-guide');
-  const starters=ARCHETYPES.filter(a=>a.ranks);
-  const endgame=ARCHETYPES.find(a=>a.endgame);
-  const list=items=>'<ul>'+items.map(t=>'<li>'+escapeHtml(t)+'</li>').join('')+'</ul>';
+  const arche=getArchetype(profile.archetypeKey);
+  const named=['h1','h2','h3'].filter(k=>habits[k] && habits[k].habit).length;
+  const go=(tab,label)=>'<button type="button" class="btn ghost go" data-goto="'+tab+'">'+label+' →</button>';
+  const step=(done,title,body,action)=>'<li class="'+(done?'done':'')+'"><span class="step-mark" aria-hidden="true">'+(done?'✓':'')+'</span><div><b>'+title+'</b><p>'+body+'</p>'+(action||'')+'</div></li>';
   let html=`
   <div class="banner info"><div><b>One system. Nine arcs. Pick yours and start today.</b><br>
-  This is the system every Anime Mindset archetype runs on. The habit science is from Atomic Habits. Your archetype’s identity, shadow, and rank ladder sit on top. Rank, XP, and level calculate themselves. You never do math.</div></div>
+  The habit science comes from Atomic Habits. Your archetype’s identity, shadow and rank ladder sit on top. Rank, XP and level work themselves out. You never do math.</div></div>
 
-  <h2 class="section-title">Setup (15 minutes, one time)</h2>
-  <div class="card"><ol>
-    <li><b>Know your archetype.</b> Open the toggles in <i>Know Your Archetype</i> below and find the one that stings a little. That’s usually yours.</li>
-    <li><b>Set up your character.</b> In the Character Profile below, rename <b>Your Name Here</b> to your name and pick your <b>Archetype</b>. Your rank ladder switches to your archetype automatically.</li>
-    <li><b>Pick 3 habits, max.</b> One Non-Negotiable plus two supporting habits. Each archetype toggle has ideas built for it. Size each one to the <b>two-minute rule</b>: “open the book,” not “read 30 pages.”</li>
-    <li><b>Pick one shadow-check.</b> This is separate from your 3 habits and works against your archetype’s specific failure mode. Ideas are in your archetype toggle.</li>
-    <li><b>Write your habit stacks</b> in the Habit Stacking section so each habit rides on something you already do.</li>
-    <li><b>Rename the Daily Log columns.</b> Click the <i>Habit 2</i> and <i>Habit 3</i> column headers and rename them to your actual habits, so check-off reads like your life, not a template.</li>
-  </ol></div>
+  <h2 class="section-title">Setup (about 5 minutes, once)</h2>
+  <ol class="steps">`+
+    step(!!arche,'Pick your archetype','Open the <b>Archetypes</b> tab and read the self-checks. Not sure? Pick the one that stings a little. That’s usually yours.', arche?'':go('archetypes','Choose an archetype'))+
+    step(named===3,'Name 3 habits, max','In <b>Setup</b>: one non-negotiable plus two supporting habits. Size each one to the <b>two-minute rule</b>: “open the book,” not “read 30 pages.” Your archetype has ideas you can tap to fill in.', named===3?'':go('setup','Open Setup'))+
+    step(!!(habits.sc && habits.sc.habit),'Pick one shadow-check','Also in <b>Setup</b>. It’s separate from your 3 habits and works against your archetype’s specific failure mode.')+
+    step(!!(habits.h1 && habits.h1.cue),'Stack each habit on something you already do','Fill the “After I…” box for each habit: your morning coffee, sitting down at your desk, brushing your teeth. <i>After I pour my coffee, I will open my book and read one page.</i>')+
+    step(IS_STANDALONE,'Add Arc Tracker to your Home Screen','On iPhone: tap Share, then <b>Add to Home Screen</b>. On Android: the browser menu, then <b>Install app</b>. It opens full screen, can send reminders, and your phone is far less likely to clear your progress.')+
+    step(pushState==='on','Turn on your daily reminder','In <b>Setup</b>, pick a time. If you haven’t cleared the day by then, you get a nudge.')+
+  `</ol>
   <div class="banner note"><div>If setup is taking longer than 15 minutes, you’re overbuilding it. Three habits and one shadow-check. That’s the whole system.</div></div>
 
-  <h2 class="section-title">Your Character</h2>
-  <div class="banner info"><div><b>Your progress is automatic.</b> Ranks are earned by <b>full-clear days</b> (all 3 habits on the same day), not by time on the calendar. Coasting doesn’t move you up. Check the Rank Progress bar after each log.</div></div>
-
-  <h2 class="section-title">The Daily Loop (under 5 minutes)</h2>
+  <h2 class="section-title">The daily loop (under a minute)</h2>
   <div class="card"><ol>
-    <li>Add today’s row in the Daily Log below and check off what you did, <b>even on a miss.</b> An honest empty box keeps your rank real.</li>
-    <li>Check <b>Shadow-Check</b> if you did it.</li>
+    <li>Open <b>Today</b> and tap each habit you did. It saves as you tap.</li>
+    <li>Want the extra push? Add a photo or video as proof. It’s optional and worth <b>+${PROOF_XP} XP</b> per habit.</li>
+    <li>Tap your <b>shadow-check</b> if you did it.</li>
     <li>Write <b>one line</b>: a win or something you’re grateful for (+2 XP).</li>
-    <li>Watch the <b>Status</b> column. All three habits gives you <img class="kbolt" src="/assets/kaminari-bolt.png" alt="" width="12" height="16"> Day Cleared.</li>
+    <li>All three habits on the same day is a <img class="kbolt" src="/assets/kaminari-bolt.png" alt="" width="12" height="16"> <b>Day Cleared</b>.</li>
   </ol></div>
-  <div class="banner warn"><div><b>Never Miss Twice.</b> Missing one day is an accident. Missing two is the start of a new (worse) habit. If you miss a day, the only rule is: don’t miss the next one.</div></div>
-  <div class="banner note"><div><b>XP breakdown:</b> Non-Negotiable 10 · Habit 2: 5 · Habit 3: 5 · Shadow-Check 5 · Win line 2. Every 100 XP is a new level.</div></div>
+  <div class="banner warn"><div><b>Never miss twice.</b> Missing one day is an accident. Missing two is the start of a new (worse) habit. If you miss a day, the only rule is: don’t miss the next one. Forgot to log before midnight? Switch to <b>Yesterday</b> on the Today tab.</div></div>
 
-  <h2 class="section-title">Habit Stacking Setup (fill once, then leave alone)</h2>
-  <p class="guide-p"><b>The formula:</b> “After I [thing I already do], I will [new habit].” Your morning coffee, sitting down at your desk, brushing your teeth: all reliable enough to build on. Example: <i>After I pour my morning coffee, I will open my book and read one page.</i></p>
-  <div class="banner info"><div>
-    <b>Non-Negotiable:</b> After I (existing habit), I will (new habit).<br>
-    <b>Habit 2:</b> After I (existing habit), I will (new habit).<br>
-    <b>Habit 3:</b> After I (existing habit), I will (new habit).<br>
-    <b>Shadow-Check:</b> After I (existing habit), I will (shadow-check).
-  </div></div>
-  <p class="guide-p"><i>Each one should take 2 minutes or less to start. The goal is showing up, not going hard.</i></p>
+  <h2 class="section-title">How you level up</h2>
+  <div class="card"><ol>
+    <li><b>Rank</b> is earned by <b>full-clear days</b> (all 3 habits on the same day), not by time on the calendar. Coasting doesn’t move you up. Every archetype has five ranks, at 0, 10, 25, 50 and 100 full clears.</li>
+    <li><b>XP:</b> non-negotiable 10 · habits 2 and 3: 5 each · shadow-check 5 · proof +${PROOF_XP} per habit · win line 2. Every 100 XP is a new level.</li>
+    <li><b>Shadow badges</b> unlock at 10, 25 and 50 shadow-checks, tracked separately from rank.</li>
+  </ol></div>
 
-  <h2 class="section-title">Weekly Review (5 minutes, once a week)</h2>
-  <p class="guide-p">Pick a day (Sunday night works for most people). Add a row below and answer the prompts. It’s the only place you actually see your patterns instead of just grinding through days.</p>
+  <h2 class="section-title">Weekly review (5 minutes)</h2>
+  <p class="guide-p">Pick a day (Sunday night works for most people) and answer the four prompts at the bottom of <b>Progress</b>. It’s the only place you actually see your patterns instead of just grinding through days. If a habit keeps getting missed, make it smaller.</p>
 
-  <h2 class="section-title">Know Your Archetype</h2>
-  <p class="guide-p">Open your toggle. Each one has a self-check, your Light and Shadow, habit ideas built for your archetype, shadow-check ideas, and your rank ladder.</p>`;
-  starters.forEach(a=>{
-    html+='<details class="arche"><summary><span class="em">'+iconSVG(a,34)+'</span>'+a.title+' · '+a.alias+'</summary><div class="body">'+
-      '<p class="quote">'+escapeHtml(a.quote)+'</p>'+
-      '<div class="fieldrow"><b>You might be this if:</b> '+a.check+'</div>'+
-      '<div class="fieldrow"><b>Light:</b> '+a.light+'</div>'+
-      '<div class="fieldrow"><b>Shadow (the demon):</b> '+a.shadow+'</div>'+
-      '<div class="fieldrow"><b>Integration:</b> '+a.integration+'</div>'+
-      '<div class="fieldrow"><b>Anime:</b> '+a.anime+'</div>'+
-      '<div class="fieldrow"><b>Habit ideas that build your Light:</b>'+list(a.lightHabits)+'</div>'+
-      '<div class="fieldrow"><b>Shadow-check ideas</b> (pick one, log it in the Shadow-Check column):'+list(a.shadowOptions)+'</div>'+
-      '<div class="fieldrow"><b>Rank ladder</b> (full-clear days): '+a.ranks.map(r=>escapeHtml(r.name)+' '+r.ms).join(' → ')+'</div>'+
-      '</div></details>';
-  });
-  if(endgame){
-    html+='<details class="arche"><summary><span class="em">'+iconSVG(endgame,34)+'</span>'+endgame.title+' · '+endgame.alias+' (the endgame)</summary><div class="body">'+
-      '<p class="quote">'+escapeHtml(endgame.quote)+'</p>'+
-      '<div class="fieldrow">Not a starting archetype. This is where every arc is headed: the version of you that has done the shadow work.</div>'+
-      '<div class="fieldrow"><b>Shadow:</b> '+endgame.shadow+'</div>'+
-      '<div class="fieldrow"><b>Integration:</b> '+endgame.integration+'</div>'+
-      '<div class="fieldrow"><b>Anime:</b> '+endgame.anime+'</div></div></details>';
-  }
-  html+='<div class="banner note" style="margin-top:18px;"><div><b>Final Rule of the System</b><br><i>You do not wait to feel different. You act different until you become different.</i></div></div>';
+  <div class="banner note" style="margin-top:18px;"><div><b>Final rule of the system</b><br><i>You do not wait to feel different. You act different until you become different.</i></div></div>`;
   el.innerHTML='<div class="guide">'+html+'</div>';
 }
 
@@ -1111,7 +1101,7 @@ function renderAll(){
 }
 renderAll();
 // someone who hasn't picked an archetype yet lands on the setup guide first
-if(!getArchetype(profile.archetypeKey)) document.querySelector('nav.tabs button[data-tab="guide"]').click();
+if(!getArchetype(profile.archetypeKey)) showTab('guide');
 pushInit();
 // opened from a quote notification: play the reveal
 if(location.hash==='#quote'){
@@ -1121,5 +1111,5 @@ if(location.hash==='#quote'){
 if('serviceWorker' in navigator) navigator.serviceWorker.addEventListener('message', (e)=>{ if(e.data && e.data.arc==='quote') showQuoteReveal(); });
 document.addEventListener('click', (e)=>{ if(e.target.closest && e.target.closest('#dailyQuoteBtn')) showQuoteReveal(); });
 // load today's proof, then draw again so habits with proof show as done
-openProofDb().then(db=>{ proofDb=db; return loadTodayProof(); }).then(()=>{ renderToday(); pruneProof(); }).catch(()=>{});
+openProofDb().then(db=>{ proofDb=db; return loadDayProof(); }).then(()=>{ renderToday(); pruneProof(); }).catch(()=>{});
 })();
