@@ -3,6 +3,11 @@
   "name": "kaminari-site",
   "main": "worker.js",
   "compatibility_date": "2026-10-01",
+  // the addresses this site answers on; keeping them here means every deploy re-confirms them
+  "routes": [
+    { "pattern": "www.joinkaminari.com", "custom_domain": true },
+    { "pattern": "joinkaminari.com", "custom_domain": true }
+  ],
   "assets": {
     "directory": "./dist",
     "binding": "ASSETS",
