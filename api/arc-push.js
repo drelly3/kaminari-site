@@ -10,7 +10,7 @@
 //
 // Settings on the Worker: ARC_PUSH (KV), VAPID_PUBLIC_KEY, VAPID_PRIVATE_JWK (secret), VAPID_SUBJECT.
 import { verifyLicense } from './arc-verify.js';
-import { quoteFor } from './arc-quotes.js';
+import { quoteFor, dropFor } from './arc-quotes.js';
 
 const b64url = bytes => btoa(String.fromCharCode(...new Uint8Array(bytes))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 const text = s => new TextEncoder().encode(s);
@@ -35,6 +35,15 @@ export function localNow(tz, now = new Date()) {
 export function reminderDue(meta, now = new Date()) {
   const { date, minutes } = localNow(meta.tz, now);
   return minutes >= meta.m && meta.sent !== date && meta.cleared !== date;
+}
+
+// what, if anything, this device is owed right now. Mondays and Thursdays are quote days: everyone
+// gets the quote notification at their reminder time. Other days: a reminder, unless today is cleared.
+export function dueKind(meta, now = new Date()) {
+  const { date, minutes } = localNow(meta.tz, now);
+  if (minutes < meta.m || meta.sent === date) return '';
+  if (dropFor(date).isDropDay) return 'quote';
+  return meta.cleared !== date ? 'reminder' : '';
 }
 
 /* ---------- sending ---------- */
@@ -62,14 +71,19 @@ export async function sendDue(env, now = new Date()) {
     const page = await env.ARC_PUSH.list({ prefix: 'sub:', cursor });
     for (const { name, metadata: meta } of page.keys) {
       checked++;
-      if (!meta || !reminderDue(meta, now)) continue;
+      let kind = meta ? dueKind(meta, now) : '';
+      if (!kind) continue;
       const sub = await env.ARC_PUSH.get(name, 'json');
       if (!sub) continue;
+      const today = localNow(meta.tz, now).date;
+      // no archetype picked yet means no quote to send; fall back to the plain reminder
+      if (kind === 'quote' && !quoteFor(sub.archetype, today)) kind = meta.cleared !== today ? 'reminder' : '';
+      if (!kind) continue;
       const result = await sendPush(sub.endpoint, env);
       if (result === 'gone') { await env.ARC_PUSH.delete(name); continue; }
       if (result !== 'sent') continue; // try again on the next run
-      sub.next = 'reminder';
-      await env.ARC_PUSH.put(name, JSON.stringify(sub), { metadata: { ...meta, sent: localNow(meta.tz, now).date } });
+      sub.next = kind;
+      await env.ARC_PUSH.put(name, JSON.stringify(sub), { metadata: { ...meta, sent: today } });
       sent++;
     }
     cursor = page.list_complete ? undefined : page.cursor;
@@ -80,7 +94,9 @@ export async function sendDue(env, now = new Date()) {
 /* ---------- what a notification says ---------- */
 const MESSAGES = {
   reminder: { title: 'Log today’s arc', body: 'Three habits, three proofs. Clear today before it’s gone.' },
-  test: { title: 'Arc Tracker notifications are on', body: 'This is how your daily reminder will arrive.' },
+  // the quote itself stays hidden until they open the tracker, where it is revealed
+  quote: { title: 'Your new arc quote just dropped', body: 'Tap to reveal it.', url: '/arc-tracker/app#quote' },
+  test: { title: 'Arc Tracker notifications are on', body: 'This is how they will arrive. Tap to see your current quote.', url: '/arc-tracker/app#quote' },
 };
 
 /* ---------- the /api/arc-push/* addresses ---------- */
@@ -136,12 +152,8 @@ export async function handlePush(request, env, pathname) {
   }
 
   if (action === 'next') { // asked by the device when a push arrives: what should I show?
-    let message = MESSAGES[sub.next] || MESSAGES.reminder;
-    if (message === MESSAGES.reminder) { // the reminder carries today's quote for the member's archetype
-      const quote = quoteFor(sub.archetype, localNow(meta.tz).date);
-      if (quote) message = { title: message.title, body: `“${quote.q}” ${quote.c} energy.` };
-    }
-    return json(200, { ok: true, ...message, url: '/arc-tracker/app' });
+    const message = MESSAGES[sub.next] || MESSAGES.reminder;
+    return json(200, { ok: true, url: '/arc-tracker/app', ...message });
   }
 
   return json(404, { ok: false, reason: 'unknown_action' });

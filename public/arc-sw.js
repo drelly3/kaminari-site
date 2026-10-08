@@ -31,7 +31,11 @@ self.addEventListener('notificationclick', event => {
   event.waitUntil((async () => {
     const open = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
     const tab = open.find(c => new URL(c.url).pathname.startsWith('/arc-tracker'));
-    if (tab) return tab.focus();
+    if (tab) {
+      // already open: bring it forward and, for a quote notification, ask it to play the reveal
+      if (url.includes('#quote')) tab.postMessage({ arc: 'quote' });
+      return tab.focus();
+    }
     return self.clients.openWindow(url);
   })());
 });
