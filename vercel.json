@@ -16,6 +16,17 @@
   ],
   "redirects": [
     {
+      "source": "/",
+      "has": [
+        {
+          "type": "host",
+          "value": "joinkaminari.com"
+        }
+      ],
+      "destination": "https://www.joinkaminari.com/",
+      "permanent": true
+    },
+    {
       "source": "/:path*",
       "has": [
         {
