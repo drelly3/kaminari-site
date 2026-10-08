@@ -156,7 +156,7 @@ function iconSVG(arche, size){
 /* ---------------- Storage ---------------- */
 const LS = {profile:'arc_profile',habits:'arc_habits',log:'arc_log',weekly:'arc_weekly',reminder:'arc_reminder',secondWinds:'arc_second_winds'};
 function load(k,fb){ try{ const r=localStorage.getItem(k); return r?JSON.parse(r):fb; }catch(e){ return fb; } }
-function persist(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} if(SYNCED.includes(k)) scheduleSync(); }
+function persist(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} if(SYNCED.includes(k) && !applyingSync){ editSeq++; scheduleSync(); } }
 
 let profile = load(LS.profile,{name:'',archetypeKey:''});
 let habits  = load(LS.habits,{h1:{cue:'',habit:''},h2:{cue:'',habit:''},h3:{cue:'',habit:''},sc:{cue:'',habit:''}});
@@ -172,12 +172,12 @@ let secondWinds= load(LS.secondWinds,[]); // [{missed, on, cost}]: each Second W
 const SYNCED = [LS.profile, LS.habits, LS.log, LS.weekly, LS.secondWinds];
 const SYNC_DELAY = 2500;
 let sync = load('arc_sync', {at:0, owner:'', resetAt:0}); // last good backup, whose key the local arc belongs to
+let editSeq = 0; // bumped on every local change, so a backup reply never overwrites a newer tap
 let syncStatus = 'idle', syncTimer = null, syncBusy = false, syncAgain = false, applyingSync = false, renderWhenIdle = false, syncRestored = false;
 const blankProfile = ()=>({name:'',archetypeKey:''});
 const blankHabits = ()=>({h1:{cue:'',habit:''},h2:{cue:'',habit:''},h3:{cue:'',habit:''},sc:{cue:'',habit:''}});
 function licenceKey(){ try{ return localStorage.getItem('arc_license')||''; }catch(e){ return ''; } }
 function scheduleSync(){
-  if(applyingSync) return;
   clearTimeout(syncTimer);
   syncTimer = setTimeout(()=>{ syncTimer=null; syncNow(); }, SYNC_DELAY);
 }
@@ -197,11 +197,13 @@ async function syncNow(opts){
   }
   syncBusy = true; setSyncStatus('busy');
   const wasEmpty = !log.length && !profile.archetypeKey;
+  const seq = editSeq;
   try{
     const res = await fetch('/api/arc-sync', {method:'POST', headers:{'Content-Type':'application/json'}, keepalive:!!opts.keepalive,
       body: JSON.stringify({key, reset:!!opts.reset, state:{profile, habits, log, weekly, secondWinds, resetAt:sync.resetAt||0}})});
     const out = await res.json().catch(()=>({ok:false}));
-    if(out.ok){
+    if(out.ok && editSeq !== seq){ syncAgain = true; setSyncStatus('busy'); } // changed mid-flight: send again, apply that reply
+    else if(out.ok){
       applyBackup(out.state);
       sync = {at:Date.now(), owner:key, resetAt:out.state.resetAt||0};
       try{ localStorage.setItem('arc_sync', JSON.stringify(sync)); }catch(e){}
@@ -680,6 +682,7 @@ function commitDay(){
       queueCelebration(done=>loadGallery().catch(()=>[]).then(pics=>showRankUpModal(arche2, afterRank.cur, beforeRank.cur, ()=>{ freeGallery(pics); done(); }, pics)));
     }
   }
+  if(before < PROOF_MILESTONE && after >= PROOF_MILESTONE) queueCelebration(done=>showProofMilestone(done));
   pushReportCleared();
   renderAll();
   const saved=document.getElementById('noteSaved');
@@ -804,6 +807,96 @@ async function pruneProof(){
   }catch(e){}
 }
 
+/* ---------------- Look back: the monthly recap and the 30-full-clear reveal ---------------- */
+// The first time the tracker opens in a new month, last month's recap plays: its proof photos, full
+// clears, best streak, Second Winds and best win line. Reaching 30 full clears plays a one-off "30
+// days of proof" reveal. Both can be replayed from the Progress tab.
+const PROOF_MILESTONE = 30;
+const MONTH_KEY = 'arc_recaps_seen';
+const ymOf = d => d.slice(0,7);
+function monthName(ym, withYear){ const p=ym.split('-').map(Number); return new Date(p[0],p[1]-1,1).toLocaleDateString(undefined, withYear?{month:'long',year:'numeric'}:{month:'long'}); }
+function prevMonth(ym){ const p=ym.split('-').map(Number); const d=new Date(p[0],p[1]-2,1); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); }
+// months with anything logged, newest first, not counting the one in progress
+function pastMonths(){ const now=ymOf(todayStr()); return [...new Set(log.map(e=>ymOf(e.date)))].filter(m=>m<now).sort().reverse(); }
+function monthSummary(ym){
+  const days = log.filter(e=>ymOf(e.date)===ym && !(e.repaired && !e.h1)).sort((a,b)=>a.date.localeCompare(b.date));
+  const by = Object.fromEntries(log.map(e=>[e.date,e]));
+  let best = 0;
+  days.forEach(e=>{ if(e.h1) best = Math.max(best, streakEndingAt(e.date, Object.fromEntries(Object.entries(by).filter(([d])=>ymOf(d)===ym)))); });
+  const notes = days.map(e=>(e.note||'').trim()).filter(Boolean);
+  return {
+    logged: days.length,
+    fullClears: days.filter(e=>e.h1&&e.h2&&e.h3).length,
+    best,
+    secondWinds: secondWinds.filter(s=>ymOf(s.missed)===ym).length,
+    // the longest win line tends to be the one with the most in it
+    win: notes.sort((a,b)=>b.length-a.length)[0] || ''
+  };
+}
+function proofMosaic(pics, max){
+  // when there are more than fit, the last tile becomes "+N" so the grid stays a clean rectangle
+  const shown = pics.length > max ? pics.slice(0,max-1) : pics, extra = pics.length - shown.length;
+  return '<div class="recap-grid'+(shown.length>9?' dense':'')+'">'+shown.map((x,i)=>'<img src="'+x.thumbUrl+'" alt="" style="animation-delay:'+(0.9+i*0.05).toFixed(2)+'s;">').join('')+
+    (extra>0?'<span class="recap-more">+'+extra+'</span>':'')+'</div>';
+}
+function recapStat(num,lbl){ return '<div class="recap-stat"><b>'+num+'</b><span>'+lbl+'</span></div>'; }
+
+function showMonthRecap(ym, onDone){
+  const arche = getArchetype(profile.archetypeKey);
+  const m = monthSummary(ym);
+  loadGallery().catch(()=>[]).then(all=>{
+    const pics = all.filter(x=>ymOf(x.date)===ym).reverse(); // oldest first, so the month reads in order
+    const next = monthName(shiftDay(ym+'-28',7).slice(0,7));
+    const inner = '<div class="month-recap">'+
+      '<div class="cel-kicker">YOUR '+escapeHtml(monthName(ym).toUpperCase())+' ARC</div>'+
+      '<div class="cel-title">'+(m.fullClears ? m.fullClears+' full '+(m.fullClears===1?'clear':'clears')+'.' : m.logged+' '+(m.logged===1?'day':'days')+' logged.')+'</div>'+
+      (pics.length ? proofMosaic(pics, 12) : '<p class="cel-sub">No proof this month. Add a photo of your non-negotiable and next month’s recap fills with your days.</p>')+
+      '<div class="recap-stats">'+recapStat(m.logged,'days logged')+recapStat('🔥 '+m.best,'best streak')+recapStat(m.secondWinds,m.secondWinds===1?'Second Wind':'Second Winds')+'</div>'+
+      (m.win ? '<p class="recap-win">“'+escapeHtml(m.win)+'”<span>Your best win line</span></p>' : '')+
+      '<button class="btn" id="celOk">On to '+escapeHtml(next)+'</button></div>';
+    mountCelebration(arche, inner, 10*60*1000, ()=>{ freeGallery(all); onDone&&onDone(); }, false);
+  });
+}
+
+function showProofMilestone(onDone){
+  const arche = getArchetype(profile.archetypeKey);
+  loadGallery().catch(()=>[]).then(all=>{
+    const pics = all.slice(0,PROOF_MILESTONE).reverse();
+    const inner = '<div class="month-recap">'+
+      '<div class="cel-kicker">'+PROOF_MILESTONE+' DAYS OF PROOF</div>'+
+      '<div class="cel-title">'+PROOF_MILESTONE+' full clears.</div>'+
+      (pics.length ? proofMosaic(pics, PROOF_MILESTONE) : '')+
+      '<p class="cel-sub">A month of showing up, all three, every time it counted. '+(arche?escapeHtml(arche.title)+' isn’t a plan any more. It’s a record.':'')+'</p>'+
+      '<button class="btn" id="celOk">Keep building</button></div>';
+    mountCelebration(arche, inner, 10*60*1000, ()=>{ freeGallery(all); onDone&&onDone(); }, false);
+    setTimeout(()=>spawnConfetti(arche?arche.hue:45), 600);
+  });
+}
+
+// on opening the tracker: last month's recap, once, if anything was logged in it
+function maybeShowMonthRecap(){
+  const last = prevMonth(ymOf(todayStr()));
+  const seen = load(MONTH_KEY, []);
+  if(seen.includes(last) || !log.some(e=>ymOf(e.date)===last)) return;
+  persist(MONTH_KEY, [...seen, last].slice(-24));
+  queueCelebration(done=>showMonthRecap(last, done));
+}
+
+// the "Look back" row on Progress: replay any past month, and the 30-day reveal once earned
+function lookBackHtml(stats){
+  const months = pastMonths().slice(0,12);
+  const milestone = stats.fullClear >= PROOF_MILESTONE;
+  if(!months.length && !milestone) return '';
+  return '<div class="lookback"><div class="card-kicker">Look back</div><div class="lookback-row">'+
+    (milestone?'<button type="button" class="chip-btn gold" data-milestone>'+PROOF_MILESTONE+' days of proof</button>':'')+
+    months.map(ym=>'<button type="button" class="chip-btn" data-recap="'+ym+'">'+escapeHtml(monthName(ym, ym.slice(0,4)!==todayStr().slice(0,4)))+'</button>').join('')+
+    '</div></div>';
+}
+function wireLookBack(el){
+  el.querySelectorAll('[data-recap]').forEach(b=>b.addEventListener('click',()=>queueCelebration(done=>showMonthRecap(b.dataset.recap, done))));
+  el.querySelectorAll('[data-milestone]').forEach(b=>b.addEventListener('click',()=>queueCelebration(done=>showProofMilestone(done))));
+}
+
 /* ---------------- Arc gallery: every proof, newest first ---------------- */
 // loadGallery makes a thumbnail URL per item; whoever asked for them frees them with freeGallery
 let galleryItems = [], galleryShowAll = false;
@@ -823,9 +916,10 @@ async function renderGallery(){
   if(!el) return;
   const items = await loadGallery().catch(()=>[]);
   freeGallery(galleryItems); galleryItems = items;
-  let html = '<h2 class="section-title" style="margin-top:26px;">Your arc in pictures</h2>';
+  let html = '<h2 class="section-title" style="margin-top:26px;">Your arc in pictures</h2>'+lookBackHtml(computeStats());
   if(!items.length){
     el.innerHTML = html+'<div class="card gallery-empty"><p>Add a photo or video of your non-negotiable on the <b>Today</b> tab. Every one lands here, so you can scroll back and see how far you’ve come.</p><button type="button" class="btn ghost go" data-goto="today">Go to Today →</button></div>';
+    wireLookBack(el);
     return;
   }
   const shown = galleryShowAll ? items : items.slice(0,12);
@@ -837,6 +931,7 @@ async function renderGallery(){
   html += '<p class="card-note">Kept on this phone only. Videos turn into a still after '+VIDEO_KEEP_DAYS+' days to save space.</p>';
   el.innerHTML = html;
   el.querySelectorAll('[data-gal]').forEach(b=>b.addEventListener('click',()=>openViewer(shown, +b.dataset.gal)));
+  wireLookBack(el);
   const more=document.getElementById('galMore'); if(more) more.addEventListener('click',()=>{ galleryShowAll=true; renderGallery(); });
 }
 // full-screen look back at one day: the proof, the date, and that day's win line
@@ -1373,6 +1468,7 @@ function renderGuide(){
     <li><b>XP</b> is what you spend. Non-negotiable 10 · habits 2 and 3: 5 each · shadow-check 5 · proof of your non-negotiable +${PROOF_XP} · win line 2. Every 100 XP you earn is a new level, and spending never lowers it.</li>
     <li><b>Second Wind:</b> miss a day, then clear all three the next day, and you can spend <b>${SECOND_WIND_COST} XP</b> to repair the miss and keep your streak. Once every ${SECOND_WIND_EVERY} days, only for yesterday. The repaired day doesn’t count as a full clear, so rank stays earned. Two misses in a row can’t be repaired.</li>
     <li><b>Shadow badges</b> unlock at 10, 25 and 50 shadow-checks, tracked separately from rank.</li>
+    <li><b>Look back:</b> the first time you open the tracker each month, you get a recap of the month before: your proof, full clears, best streak and best win line. At ${PROOF_MILESTONE} full clears you get a \u201c${PROOF_MILESTONE} days of proof\u201d reveal. Replay any of them on <b>Progress</b>.</li>
   </ol></div>
 
   <h2 class="section-title">Weekly review (5 minutes)</h2>
@@ -1404,5 +1500,5 @@ if(location.hash==='#quote'){
 if('serviceWorker' in navigator) navigator.serviceWorker.addEventListener('message', (e)=>{ if(e.data && e.data.arc==='quote') showQuoteReveal(); });
 document.addEventListener('click', (e)=>{ if(e.target.closest && e.target.closest('#dailyQuoteBtn')) showQuoteReveal(); });
 // load today's proof, then draw again so habits with proof show as done
-openProofDb().then(db=>{ proofDb=db; return loadDayProof(); }).then(()=>{ renderToday(); pruneProof(); }).catch(()=>{});
+openProofDb().then(db=>{ proofDb=db; return loadDayProof(); }).then(()=>{ renderToday(); pruneProof(); }).catch(()=>{}).then(maybeShowMonthRecap);
 })();
