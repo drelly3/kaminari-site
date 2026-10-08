@@ -1,0 +1,14 @@
+// Cloudflare settings for the site. Cloudflare reads this when it builds from GitHub.
+{
+  "name": "kaminari-site",
+  "main": "worker.js",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    // unknown addresses show dist/404.html
+    "not_found_handling": "404-page",
+    // everything is served as a plain file except the licence check
+    "run_worker_first": ["/api/*"]
+  }
+}
