@@ -122,10 +122,10 @@ function showQuoteReveal(){
   const root = document.querySelector('.arc-root');
   if(!dq || !root || document.querySelector('.quote-reveal')) return;
   let puffs = '';
-  for(let i=0;i<14;i++){
-    const angle = (i/14)*Math.PI*2, far = 34 + (i%3)*10;
+  for(let i=0;i<18;i++){
+    const angle = (i/18)*Math.PI*2, far = 30 + (i%3)*10;
     puffs += '<i style="--x:'+(50+Math.cos(angle)*(8+(i%4)*7)).toFixed(1)+'%;--y:'+(50+Math.sin(angle)*(6+(i%5)*6)).toFixed(1)+'%;'+
-      '--dx:'+(Math.cos(angle)*far).toFixed(1)+'vw;--dy:'+(Math.sin(angle)*far).toFixed(1)+'vh;--s:'+(190+(i%4)*70)+'px;--d:'+(i%5)*0.12+'s;"></i>';
+      '--dx:'+(Math.cos(angle)*far).toFixed(1)+'vw;--dy:'+(Math.sin(angle)*far).toFixed(1)+'vh;--s:'+(240+(i%4)*90)+'px;--d:'+((i%6)*0.18).toFixed(2)+'s;"></i>';
   }
   const el = document.createElement('div');
   el.className = 'quote-reveal';
@@ -135,7 +135,7 @@ function showQuoteReveal(){
     '<p class="qr-quote">\u201c'+escapeHtml(dq.q)+'\u201d</p>'+
     '<div class="qr-by">Inspired by '+escapeHtml(dq.c)+'</div>'+
     '<button class="btn" type="button">Continue</button></div>'+
-    '<div class="qr-smoke" aria-hidden="true">'+puffs+'</div>';
+    '<div class="qr-smoke" aria-hidden="true"><b class="s1"></b><b class="s2"></b>'+puffs+'<b class="s3"></b></div>';
   const close = ()=>{ el.classList.add('out'); setTimeout(()=>el.remove(), 350); document.removeEventListener('keydown', onKey); };
   const onKey = (e)=>{ if(e.key==='Escape') close(); };
   el.querySelector('button').addEventListener('click', close);
