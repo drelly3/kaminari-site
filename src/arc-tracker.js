@@ -371,12 +371,15 @@ function showDayCleared(archetype, streak, habitNames, onDone){
 }
 
 // Rank up: crossed a milestone
-function showRankUpModal(archetype, rank, prevRank, onDone){
+// pics: the latest gallery items, shown as a strip of the proof that earned the rank
+function showRankUpModal(archetype, rank, prevRank, onDone, pics){
+  const strip = (pics||[]).slice(0,6);
   const inner = avatarStage(archetype, '')+
     '<div class="cel-kicker">RANK UP</div>'+
     '<div class="cel-title">'+escapeHtml(rank.name)+'</div>'+
     (prevRank?'<div class="cel-path"><span class="old">'+escapeHtml(prevRank.name)+'</span><span class="arrow">\u279C</span><span class="new">'+escapeHtml(rank.name)+'</span></div>':'')+
     '<p class="cel-sub">'+rank.ms+' full-clear days, earned the real way. '+escapeHtml(archetype.title)+' moves different now.</p>'+
+    (strip.length?'<div class="cel-proof"><div class="cel-proof-label">What it took</div><div class="cel-proof-row">'+strip.map((x,k)=>'<img src="'+x.thumbUrl+'" alt="" style="animation-delay:'+(1.3+k*0.12).toFixed(2)+'s;">').join('')+'</div></div>':'')+
     '<button class="btn" id="celOk">Claim it</button>';
   mountCelebration(archetype, inner, 9000, onDone, true);
   setTimeout(()=>spawnConfetti(archetype.hue), 550);
@@ -415,13 +418,13 @@ function renderToday(){
     '<button type="button" data-day="yesterday" class="'+(viewDay==='yesterday'?'on':'')+'">Yesterday'+(yMissing?' <span class="dot" title="Not logged"></span>':'')+'</button></div>';
   html += '<p class="section-sub">'+(viewDay==='yesterday'
     ? 'Forgot to log before midnight? Fix yesterday here. Anything older stays as it is.'
-    : 'Tap a habit when it’s done. Add a photo or video as proof for +'+PROOF_XP+' XP each.')+'</p>';
+    : 'Tap a habit when it’s done. Add a photo or video of your non-negotiable for +'+PROOF_XP+' XP. It goes in your arc gallery on Progress.')+'</p>';
 
   const vals = existing || {h1:false,h2:false,h3:false,sc:false,note:''};
   html += '<div class="card">';
   html += habitLine('h1',habits.h1,vals.h1,true);
-  html += habitLine('h2',habits.h2,vals.h2,false);
-  html += habitLine('h3',habits.h3,vals.h3,false);
+  html += checkline('f_h2',habits.h2,vals.h2,'Habit 2 (name it in Setup)');
+  html += checkline('f_h3',habits.h3,vals.h3,'Habit 3 (name it in Setup)');
   if(proofError) html += '<div class="proof-error" role="alert">'+escapeHtml(proofError)+'</div>';
   html += '</div>';
 
@@ -440,8 +443,9 @@ function renderToday(){
 
   el.innerHTML = html;
 
+  // the non-negotiable is the one habit that takes proof
   function habitLine(key, h, checked, nonneg){
-    const fallback = key==='h1' ? 'Non-negotiable (name it in Setup)' : 'Habit '+key.slice(1)+' (name it in Setup)';
+    const fallback = 'Non-negotiable (name it in Setup)';
     const p = dayProof[key];
     let row;
     if(p){
@@ -491,7 +495,7 @@ function commitDay(){
     h3: box('f_h3','h3'),
     sc: box('f_sc','sc'),
     note: noteEl ? noteEl.value.slice(0,280) : (existing?existing.note:''),
-    proof: {h1:!!dayProof.h1, h2:!!dayProof.h2, h3:!!dayProof.h3}
+    proof: {h1:!!dayProof.h1}
   };
   const idx = log.findIndex(e=>e.date===d);
   if(idx>=0) log[idx]=entry; else log.push(entry);
@@ -508,7 +512,7 @@ function commitDay(){
     const beforeRank = rankInfo(arche2, before);
     const afterRank = rankInfo(arche2, after);
     if(afterRank && beforeRank && afterRank.idx > beforeRank.idx){
-      queueCelebration(done=>showRankUpModal(arche2, afterRank.cur, beforeRank.cur, done));
+      queueCelebration(done=>loadGallery().catch(()=>[]).then(pics=>showRankUpModal(arche2, afterRank.cur, beforeRank.cur, ()=>{ freeGallery(pics); done(); }, pics)));
     }
   }
   pushReportCleared();
@@ -517,9 +521,12 @@ function commitDay(){
   if(saved && entry.note.trim()) saved.textContent='Saved';
 }
 
-/* ---------------- Proof: an optional photo or video per habit, kept on this device ---------------- */
-const PROOF_SLOTS = ['h1','h2','h3'];
+/* ---------------- Proof: an optional photo or video of the non-negotiable, kept on this device ---------------- */
+// Each proof is saved with a small thumbnail for the arc gallery. Photos are kept for good; a video
+// is swapped for a still frame after 30 days so a year of proof doesn't fill the phone.
+const PROOF_SLOTS = ['h1'];
 const PROOF_MAX_VIDEO = 50*1024*1024;
+const VIDEO_KEEP_DAYS = 30;
 let proofDb = null, dayProof = {}, proofError = ''; // dayProof: proof for the day shown on the Today tab
 function openProofDb(){
   return new Promise((res,rej)=>{
@@ -549,20 +556,47 @@ async function loadDayProof(){
     if(rec) dayProof[slot] = {kind:rec.kind, url:URL.createObjectURL(rec.blob)};
   }
 }
-// photos are scaled down before saving so a month of proof doesn't fill the device
+// draws an image or video frame as a JPEG no bigger than max px on its long side
+function canvasJpeg(src, w, h, max, quality){
+  return new Promise(res=>{
+    const sc = Math.min(1, max/Math.max(w,h));
+    const c = document.createElement('canvas');
+    c.width = Math.max(1,Math.round(w*sc)); c.height = Math.max(1,Math.round(h*sc));
+    try{ c.getContext('2d').drawImage(src,0,0,c.width,c.height); }catch(e){ return res(null); }
+    c.toBlob(b=>res(b||null),'image/jpeg',quality);
+  });
+}
+// photos are scaled down before saving; returns the photo and its gallery thumbnail
 function shrinkImage(file){
   return new Promise(res=>{
     const img = new Image(), u = URL.createObjectURL(file);
-    img.onload = ()=>{
-      const sc = Math.min(1, 1280/Math.max(img.width,img.height));
-      const c = document.createElement('canvas');
-      c.width = Math.round(img.width*sc); c.height = Math.round(img.height*sc);
-      c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+    img.onload = async ()=>{
+      const full = await canvasJpeg(img, img.width, img.height, 1280, 0.8);
+      const thumb = await canvasJpeg(img, img.width, img.height, 400, 0.72);
       URL.revokeObjectURL(u);
-      c.toBlob(b=>res(b||file),'image/jpeg',0.8);
+      res({full: full||file, thumb});
     };
-    img.onerror = ()=>{ URL.revokeObjectURL(u); res(file); };
+    img.onerror = ()=>{ URL.revokeObjectURL(u); res({full:file, thumb:null}); };
     img.src = u;
+  });
+}
+// a still from early in a video: the gallery thumbnail now, and what replaces the video later
+function videoStill(file){
+  return new Promise(res=>{
+    const v = document.createElement('video'), u = URL.createObjectURL(file);
+    let settled = false;
+    const finish = async ok=>{
+      if(settled) return; settled = true;
+      const still = ok ? await canvasJpeg(v, v.videoWidth, v.videoHeight, 1280, 0.8) : null;
+      const thumb = ok ? await canvasJpeg(v, v.videoWidth, v.videoHeight, 400, 0.72) : null;
+      URL.revokeObjectURL(u); res({still, thumb});
+    };
+    v.muted = true; v.playsInline = true; v.preload = 'auto';
+    v.onloadeddata = ()=>{ try{ v.currentTime = Math.min(0.5, (v.duration||1)/2); }catch(e){ finish(true); } };
+    v.onseeked = ()=>finish(true);
+    v.onerror = ()=>finish(false);
+    setTimeout(()=>finish(v.readyState>=2), 4000);
+    v.src = u;
   });
 }
 async function addProof(slot, file){
@@ -572,8 +606,11 @@ async function addProof(slot, file){
   if(isVid && file.size > PROOF_MAX_VIDEO){ proofError = 'That video is over 50 MB. Use a shorter clip.'; return renderToday(); }
   if(!proofDb){ proofError = 'This browser can’t store proof. Private browsing blocks it.'; return renderToday(); }
   try{
-    const blob = isImg ? await shrinkImage(file) : file;
-    await proofTx('readwrite', s=>s.put({blob, kind:isImg?'image':'video', addedAt:Date.now()}, viewDate()+':'+slot));
+    let rec;
+    if(isImg){ const p = await shrinkImage(file); rec = {blob:p.full, thumb:p.thumb, kind:'image'}; }
+    else { const p = await videoStill(file); rec = {blob:file, still:p.still, thumb:p.thumb, kind:'video'}; }
+    rec.addedAt = Date.now();
+    await proofTx('readwrite', s=>s.put(rec, viewDate()+':'+slot));
   }catch(e){ proofError = 'Couldn’t save that file. Your device may be out of space.'; return renderToday(); }
   await loadDayProof();
   // proof of a habit means it happened, so it checks the habit off too
@@ -586,15 +623,90 @@ async function removeProof(slot){
   await loadDayProof();
   commitDay();
 }
-// proof older than 30 days is deleted; the log itself (and the rank it earned) stays
+// videos older than 30 days become their still frame; photos, and the log itself, stay
 async function pruneProof(){
   if(!proofDb) return;
-  const d = new Date(); d.setDate(d.getDate()-30);
-  const cutoff = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  const cutoff = shiftDay(todayStr(), -VIDEO_KEEP_DAYS);
   try{
     const keys = await proofTx('readonly', s=>s.getAllKeys());
-    for(const k of keys||[]){ if(String(k).slice(0,10) < cutoff) await proofTx('readwrite', s=>s.delete(k)); }
+    for(const k of keys||[]){
+      if(String(k).slice(0,10) >= cutoff) continue;
+      const rec = await proofTx('readonly', s=>s.get(k));
+      if(!rec || rec.kind!=='video') continue;
+      if(rec.still) await proofTx('readwrite', s=>s.put({blob:rec.still, thumb:rec.thumb, kind:'image', fromVideo:true, addedAt:rec.addedAt}, k));
+      else await proofTx('readwrite', s=>s.delete(k));
+    }
   }catch(e){}
+}
+
+/* ---------------- Arc gallery: every proof, newest first ---------------- */
+// loadGallery makes a thumbnail URL per item; whoever asked for them frees them with freeGallery
+let galleryItems = [], galleryShowAll = false;
+function freeGallery(items){ (items||[]).forEach(x=>URL.revokeObjectURL(x.thumbUrl)); }
+async function loadGallery(){
+  if(!proofDb) return [];
+  const keys = await proofTx('readonly', s=>s.getAllKeys());
+  const recs = await proofTx('readonly', s=>s.getAll());
+  const items = (keys||[]).map((k,i)=>({date:String(k).slice(0,10), slot:String(k).slice(11), rec:recs[i]}))
+    .filter(x=>x.rec && x.rec.blob && (x.rec.thumb || x.rec.still || x.rec.kind==='image'))
+    .sort((a,b)=>b.date.localeCompare(a.date));
+  items.forEach(x=>{ x.thumbUrl = URL.createObjectURL(x.rec.thumb || x.rec.still || x.rec.blob); });
+  return items;
+}
+async function renderGallery(){
+  const el = document.getElementById('arcGallery');
+  if(!el) return;
+  const items = await loadGallery().catch(()=>[]);
+  freeGallery(galleryItems); galleryItems = items;
+  let html = '<h2 class="section-title" style="margin-top:26px;">Your arc in pictures</h2>';
+  if(!items.length){
+    el.innerHTML = html+'<div class="card gallery-empty"><p>Add a photo or video of your non-negotiable on the <b>Today</b> tab. Every one lands here, so you can scroll back and see how far you’ve come.</p><button type="button" class="btn ghost go" data-goto="today">Go to Today →</button></div>';
+    return;
+  }
+  const shown = galleryShowAll ? items : items.slice(0,12);
+  html += '<p class="section-sub">'+items.length+' '+(items.length===1?'day':'days')+' of proof. Tap one to look back.</p>';
+  html += '<div class="gallery">'+shown.map((x,i)=>'<button type="button" class="gal-item" data-gal="'+i+'" aria-label="Proof from '+fmtDate(x.date)+'">'+
+    '<img src="'+x.thumbUrl+'" alt="" loading="lazy">'+(x.rec.kind==='video'?'<span class="gal-play" aria-hidden="true">▶</span>':'')+
+    '<span class="gal-date">'+fmtDate(x.date)+'</span></button>').join('')+'</div>';
+  if(items.length>shown.length) html += '<button type="button" class="btn ghost" id="galMore" style="margin-top:10px;">Show all '+items.length+'</button>';
+  html += '<p class="card-note">Kept on this phone only. Videos turn into a still after '+VIDEO_KEEP_DAYS+' days to save space.</p>';
+  el.innerHTML = html;
+  el.querySelectorAll('[data-gal]').forEach(b=>b.addEventListener('click',()=>openViewer(shown, +b.dataset.gal)));
+  const more=document.getElementById('galMore'); if(more) more.addEventListener('click',()=>{ galleryShowAll=true; renderGallery(); });
+}
+// full-screen look back at one day: the proof, the date, and that day's win line
+function openViewer(items, start){
+  const root = document.querySelector('.arc-root');
+  let i = start, url = '';
+  const el = document.createElement('div');
+  el.className = 'proof-viewer'; el.setAttribute('role','dialog'); el.setAttribute('aria-label','Proof');
+  root.appendChild(el);
+  const draw = ()=>{
+    if(url) URL.revokeObjectURL(url);
+    const x = items[i]; url = URL.createObjectURL(x.rec.blob);
+    const entry = log.find(e=>e.date===x.date);
+    const habit = habits[x.slot] && habits[x.slot].habit;
+    const media = x.rec.kind==='video' ? '<video src="'+url+'" controls playsinline autoplay muted></video>' : '<img src="'+url+'" alt="">';
+    el.innerHTML = '<button type="button" class="pv-close" aria-label="Close">×</button>'+
+      '<div class="pv-media">'+media+'</div>'+
+      '<div class="pv-info"><div class="pv-date">'+dfs(x.date).toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric',year:'numeric'})+'</div>'+
+      (habit?'<div class="pv-habit">'+escapeHtml(habit)+'</div>':'')+
+      (entry && (entry.note||'').trim()?'<p class="pv-note">“'+escapeHtml(entry.note)+'”</p>':'')+
+      '<div class="pv-nav"><button type="button" class="btn ghost" data-pv="-1"'+(i>0?'':' disabled')+'>← Newer</button>'+
+      '<span>'+(i+1)+' / '+items.length+'</span>'+
+      '<button type="button" class="btn ghost" data-pv="1"'+(i<items.length-1?'':' disabled')+'>Older →</button></div></div>';
+    el.querySelector('.pv-close').addEventListener('click', close);
+    el.querySelectorAll('[data-pv]').forEach(b=>b.addEventListener('click',()=>step(+b.dataset.pv)));
+  };
+  const step = d=>{ const n=i+d; if(n>=0 && n<items.length){ i=n; draw(); } };
+  const close = ()=>{ if(url) URL.revokeObjectURL(url); el.remove(); document.removeEventListener('keydown', onKey); document.body.style.overflow=''; };
+  const onKey = e=>{ if(e.key==='Escape') close(); else if(e.key==='ArrowLeft') step(-1); else if(e.key==='ArrowRight') step(1); };
+  let touchX = null;
+  el.addEventListener('touchstart', e=>{ touchX = e.touches[0].clientX; }, {passive:true});
+  el.addEventListener('touchend', e=>{ if(touchX==null) return; const dx = e.changedTouches[0].clientX - touchX; touchX = null; if(Math.abs(dx)>50) step(dx<0?1:-1); });
+  document.addEventListener('keydown', onKey);
+  document.body.style.overflow='hidden';
+  draw();
 }
 
 function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
@@ -659,7 +771,7 @@ function renderProgress(){
   const inLevel = stats.xp%100;
   html += '<div class="card"><div class="level-head"><span>Level '+level+'</span><span>'+stats.xp+' XP</span></div>';
   html += '<div class="xpbar-outer"><div class="xpbar-inner" style="width:'+inLevel+'%;"></div></div>';
-  html += '<div class="card-note">'+(100-inLevel)+' XP to level '+(level+1)+'. Non-negotiable 10 · habits 2 and 3: 5 each · shadow-check 5 · proof +'+PROOF_XP+' per habit · win line 2.</div></div>';
+  html += '<div class="card-note">'+(100-inLevel)+' XP to level '+(level+1)+'. Non-negotiable 10 · habits 2 and 3: 5 each · shadow-check 5 · proof of your non-negotiable +'+PROOF_XP+' · win line 2.</div></div>';
 
   if(arche && arche.shadowOptions){
     html += '<div class="card"><div class="card-kicker gold">Shadow-check</div>';
@@ -673,10 +785,12 @@ function renderProgress(){
   html += '<div class="card"><div style="font-size:13px;color:var(--text-dim);margin-bottom:6px;">Last 30 days \u2014 brighter means more of the three habits landed</div>';
   html += '<div class="heatgrid">'+heatCells(30)+'</div></div>';
 
+  html += '<div id="arcGallery"></div>';
   html += weeklyReviewBlock();
 
   el.innerHTML = html;
   wireWeeklyReview();
+  renderGallery();
 
   function stat(num,lbl){ return '<div class="stat"><div class="num">'+num+'</div><div class="lbl">'+lbl+'</div></div>'; }
 
@@ -1069,7 +1183,7 @@ function renderGuide(){
   <h2 class="section-title">The daily loop (under a minute)</h2>
   <div class="card"><ol>
     <li>Open <b>Today</b> and tap each habit you did. It saves as you tap.</li>
-    <li>Want the extra push? Add a photo or video as proof. It’s optional and worth <b>+${PROOF_XP} XP</b> per habit.</li>
+    <li>Want the extra push? Add a photo or video of your <b>non-negotiable</b>. It’s optional, worth <b>+${PROOF_XP} XP</b>, and builds your arc gallery on <b>Progress</b>, so you can look back at every day you showed up.</li>
     <li>Tap your <b>shadow-check</b> if you did it.</li>
     <li>Write <b>one line</b>: a win or something you’re grateful for (+2 XP).</li>
     <li>All three habits on the same day is a <img class="kbolt" src="/assets/kaminari-bolt.png" alt="" width="12" height="16"> <b>Day Cleared</b>.</li>
@@ -1079,7 +1193,7 @@ function renderGuide(){
   <h2 class="section-title">How you level up</h2>
   <div class="card"><ol>
     <li><b>Rank</b> is earned by <b>full-clear days</b> (all 3 habits on the same day), not by time on the calendar. Coasting doesn’t move you up. Every archetype has five ranks, at 0, 10, 25, 50 and 100 full clears.</li>
-    <li><b>XP:</b> non-negotiable 10 · habits 2 and 3: 5 each · shadow-check 5 · proof +${PROOF_XP} per habit · win line 2. Every 100 XP is a new level.</li>
+    <li><b>XP:</b> non-negotiable 10 · habits 2 and 3: 5 each · shadow-check 5 · proof of your non-negotiable +${PROOF_XP} · win line 2. Every 100 XP is a new level.</li>
     <li><b>Shadow badges</b> unlock at 10, 25 and 50 shadow-checks, tracked separately from rank.</li>
   </ol></div>
 
