@@ -122,10 +122,10 @@ function showQuoteReveal(){
   const root = document.querySelector('.arc-root');
   if(!dq || !root || document.querySelector('.quote-reveal')) return;
   let puffs = '';
-  for(let i=0;i<18;i++){
-    const angle = (i/18)*Math.PI*2, far = 30 + (i%3)*10;
-    puffs += '<i style="--x:'+(50+Math.cos(angle)*(8+(i%4)*7)).toFixed(1)+'%;--y:'+(50+Math.sin(angle)*(6+(i%5)*6)).toFixed(1)+'%;'+
-      '--dx:'+(Math.cos(angle)*far).toFixed(1)+'vw;--dy:'+(Math.sin(angle)*far).toFixed(1)+'vh;--s:'+(240+(i%4)*90)+'px;--d:'+((i%6)*0.18).toFixed(2)+'s;"></i>';
+  for(let i=0;i<14;i++){
+    const angle = (i/14)*Math.PI*2, far = 30 + (i%3)*10;
+    puffs += '<i style="--x:'+(50+Math.cos(angle)*(6+(i%4)*5)).toFixed(1)+'%;--y:'+(50+Math.sin(angle)*(4+(i%5)*3.5)).toFixed(1)+'%;'+
+      '--dx:'+(Math.cos(angle)*far).toFixed(1)+'vw;--dy:'+(Math.sin(angle)*far).toFixed(1)+'vh;--s:'+(200+(i%4)*60)+'px;--d:'+((i%6)*0.18).toFixed(2)+'s;"></i>';
   }
   const el = document.createElement('div');
   el.className = 'quote-reveal';
