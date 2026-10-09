@@ -550,6 +550,7 @@ body.app main{display:block;}
 /* ---------- opening screens: first-visit question, archetype picker, welcome back ---------- */
 .arc-root .arc-intro{position:fixed;inset:0;z-index:9990;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:24px 18px;text-align:center;overflow-y:auto;cursor:pointer;animation:qrIn .35s ease-out;transition:opacity .38s;}
 .arc-root .arc-intro.out{opacity:0;}
+.arc-root .arc-intro.instant{animation:none;}
 .arc-root .intro-box{max-width:520px;animation:introRise .7s ease-out both;}
 .arc-root .intro-kicker{font-family:var(--font-display);font-weight:700;font-size:13px;letter-spacing:2.5px;text-transform:uppercase;color:var(--accent);margin-bottom:12px;}
 .arc-root .intro-title{font-family:var(--font-display);font-weight:700;font-size:clamp(24px,6vw,34px);line-height:1.2;color:var(--text);}

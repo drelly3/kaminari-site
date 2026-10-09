@@ -25,10 +25,13 @@
 
   let loaded = false;
   function open() {
-    gate.hidden = true; app.hidden = false;
-    if (loaded) return;
+    gate.hidden = true;
+    if (loaded) { app.hidden = false; return; }
     loaded = true;
-    const s = document.createElement('script'); s.src = '/arc-tracker.js'; document.body.appendChild(s);
+    // the tracker stays hidden until its script has run, so its opening screen is the first thing seen
+    const s = document.createElement('script'); s.src = '/arc-tracker.js';
+    s.onload = s.onerror = () => { if (gate.hidden) app.hidden = false; };
+    document.body.appendChild(s);
   }
   function lock(text) {
     app.hidden = true; gate.hidden = false;

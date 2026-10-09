@@ -2033,9 +2033,10 @@ function renderGuide(){
 // First visit: a question, then the nine archetypes to choose from, then Start Here.
 // Every visit after: the member's archetype and its line for a few seconds. A tap skips either one.
 const INTRO_MS = 2800;
-function openIntro(inner, cls){
+// instant = no fade-in, for the first screen, so the tracker behind it never shows
+function openIntro(inner, cls, instant){
   const el = document.createElement('div');
-  el.className = 'arc-intro '+cls;
+  el.className = 'arc-intro '+cls+(instant?' instant':'');
   el.innerHTML = inner;
   document.querySelector('.arc-root').appendChild(el);
   return el;
@@ -2053,28 +2054,35 @@ function chooseArchetype(key){
   if(pushState==='on') pushSync().catch(()=>{});
   renderAll();
 }
-function showWelcomeBack(done){
+function showWelcomeBack(done, fadeIn){
   const arche = getArchetype(profile.archetypeKey);
-  if(!arche){ done(); return; }
+  if(!arche){ done(); return null; }
   const el = openIntro('<div class="intro-box"><div class="intro-avatar" style="--hue:'+arche.hue+';">'+iconSVG(arche,132)+'</div>'+
     '<div class="intro-kicker">'+(profile.name ? 'Welcome back, '+escapeHtml(profile.name) : 'Welcome back')+'</div>'+
     '<div class="intro-title">'+escapeHtml(arche.title)+'</div>'+
     '<p class="intro-quote">“'+escapeHtml(arche.quote)+'”</p>'+
-    '<div class="intro-skip">Tap anywhere to skip</div></div>', 'splash');
+    '<div class="intro-skip">Tap anywhere to skip</div></div>', 'splash', !fadeIn);
   const go = ()=>closeIntro(el, done);
   el.addEventListener('click', go);
   setTimeout(go, INTRO_MS);
+  return el;
 }
 function showFirstRun(done){
   const el = openIntro('<div class="intro-box"><div class="intro-kicker">Arc Tracker</div>'+
     '<div class="intro-title big">Who are you trying to become?</div>'+
-    '<div class="intro-skip">Tap to continue</div></div>', 'ask');
+    '<div class="intro-skip">Tap to continue</div></div>', 'ask', true);
   let moved = false;
   const next = ()=>{
     if(moved) return; moved = true;
     // a backup restored while the question was up means this isn't a first visit after all
-    if(getArchetype(profile.archetypeKey)) closeIntro(el, ()=>{ showTab('today'); showWelcomeBack(done); });
-    else closeIntro(el, ()=>showArchetypePicker(done));
+    // the next screen fades in over the question, which is then taken away underneath it
+    let over;
+    if(getArchetype(profile.archetypeKey)){ showTab('today'); over = showWelcomeBack(done, true); }
+    else over = showArchetypePicker(done);
+    // only once the new screen is fully in (or after a pause, if the browser skips the fade)
+    const drop = ()=>el.remove();
+    if(over) over.addEventListener('animationend', (e)=>{ if(e.target===over) drop(); });
+    setTimeout(drop, over ? 1500 : 0);
   };
   el.addEventListener('click', next);
   setTimeout(next, INTRO_MS);
@@ -2095,6 +2103,7 @@ function showArchetypePicker(done){
   el.querySelector('.pick-later').addEventListener('click',()=>finish('guide'));
   // a backup that arrives with an archetype already chosen closes the picker
   watch = setInterval(()=>{ if(getArchetype(profile.archetypeKey)) finish('today'); }, 500);
+  return el;
 }
 
 /* ---------------- Bring over progress from another tracker ---------------- */
