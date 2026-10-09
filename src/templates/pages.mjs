@@ -516,6 +516,9 @@ const arcTrackerSections = all => {
 </section>`;
 };
 
+// one button in the Arc Tracker's bottom tab bar: a line icon over a short label
+const arcTab = (tab, label, icon, active) => `<button type="button" data-tab="${tab}"${active ? ' class="active" aria-current="page"' : ''}><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icon}</svg><span>${label}</span></button>`;
+
 /* ---------- ARC TRACKER (the app itself lives in src/arc-tracker.js + src/arc-tracker.css) ---------- */
 export const arcTracker = () => `
 <div class="arc-root">
@@ -533,29 +536,30 @@ export const arcTracker = () => `
         <button type="button" class="btn ghost" id="arc-preview-open" style="margin-top:14px;">Skip the key and open the tracker</button>
         <p class="arc-gate-foot">Preview only. This button and the sample key ARC7-K2MQ-9XTD-4HPL do not work on the live site.</p>
       </div>
+      <p class="arc-gate-foot"><a href="/anime-mindset">← Back to Kaminari</a></p>
     </form>
   </div>
   <div id="arc-app" hidden>
     <header class="top">
-      <div class="brand"><span class="word">ARC TRACKER</span></div>
+      <div class="brand"><img class="kbolt" src="/assets/kaminari-bolt.png" alt="" width="12" height="16"><span class="word">ARC TRACKER</span></div>
       <div class="headline-badge" id="headerBadge">Set up your character in Setup →</div>
     </header>
 
-    <nav class="tabs">
-      <button data-tab="guide">Start Here</button>
-      <button data-tab="setup">Setup</button>
-      <button data-tab="archetypes">Archetypes</button>
-      <button data-tab="today" class="active">Today</button>
-      <button data-tab="progress">Progress</button>
-    </nav>
-
     <div class="arc-main">
-      <section class="tab" id="tab-guide"></section>
       <section class="tab active" id="tab-today"></section>
       <section class="tab" id="tab-progress"></section>
       <section class="tab" id="tab-archetypes"></section>
       <section class="tab" id="tab-setup"></section>
+      <section class="tab" id="tab-guide"></section>
     </div>
+
+    <nav class="tabs" aria-label="Arc Tracker">
+      ${arcTab('today', 'Today', '<circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.7 2.7L16.5 9"/>', true)}
+      ${arcTab('progress', 'Progress', '<path d="M5 20V12M12 20V5M19 20v-9"/>')}
+      ${arcTab('archetypes', 'Archetypes', '<circle cx="12" cy="8" r="4"/><path d="M4.5 20.5c1.2-4 4-6 7.5-6s6.3 2 7.5 6"/>')}
+      ${arcTab('setup', 'Setup', '<path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/>')}
+      ${arcTab('guide', 'Start Here', '<path d="M5 4.5h9.5a3 3 0 0 1 3 3V20H8a3 3 0 0 1-3-3z"/><path d="M5 17a3 3 0 0 1 3-3h9.5"/>')}
+    </nav>
     <noscript><p>Arc Tracker needs JavaScript turned on.</p></noscript>
   </div>
   <div id="modalRoot"></div>

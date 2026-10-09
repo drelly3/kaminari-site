@@ -36,13 +36,13 @@ if (/(^|\\.)joinkaminari\\.com$/.test(location.hostname)) {
 const logo = `<img src="/assets/kaminari-mark.svg" alt="" width="35" height="28">Kaminari`;
 
 // head: extra tags for one page. tracking: false leaves GA4 + Clarity off that page.
-export function layout({ title, description = site.description, path, image = site.ogImage, type = 'website', jsonLd, body, head = '', tracking = true }) {
+export function layout({ title, description = site.description, path, image = site.ogImage, type = 'website', jsonLd, body, head = '', tracking = true, chrome = true }) {
   const canonical = site.url + (path === '/' ? '' : path);
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0${chrome ? '' : ', viewport-fit=cover'}">
 <title>${esc(title)}</title>
 <meta name="description" content="${esc(description)}">
 <link rel="canonical" href="${canonical}">
@@ -68,8 +68,8 @@ ${jsonLd ? `<script type="application/ld+json">${JSON.stringify(jsonLd).replace(
 ${head}
 ${tracking ? analytics : ''}
 </head>
-<body>
-
+<body${chrome ? '' : ' class="app"'}>
+${chrome ? `
 <nav class="site-nav">
   <div class="wrap">
     <a href="/" class="brand" aria-label="Kaminari home">${logo}</a>
@@ -82,11 +82,11 @@ ${tracking ? analytics : ''}
     </div>
   </div>
 </nav>
-
+` : ''}
 <main>
 ${body}
 </main>
-
+${chrome ? `
 <footer id="newsletter">
   <div class="wrap">
     <div class="footer-top">
@@ -140,6 +140,7 @@ ${body}
 </dialog>
 
 <script src="/main.js" defer></script>
+` : ''}
 </body>
 </html>
 `;

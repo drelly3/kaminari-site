@@ -154,15 +154,123 @@ function iconSVG(arche, size){
 }
 
 /* ---------------- Storage ---------------- */
-const LS = {profile:'arc_profile',habits:'arc_habits',log:'arc_log',weekly:'arc_weekly',reminder:'arc_reminder'};
+const LS = {profile:'arc_profile',habits:'arc_habits',log:'arc_log',weekly:'arc_weekly',reminder:'arc_reminder',secondWinds:'arc_second_winds',proofGone:'arc_proof_gone'};
 function load(k,fb){ try{ const r=localStorage.getItem(k); return r?JSON.parse(r):fb; }catch(e){ return fb; } }
-function persist(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} }
+function persist(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} if(SYNCED.includes(k) && !applyingSync){ editSeq++; scheduleSync(); } }
 
 let profile = load(LS.profile,{name:'',archetypeKey:''});
 let habits  = load(LS.habits,{h1:{cue:'',habit:''},h2:{cue:'',habit:''},h3:{cue:'',habit:''},sc:{cue:'',habit:''}});
 let log     = load(LS.log,[]);
 let weekly  = load(LS.weekly,[]);
 let reminder= load(LS.reminder,{enabled:false,time:'08:00',lastFired:''});
+let proofGone = load(LS.proofGone,[]); // [{id, t}]: proof photos removed, so other phones drop them too
+let secondWinds= load(LS.secondWinds,[]); // [{missed, on, cost}]: each Second Wind: an XP-paid streak repair
+
+/* ---------------- Cloud backup: the arc is saved under the member's licence key ---------------- */
+// Every change is sent a couple of seconds after it's made; the server merges it with the backup and
+// sends the merged arc back, so a second phone picks up days logged on the first. See api/arc-sync.js.
+// Proof photos stay on the device.
+const SYNCED = [LS.profile, LS.habits, LS.log, LS.weekly, LS.secondWinds, LS.proofGone];
+const SYNC_DELAY = 2500;
+let sync = load('arc_sync', {at:0, owner:'', resetAt:0}); // last good backup, whose key the local arc belongs to
+let editSeq = 0; // bumped on every local change, so a backup reply never overwrites a newer tap
+let syncStatus = 'idle', syncTimer = null, syncBusy = false, syncAgain = false, applyingSync = false, renderWhenIdle = false, syncRestored = false;
+const blankProfile = ()=>({name:'',archetypeKey:''});
+const blankHabits = ()=>({h1:{cue:'',habit:''},h2:{cue:'',habit:''},h3:{cue:'',habit:''},sc:{cue:'',habit:''}});
+function licenceKey(){ try{ return localStorage.getItem('arc_license')||''; }catch(e){ return ''; } }
+function scheduleSync(){
+  clearTimeout(syncTimer);
+  syncTimer = setTimeout(()=>{ syncTimer=null; syncNow(); }, SYNC_DELAY);
+}
+async function syncNow(opts){
+  opts = opts || {};
+  const key = licenceKey();
+  if(!key) return;
+  if(syncBusy){ syncAgain = true; return; }
+  // a different key on this device means the local arc is someone else's: start from their backup instead
+  if(sync.owner && sync.owner !== key){
+    profile=blankProfile(); habits=blankHabits(); log=[]; weekly=[]; secondWinds=[]; proofGone=[];
+    applyingSync = true;
+    persist(LS.profile,profile); persist(LS.habits,habits); persist(LS.log,log); persist(LS.weekly,weekly); persist(LS.secondWinds,secondWinds); persist(LS.proofGone,proofGone);
+    applyingSync = false;
+    if(proofDb) proofTx('readwrite', s=>s.clear()).catch(()=>{});
+    sync = {at:0, owner:key, resetAt:0};
+  }
+  syncBusy = true; setSyncStatus('busy');
+  const wasEmpty = !log.length && !profile.archetypeKey;
+  const seq = editSeq;
+  try{
+    const res = await fetch('/api/arc-sync', {method:'POST', headers:{'Content-Type':'application/json'}, keepalive:!!opts.keepalive,
+      body: JSON.stringify({key, reset:!!opts.reset, state:{profile, habits, log, weekly, secondWinds, proofGone, resetAt:sync.resetAt||0}})});
+    const out = await res.json().catch(()=>({ok:false}));
+    if(out.ok && editSeq !== seq){ syncAgain = true; setSyncStatus('busy'); } // changed mid-flight: send again, apply that reply
+    else if(out.ok){
+      applyBackup(out.state);
+      sync = {at:Date.now(), owner:key, resetAt:out.state.resetAt||0};
+      try{ localStorage.setItem('arc_sync', JSON.stringify(sync)); }catch(e){}
+      setSyncStatus('ok');
+      if(wasEmpty && (log.length || profile.archetypeKey) && !syncRestored){ syncRestored = true; showToast('Welcome back. Your arc is restored.'); }
+      syncPhotos();
+    } else setSyncStatus(out.reason==='no_access' ? 'denied' : 'error');
+  }catch(e){ setSyncStatus('offline'); }
+  syncBusy = false;
+  if(syncAgain){ syncAgain = false; scheduleSync(); }
+}
+// takes the merged arc from the server; redraws unless the member is mid-typing
+function applyBackup(st){
+  const next = {
+    profile: st.profile || blankProfile(), habits: st.habits || blankHabits(),
+    log: st.log || [], weekly: st.weekly || [], secondWinds: st.secondWinds || [], proofGone: st.proofGone || []
+  };
+  const changed = JSON.stringify(next) !== JSON.stringify({profile, habits, log, weekly, secondWinds, proofGone});
+  if(!changed) return;
+  const hadArchetype = !!getArchetype(profile.archetypeKey);
+  profile=next.profile; habits=next.habits; log=next.log; weekly=next.weekly; secondWinds=next.secondWinds; proofGone=next.proofGone;
+  applyingSync = true;
+  persist(LS.profile,profile); persist(LS.habits,habits); persist(LS.log,log); persist(LS.weekly,weekly); persist(LS.secondWinds,secondWinds); persist(LS.proofGone,proofGone);
+  applyingSync = false;
+  const a = document.activeElement;
+  if(a && /^(INPUT|TEXTAREA)$/.test(a.tagName) && a.type!=='checkbox' && a.type!=='file') renderWhenIdle = true;
+  else renderAll();
+  // a restored arc opens on Today, not on the setup guide shown to brand-new members
+  if(!hadArchetype && getArchetype(profile.archetypeKey) && document.getElementById('tab-guide').classList.contains('active')) showTab('today');
+}
+document.addEventListener('focusout', ()=>{ if(renderWhenIdle){ setTimeout(()=>{ const a=document.activeElement; if(!(a && /^(INPUT|TEXTAREA)$/.test(a.tagName))){ renderWhenIdle=false; renderAll(); } }, 50); } });
+// leaving the app: send anything still waiting
+function flushSync(){ if(syncTimer){ clearTimeout(syncTimer); syncTimer=null; syncNow({keepalive:true}); } }
+document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='hidden') flushSync(); else syncNow(); });
+window.addEventListener('pagehide', flushSync);
+window.addEventListener('online', ()=>syncNow());
+function setSyncStatus(st){ syncStatus = st; const el=document.getElementById('syncBox'); if(el){ el.innerHTML = syncBoxHtml(); wireSyncBox(); } }
+function syncBoxHtml(){
+  const ago = sync.at ? timeAgo(sync.at) : '';
+  const line = {
+    busy: 'Backing up…',
+    ok: 'Backed up '+ago+'.',
+    offline: 'You’re offline. Changes are saved on this phone and back up when you reconnect.',
+    denied: 'Your key no longer has access, so backups are paused.',
+    error: 'Couldn’t reach the backup just now. It will try again.',
+    idle: sync.at ? 'Last backed up '+ago+'.' : 'Not backed up yet.'
+  }[syncStatus] || '';
+  const good = syncStatus==='ok' || (syncStatus==='idle' && sync.at);
+  const photos = photoLine();
+  return '<div class="sync-line'+(good?' good':'')+'">'+line+'</div>'+(photos?'<div class="sync-line photos'+(photoStatus.state==='ok'?' good':'')+'">'+photos+'</div>':'')+'<button type="button" class="btn ghost" id="syncNowBtn"'+(syncStatus==='busy'?' disabled':'')+'>Back up now</button>';
+}
+function wireSyncBox(){ const b=document.getElementById('syncNowBtn'); if(b) b.addEventListener('click', ()=>syncNow()); }
+function timeAgo(ms){
+  const m = Math.round((Date.now()-ms)/60000);
+  if(m<1) return 'just now';
+  if(m<60) return m+' min ago';
+  const h = Math.round(m/60);
+  if(h<24) return h+(h===1?' hour':' hours')+' ago';
+  return 'on '+new Date(ms).toLocaleDateString(undefined,{month:'short',day:'numeric'});
+}
+function showToast(text){
+  const root=document.querySelector('.arc-root'); if(!root) return;
+  const el=document.createElement('div'); el.className='arc-toast'; el.setAttribute('role','status'); el.textContent=text;
+  root.appendChild(el);
+  setTimeout(()=>el.classList.add('out'), 3200); setTimeout(()=>el.remove(), 3700);
+}
 
 // The "Preview the animations" section is a demo tool, not something members should play with:
 // it only appears when the address ends in ?demo
@@ -176,27 +284,31 @@ function fmtDate(s){ return dfs(s).toLocaleDateString(undefined,{month:'short',d
 
 function getArchetype(key){ return ARCHETYPES.find(a=>a.key===key); }
 
+// A day keeps a streak going if its non-negotiable was done or it was repaired with a Second Wind.
+// Only done days add to the count: a repaired day bridges the gap without padding the number.
+function streakEndingAt(d, byDate){
+  let n=0;
+  while(byDate[d] && (byDate[d].h1 || byDate[d].repaired)){ if(byDate[d].h1) n++; d=shiftDay(d,-1); }
+  return n;
+}
 function computeStats(){
   const sorted=[...log].sort((a,b)=>a.date.localeCompare(b.date));
+  const byDate=Object.fromEntries(sorted.map(e=>[e.date,e]));
   let fullClear=0, xp=0, shadowTotal=0;
   sorted.forEach(e=>{
     if(e.h1&&e.h2&&e.h3) fullClear++;
     if(e.sc) shadowTotal++;
-    xp += (e.h1?10:0)+(e.h2?5:0)+(e.h3?5:0)+(e.sc?5:0)+((e.note||'').trim()?2:0);
+    const pf=e.proof||{};
+    xp += (e.h1?10:0)+(e.h2?5:0)+(e.h3?5:0)+(e.sc?5:0)+((e.note||'').trim()?2:0)+PROOF_SLOTS.filter(k=>e[k]&&pf[k]).length*PROOF_XP;
   });
-  let currentStreak=0;
-  for(let i=sorted.length-1;i>=0;i--){
-    const e=sorted[i];
-    if(i<sorted.length-1){ if(dayGap(e.date,sorted[i+1].date)!==1) break; }
-    if(!e.h1) break;
-    currentStreak++;
-  }
-  let longest=0, run=0;
-  for(let i=0;i<sorted.length;i++){
-    const e=sorted[i];
-    if(i>0 && dayGap(sorted[i-1].date,e.date)!==1) run=0;
-    if(e.h1){ run++; longest=Math.max(longest,run); } else { run=0; }
-  }
+  // XP is earned for good (it sets your level) and spent on secondWinds (it fills your wallet)
+  const spent = secondWinds.reduce((n,c)=>n+(c.cost||0),0);
+  // today only counts once its non-negotiable is done; until then the streak runs to yesterday
+  const t=todayStr();
+  const currentStreak = (byDate[t] && byDate[t].h1) ? streakEndingAt(t,byDate) : streakEndingAt(shiftDay(t,-1),byDate);
+  let longest=0;
+  sorted.forEach(e=>{ if(e.h1 && !(byDate[shiftDay(e.date,1)] && (byDate[shiftDay(e.date,1)].h1 || byDate[shiftDay(e.date,1)].repaired))) longest=Math.max(longest, streakEndingAt(e.date,byDate)); });
+  longest=Math.max(longest,currentStreak);
   let shadowStreak=0;
   for(let i=sorted.length-1;i>=0;i--){
     const e=sorted[i];
@@ -204,7 +316,47 @@ function computeStats(){
     if(!e.sc) break;
     shadowStreak++;
   }
-  return {totalDays:sorted.length, fullClear, xp, currentStreak, longest, shadowTotal, shadowStreak, sorted};
+  return {totalDays:sorted.length, fullClear, xp, spent, wallet:xp-spent, currentStreak, longest, shadowTotal, shadowStreak, sorted, byDate};
+}
+
+/* ---------------- Second Wind: spend XP to repair yesterday ---------------- */
+// Miss a day, then clear all three today, and you can spend XP to repair yesterday so your streak
+// survives. Once a week at most, only for yesterday, and the repaired day never counts as a full
+// clear, so rank stays earned. Two misses in a row can't be repaired: never miss twice.
+const SECOND_WIND_COST = 50, SECOND_WIND_EVERY = 7;
+function secondWindState(stats){
+  const t=todayStr(), y=shiftDay(t,-1), by=stats.byDate;
+  if(by[y] && (by[y].h1 || by[y].repaired)) return null;
+  const saved = streakEndingAt(shiftDay(t,-2), by);
+  if(!saved) return null;
+  const last = secondWinds.length ? secondWinds[secondWinds.length-1].on : '';
+  const nextOn = last && dayGap(last,t) < SECOND_WIND_EVERY ? shiftDay(last,SECOND_WIND_EVERY) : '';
+  const te = by[t];
+  return {missed:y, saved, nextOn, cleared:!!(te && te.h1 && te.h2 && te.h3), wallet:stats.wallet, afford:stats.wallet>=SECOND_WIND_COST};
+}
+function useSecondWind(){
+  const stats=computeStats(), cb=secondWindState(stats);
+  if(!cb || cb.nextOn || !cb.cleared || !cb.afford) return;
+  const i=log.findIndex(e=>e.date===cb.missed);
+  if(i>=0){ log[i].repaired=true; log[i].t=Date.now(); }
+  else log.push({date:cb.missed,h1:false,h2:false,h3:false,sc:false,note:'',repaired:true,t:Date.now()});
+  secondWinds.push({missed:cb.missed, on:todayStr(), cost:SECOND_WIND_COST, t:Date.now()});
+  persist(LS.log, log); persist(LS.secondWinds, secondWinds);
+  const arche=getArchetype(profile.archetypeKey);
+  const streak=computeStats().currentStreak;
+  queueCelebration(done=>showSecondWind(arche, streak, done));
+  renderAll();
+}
+function secondWindCard(stats){
+  const cb=secondWindState(stats);
+  if(!cb) return '';
+  const head='<div class="card second-wind"><div class="card-kicker">Second Wind</div>';
+  const lead='<p class="second-wind-lead">You missed yesterday. Your <b>\u{1F525} '+cb.saved+'-day streak</b> can still be saved.</p>';
+  if(cb.nextOn) return head+lead+'<p class="card-note">You’ve used your Second Wind this week. The next one unlocks '+fmtDate(cb.nextOn)+'. Clear today and start the next run. Never miss twice.</p></div>';
+  if(!cb.afford) return head+lead+'<p class="card-note">A Second Wind costs '+SECOND_WIND_COST+' XP and you have '+cb.wallet+' to spend. Clear today and start the next run. Never miss twice.</p></div>';
+  if(!cb.cleared) return head+lead+'<p class="card-note">Clear all three habits today first. Then you can spend '+SECOND_WIND_COST+' XP to repair yesterday. You have '+cb.wallet+' XP.</p></div>';
+  return head+lead+'<p class="card-note">You came straight back and cleared today. Spend '+SECOND_WIND_COST+' of your '+cb.wallet+' XP to repair yesterday. It keeps the streak alive but doesn’t count as a full clear.</p>'+
+    '<button type="button" class="btn second-wind-btn" id="secondWindBtn">Use Second Wind · '+SECOND_WIND_COST+' XP</button></div>';
 }
 
 const SHADOW_BADGES=[{name:'Shadow Aware',n:10},{name:'Shadow Tamed',n:25},{name:'Shadow Integrated',n:50}];
@@ -217,14 +369,18 @@ function rankInfo(archetype, fullClear){
 }
 
 /* ---------------- Tabs ---------------- */
-document.querySelectorAll('nav.tabs button').forEach(btn=>{
-  btn.addEventListener('click',()=>{
-    document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.remove('active'));
-    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-    btn.classList.add('active');
-    document.getElementById('tab-'+btn.dataset.tab).classList.add('active');
+function showTab(name){
+  document.querySelectorAll('nav.tabs button').forEach(b=>{
+    const on = b.dataset.tab===name;
+    b.classList.toggle('active', on);
+    if(on) b.setAttribute('aria-current','page'); else b.removeAttribute('aria-current');
   });
-});
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.id==='tab-'+name));
+  window.scrollTo(0,0);
+}
+document.querySelectorAll('nav.tabs button').forEach(btn=>btn.addEventListener('click',()=>showTab(btn.dataset.tab)));
+// buttons inside a tab that jump to another one, like "Open Setup" in the guide
+document.addEventListener('click',(e)=>{ const b=e.target.closest && e.target.closest('[data-goto]'); if(b) showTab(b.dataset.goto); });
 
 /* ---------------- Header ---------------- */
 function renderHeader(){
@@ -351,7 +507,7 @@ function avatarStage(archetype, extra){
 }
 
 // Daily: all three habits checked
-function showDayCleared(archetype, streak, habitNames, onDone){
+function showDayCleared(archetype, streak, habitNames, onDone, hint){
   const check='<svg class="cel-check" viewBox="0 0 74 74"><circle cx="37" cy="37" r="33"/><path d="M22 38 L32.5 48.5 L52 27"/></svg>';
   const items=(habitNames||[]).map((n,i)=>'<li style="animation-delay:'+(1.05+i*0.18)+'s;"><b>\u2713</b>'+escapeHtml(n)+'</li>').join('');
   const inner = avatarStage(archetype, check)+
@@ -359,123 +515,157 @@ function showDayCleared(archetype, streak, habitNames, onDone){
     '<div class="cel-title">All three. Done.</div>'+
     (items?'<ul class="cel-list">'+items+'</ul><br>':'')+
     '<div class="cel-streak">\uD83D\uDD25 '+streak+'-day streak</div>'+
-    '<p class="cel-sub">'+(archetype?escapeHtml(archetype.title)+' showed up today.':'You showed up today.')+'</p>'+
+    '<p class="cel-sub">'+(archetype?escapeHtml(archetype.title):'You')+' showed up '+(viewDay==='yesterday'?'yesterday':'today')+'.'+(hint?'<br><b class="cel-hint">'+escapeHtml(hint)+'</b>':'')+'</p>'+
     '<button class="btn" id="celOk">Keep the arc going</button>';
   mountCelebration(archetype, inner, 7000, onDone, false);
   setTimeout(()=>spawnConfetti(archetype?archetype.hue:45,{center:false}), 700);
 }
 
+// Second Wind: XP spent to repair yesterday
+function showSecondWind(archetype, streak, onDone){
+  const inner = avatarStage(archetype, '')+
+    '<div class="cel-kicker">SECOND WIND</div>'+
+    '<div class="cel-title">Streak saved.</div>'+
+    '<div class="cel-streak">\uD83D\uDD25 '+streak+'-day streak</div>'+
+    '<p class="cel-sub">You missed one and came straight back. That\u2019s the whole rule.</p>'+
+    '<button class="btn" id="celOk">Back to it</button>';
+  mountCelebration(archetype, inner, 7000, onDone, false);
+  setTimeout(()=>spawnConfetti(archetype?archetype.hue:45,{center:false}), 700);
+}
+
 // Rank up: crossed a milestone
-function showRankUpModal(archetype, rank, prevRank, onDone){
+// pics: the latest gallery items, shown as a strip of the proof that earned the rank
+function showRankUpModal(archetype, rank, prevRank, onDone, pics){
+  const strip = (pics||[]).slice(0,6);
   const inner = avatarStage(archetype, '')+
     '<div class="cel-kicker">RANK UP</div>'+
     '<div class="cel-title">'+escapeHtml(rank.name)+'</div>'+
     (prevRank?'<div class="cel-path"><span class="old">'+escapeHtml(prevRank.name)+'</span><span class="arrow">\u279C</span><span class="new">'+escapeHtml(rank.name)+'</span></div>':'')+
     '<p class="cel-sub">'+rank.ms+' full-clear days, earned the real way. '+escapeHtml(archetype.title)+' moves different now.</p>'+
+    (strip.length?'<div class="cel-proof"><div class="cel-proof-label">What it took</div><div class="cel-proof-row">'+strip.map((x,k)=>'<img src="'+x.thumbUrl+'" alt="" style="animation-delay:'+(1.3+k*0.12).toFixed(2)+'s;">').join('')+'</div></div>':'')+
     '<button class="btn" id="celOk">Claim it</button>';
   mountCelebration(archetype, inner, 9000, onDone, true);
   setTimeout(()=>spawnConfetti(archetype.hue), 550);
 }
 
 /* ---------------- Today tab ---------------- */
+// The Today tab logs today or, for anyone who forgot to log before midnight, yesterday. Nothing
+// further back can be changed, so a streak still has to be earned day by day.
+let viewDay = 'today';
+function shiftDay(s, n){ const d=dfs(s); d.setDate(d.getDate()+n); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function viewDate(){ return viewDay==='yesterday' ? shiftDay(todayStr(),-1) : todayStr(); }
+const PROOF_XP = 2;
+
 function renderToday(){
   const el=document.getElementById('tab-today');
   const arche=getArchetype(profile.archetypeKey);
   const stats=computeStats();
-  const t=todayStr();
-  const existing=log.find(e=>e.date===t);
-  const yesterday=(()=>{ const d=dfs(t); d.setDate(d.getDate()-1); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); })();
+  const t=todayStr(), yesterday=shiftDay(t,-1), d=viewDate();
+  const existing=log.find(e=>e.date===d);
   const yEntry=log.find(e=>e.date===yesterday);
 
   let html='';
   if(!arche){
-    html += '<div class="banner info"><div>Pick your archetype and name your three habits in <b>Setup</b> before you start logging \u2014 takes about a minute.</div></div>';
+    html += '<div class="banner info"><div>Pick your archetype and name your three habits before you start logging. It takes about a minute. <button type="button" class="linkbtn" data-goto="guide">Start here</button></div></div>';
   }
-  if(yEntry && !yEntry.h1 && stats.currentStreak===0 && stats.totalDays>0){
-    html += '<div class="banner warn"><span>\u26A0\uFE0F</span><div><b>Never miss twice.</b> Yesterday\u2019s non-negotiable didn\u2019t happen. One miss is an accident \u2014 the only rule now is don\u2019t miss today too.</div></div>';
+  const secondWind = viewDay==='today' ? secondWindCard(stats) : '';
+  if(secondWind) html += secondWind;
+  else if(viewDay==='today' && yEntry && !yEntry.h1 && !yEntry.repaired && stats.currentStreak===0 && stats.totalDays>0){
+    html += '<div class="banner warn"><span>⚠️</span><div><b>Never miss twice.</b> Yesterday’s non-negotiable didn’t happen. One miss is an accident — the only rule now is don’t miss today too. Did it and forgot to log? Switch to <b>Yesterday</b> below.</div></div>';
   }
 
   const dq = dailyQuote(arche, t);
-  if(dq) html += '<button type="button" class="daily-quote" id="dailyQuoteBtn" title="Replay the reveal"><p class="q">\u201c'+escapeHtml(dq.q)+'\u201d</p><div class="by">Inspired by '+escapeHtml(dq.c)+' \u00b7 '+escapeHtml(arche.title)+' \u00b7 New quote every Monday and Thursday</div></button>';
-  html += '<h2 class="section-title">Today \u00b7 '+fmtDate(t)+'</h2>';
-  html += '<p class="section-sub">A habit counts once you upload proof: a photo or a short video. No proof, no check.</p>';
+  if(dq) html += '<button type="button" class="daily-quote" id="dailyQuoteBtn" title="Replay the reveal"><p class="q">“'+escapeHtml(dq.q)+'”</p><div class="by">Inspired by '+escapeHtml(dq.c)+' · New quote every Monday and Thursday</div></button>';
 
-  html += '<div class="card">';
-  const h1=habits.h1, h2=habits.h2, h3=habits.h3;
+  const yMissing = stats.totalDays>0 && !yEntry;
+  html += '<div class="day-switch" role="group" aria-label="Day to log">'+
+    '<button type="button" data-day="today" class="'+(viewDay==='today'?'on':'')+'">Today · '+fmtDate(t)+'</button>'+
+    '<button type="button" data-day="yesterday" class="'+(viewDay==='yesterday'?'on':'')+'">Yesterday'+(yMissing?' <span class="dot" title="Not logged"></span>':'')+'</button></div>';
+  html += '<p class="section-sub">'+(viewDay==='yesterday'
+    ? 'Forgot to log before midnight? Fix yesterday here. Anything older stays as it is.'
+    : 'Tap a habit when it’s done. Add a photo or video of your non-negotiable for +'+PROOF_XP+' XP. It goes in your arc gallery on Progress.')+'</p>';
+
   const vals = existing || {h1:false,h2:false,h3:false,sc:false,note:''};
-  html += proofline('h1',h1,true);
-  html += proofline('h2',h2,false);
-  html += proofline('h3',h3,false);
+  html += '<div class="card">';
+  html += habitLine('h1',habits.h1,vals.h1,true);
+  html += checkline('f_h2',habits.h2,vals.h2,'Habit 2 (name it in Setup)');
+  html += checkline('f_h3',habits.h3,vals.h3,'Habit 3 (name it in Setup)');
   if(proofError) html += '<div class="proof-error" role="alert">'+escapeHtml(proofError)+'</div>';
   html += '</div>';
 
   if(arche && arche.shadowOptions){
     const sc = habits.sc||{cue:'',habit:''};
-    html += '<div class="card accent"><div style="font-size:11.5px;font-weight:700;color:var(--gold);letter-spacing:0.3px;margin-bottom:2px;">SHADOW-CHECK \u2014 separate from your 3 habits</div>';
-    html += '<div class="helptext" style="margin-bottom:8px;">'+arche.title+'\u2019s shadow: '+arche.shadow+'</div>';
-    html += checkline('f_sc','sc',sc,vals.sc,false);
+    html += '<div class="card accent"><div class="card-kicker">Shadow-check</div>';
+    html += '<p class="card-note">Separate from your 3 habits. '+escapeHtml(arche.title)+'’s shadow: '+escapeHtml(arche.shadow)+'</p>';
+    html += checkline('f_sc',sc,vals.sc,'Shadow-check (name it in Setup)');
     html += '</div>';
   }
 
-  html += '<div class="card"><div style="margin-top:0;"><label for="f_note">One line \u2014 a win or something you\u2019re grateful for</label>';
-  html += '<textarea id="f_note" placeholder="Small counts.">'+escapeHtml(vals.note||'')+'</textarea></div>';
-  html += '<button class="btn" id="saveDayBtn">Save note'+(arche && arche.shadowOptions?' and shadow-check':'')+'</button>';
-  html += ' <span class="helptext" style="margin-left:8px;">Habits save on their own when you add proof.</span>';
+  html += '<div class="card"><label for="f_note">One line — a win or something you’re grateful for <span class="xp-tag">+2 XP</span></label>';
+  html += '<textarea id="f_note" placeholder="Small counts." maxlength="280">'+escapeHtml(vals.note||'')+'</textarea>';
+  html += '<div class="note-foot"><button class="btn" id="saveDayBtn">Save note</button><span class="helptext" id="noteSaved" aria-live="polite"></span></div>';
   html += '</div>';
 
   el.innerHTML = html;
 
-  // A habit line has no checkbox to tick: it shows done only while proof for today is attached.
-  function proofline(key, h, nonneg){
-    const fallback = key==='h1' ? 'Non-negotiable (name it in Setup)' : 'Habit '+key.slice(1)+' (name it in Setup)';
-    const label = h.habit ? h.habit : fallback;
-    const cue = h.cue ? 'After I '+h.cue : '';
-    const p = todayProof[key];
+  // the non-negotiable is the one habit that takes proof
+  function habitLine(key, h, checked, nonneg){
+    const fallback = 'Non-negotiable (name it in Setup)';
+    const p = dayProof[key];
     let row;
     if(p){
       const thumb = p.kind==='image' ? '<img class="proof-thumb" src="'+p.url+'" alt="Your proof">' : '<video class="proof-thumb" src="'+p.url+'" muted playsinline preload="metadata"></video>';
-      row = '<a href="'+p.url+'" target="_blank" rel="noopener" title="Open proof">'+thumb+'</a><span class="proof-ok">Proof added</span>'+
+      row = '<a href="'+p.url+'" target="_blank" rel="noopener" title="Open proof">'+thumb+'</a><span class="proof-ok">Proof +'+PROOF_XP+' XP</span>'+
         '<label class="proof-link">Replace<input type="file" accept="image/*,video/*" data-proof="'+key+'" hidden></label>'+
         '<button type="button" class="proof-link" data-proof-remove="'+key+'">Remove</button>';
     } else {
-      row = '<label class="btn proof-btn">Upload proof<input type="file" accept="image/*,video/*" data-proof="'+key+'" hidden></label>'+
-        '<span class="proof-hint">Photo or video</span>';
+      row = '<label class="proof-add">+ Add proof <span>(+'+PROOF_XP+' XP)</span><input type="file" accept="image/*,video/*" data-proof="'+key+'" hidden></label>';
     }
-    return '<div class="checkline'+(nonneg?' nonneg':'')+'"><span class="proof-mark'+(p?' done':'')+'" aria-hidden="true">'+(p?'\u2713':'')+'</span>'+
-      '<div class="txt" style="flex:1;min-width:0;"><b>'+escapeHtml(label)+'</b>'+(cue?'<span>'+escapeHtml(cue)+'</span>':'')+
-      '<div class="proof-row">'+row+'</div></div></div>';
+    return checkline('f_'+key, h, checked, fallback, nonneg, '<div class="proof-row">'+row+'</div>');
   }
-  el.querySelectorAll('[data-proof]').forEach(inp=>inp.addEventListener('change',()=>{ if(inp.files && inp.files[0]) addProof(inp.dataset.proof, inp.files[0]); }));
-  el.querySelectorAll('[data-proof-remove]').forEach(b=>b.addEventListener('click',()=>removeProof(b.dataset.proofRemove)));
-
-  function checkline(id, key, h, checked, nonneg){
-    const fallback = key==='h1' ? 'Non-negotiable (name it in Setup)' : key==='sc' ? 'Shadow-check (name it in Setup)' : 'Habit '+key.slice(1)+' (name it in Setup)';
+  function checkline(id, h, checked, fallback, nonneg, extra){
     const label = h.habit ? h.habit : fallback;
     const cue = h.cue ? 'After I '+h.cue : '';
     return '<div class="checkline'+(nonneg?' nonneg':'')+'"><input type="checkbox" id="'+id+'" '+(checked?'checked':'')+'>'+
-      '<label class="txt" for="'+id+'" style="margin:0;font-size:14.5px;font-weight:400;color:inherit;"><b>'+escapeHtml(label)+'</b>'+(cue?'<span>'+escapeHtml(cue)+'</span>':'')+'</label></div>';
+      '<div class="txt"><label for="'+id+'"><b>'+escapeHtml(label)+'</b>'+(cue?'<span>'+escapeHtml(cue)+'</span>':'')+'</label>'+(extra||'')+'</div></div>';
   }
 
-  document.getElementById('saveDayBtn').addEventListener('click', commitToday);
+  el.querySelectorAll('[data-day]').forEach(b=>b.addEventListener('click',async ()=>{
+    if(viewDay===b.dataset.day) return;
+    viewDay=b.dataset.day; proofError='';
+    await loadDayProof();
+    renderToday();
+  }));
+  ['f_h1','f_h2','f_h3','f_sc'].forEach(id=>{ const c=document.getElementById(id); if(c) c.addEventListener('change', commitDay); });
+  el.querySelectorAll('[data-proof]').forEach(inp=>inp.addEventListener('change',()=>{ if(inp.files && inp.files[0]) addProof(inp.dataset.proof, inp.files[0]); }));
+  el.querySelectorAll('[data-proof-remove]').forEach(b=>b.addEventListener('click',()=>removeProof(b.dataset.proofRemove)));
+  const cbBtn=document.getElementById('secondWindBtn'); if(cbBtn) cbBtn.addEventListener('click', useSecondWind);
+  const note=document.getElementById('f_note');
+  note.addEventListener('change', commitDay);
+  document.getElementById('saveDayBtn').addEventListener('click', commitDay);
 }
 
-// Writes today's entry and fires the celebrations. Runs by itself the moment proof is added or
-// removed, so Day Cleared and Rank Up play as soon as the third habit is proven, with no button press.
-function commitToday(){
-  const t = todayStr();
-  const existing = log.find(e=>e.date===t);
+// Writes the logged day straight from the Today tab and fires the celebrations. Runs on every
+// tap, so Day Cleared and Rank Up play the moment the third habit is checked.
+function commitDay(){
+  const d = viewDate();
+  const existing = log.find(e=>e.date===d);
   const before = computeStats().fullClear;
   const wasFull = !!(existing && existing.h1 && existing.h2 && existing.h3);
-  const scEl = document.getElementById('f_sc'), noteEl = document.getElementById('f_note');
+  const box = (id, k)=>{ const c=document.getElementById(id); return c ? c.checked : !!(existing && existing[k]); };
+  const noteEl = document.getElementById('f_note');
   const entry = {
-    date: t,
-    h1: !!todayProof.h1,
-    h2: !!todayProof.h2,
-    h3: !!todayProof.h3,
-    sc: scEl ? scEl.checked : (existing?existing.sc:false),
-    note: noteEl ? noteEl.value.slice(0,280) : (existing?existing.note:'')
+    date: d,
+    h1: box('f_h1','h1'),
+    h2: box('f_h2','h2'),
+    h3: box('f_h3','h3'),
+    sc: box('f_sc','sc'),
+    note: noteEl ? noteEl.value.slice(0,280) : (existing?existing.note:''),
+    proof: {h1:!!dayProof.h1},
+    t: Date.now()
   };
-  const idx = log.findIndex(e=>e.date===t);
+  if(existing && existing.repaired) entry.repaired = true; // editing a repaired day keeps its Second Wind
+  const idx = log.findIndex(e=>e.date===d);
   if(idx>=0) log[idx]=entry; else log.push(entry);
   persist(LS.log, log);
   const after = computeStats().fullClear;
@@ -484,23 +674,31 @@ function commitToday(){
   if(nowFull && !wasFull){
     const names=[habits.h1.habit||'Non-negotiable', habits.h2.habit||'Habit 2', habits.h3.habit||'Habit 3'];
     const streakNow=computeStats().currentStreak;
-    queueCelebration(done=>showDayCleared(arche2, streakNow, names, done));
+    const cb = d===todayStr() ? secondWindState(computeStats()) : null;
+    const hint = cb && !cb.nextOn && cb.afford ? 'Your '+cb.saved+'-day streak can still be saved. Use your Second Wind on the Today tab.' : '';
+    queueCelebration(done=>showDayCleared(arche2, streakNow, names, done, hint));
   }
   if(arche2 && arche2.ranks){
     const beforeRank = rankInfo(arche2, before);
     const afterRank = rankInfo(arche2, after);
     if(afterRank && beforeRank && afterRank.idx > beforeRank.idx){
-      queueCelebration(done=>showRankUpModal(arche2, afterRank.cur, beforeRank.cur, done));
+      queueCelebration(done=>loadGallery().catch(()=>[]).then(pics=>showRankUpModal(arche2, afterRank.cur, beforeRank.cur, ()=>{ freeGallery(pics); done(); }, pics)));
     }
   }
+  if(before < PROOF_MILESTONE && after >= PROOF_MILESTONE) queueCelebration(done=>showProofMilestone(done));
   pushReportCleared();
   renderAll();
+  const saved=document.getElementById('noteSaved');
+  if(saved && entry.note.trim()) saved.textContent='Saved';
 }
 
-/* ---------------- Proof: a photo or video per habit, kept on this device ---------------- */
-const PROOF_SLOTS = ['h1','h2','h3'];
+/* ---------------- Proof: an optional photo or video of the non-negotiable, kept on this device ---------------- */
+// Each proof is saved with a small thumbnail for the arc gallery. Photos are kept for good; a video
+// is swapped for a still frame after 30 days so a year of proof doesn't fill the phone.
+const PROOF_SLOTS = ['h1'];
 const PROOF_MAX_VIDEO = 50*1024*1024;
-let proofDb = null, todayProof = {}, proofError = '';
+const VIDEO_KEEP_DAYS = 30;
+let proofDb = null, dayProof = {}, proofError = ''; // dayProof: proof for the day shown on the Today tab
 function openProofDb(){
   return new Promise((res,rej)=>{
     if(!('indexedDB' in window)) return rej(new Error('no indexedDB'));
@@ -519,30 +717,57 @@ function proofTx(mode, fn){
     tx.onabort = ()=>rej(tx.error);
   });
 }
-async function loadTodayProof(){
-  Object.keys(todayProof).forEach(k=>URL.revokeObjectURL(todayProof[k].url));
-  todayProof = {};
+async function loadDayProof(){
+  Object.keys(dayProof).forEach(k=>URL.revokeObjectURL(dayProof[k].url));
+  dayProof = {};
   if(!proofDb) return;
-  const t = todayStr();
+  const d = viewDate();
   for(const slot of PROOF_SLOTS){
-    const rec = await proofTx('readonly', s=>s.get(t+':'+slot));
-    if(rec) todayProof[slot] = {kind:rec.kind, url:URL.createObjectURL(rec.blob)};
+    const rec = await proofTx('readonly', s=>s.get(d+':'+slot));
+    if(rec) dayProof[slot] = {kind:rec.kind, url:URL.createObjectURL(rec.blob)};
   }
 }
-// photos are scaled down before saving so a month of proof doesn't fill the device
+// draws an image or video frame as a JPEG no bigger than max px on its long side
+function canvasJpeg(src, w, h, max, quality){
+  return new Promise(res=>{
+    const sc = Math.min(1, max/Math.max(w,h));
+    const c = document.createElement('canvas');
+    c.width = Math.max(1,Math.round(w*sc)); c.height = Math.max(1,Math.round(h*sc));
+    try{ c.getContext('2d').drawImage(src,0,0,c.width,c.height); }catch(e){ return res(null); }
+    c.toBlob(b=>res(b||null),'image/jpeg',quality);
+  });
+}
+// photos are scaled down before saving; returns the photo and its gallery thumbnail
 function shrinkImage(file){
   return new Promise(res=>{
     const img = new Image(), u = URL.createObjectURL(file);
-    img.onload = ()=>{
-      const sc = Math.min(1, 1280/Math.max(img.width,img.height));
-      const c = document.createElement('canvas');
-      c.width = Math.round(img.width*sc); c.height = Math.round(img.height*sc);
-      c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+    img.onload = async ()=>{
+      const full = await canvasJpeg(img, img.width, img.height, 1280, 0.8);
+      const thumb = await canvasJpeg(img, img.width, img.height, 400, 0.72);
       URL.revokeObjectURL(u);
-      c.toBlob(b=>res(b||file),'image/jpeg',0.8);
+      res({full: full||file, thumb});
     };
-    img.onerror = ()=>{ URL.revokeObjectURL(u); res(file); };
+    img.onerror = ()=>{ URL.revokeObjectURL(u); res({full:file, thumb:null}); };
     img.src = u;
+  });
+}
+// a still from early in a video: the gallery thumbnail now, and what replaces the video later
+function videoStill(file){
+  return new Promise(res=>{
+    const v = document.createElement('video'), u = URL.createObjectURL(file);
+    let settled = false;
+    const finish = async ok=>{
+      if(settled) return; settled = true;
+      const still = ok ? await canvasJpeg(v, v.videoWidth, v.videoHeight, 1280, 0.8) : null;
+      const thumb = ok ? await canvasJpeg(v, v.videoWidth, v.videoHeight, 400, 0.72) : null;
+      URL.revokeObjectURL(u); res({still, thumb});
+    };
+    v.muted = true; v.playsInline = true; v.preload = 'auto';
+    v.onloadeddata = ()=>{ try{ v.currentTime = Math.min(0.5, (v.duration||1)/2); }catch(e){ finish(true); } };
+    v.onseeked = ()=>finish(true);
+    v.onerror = ()=>finish(false);
+    setTimeout(()=>finish(v.readyState>=2), 4000);
+    v.src = u;
   });
 }
 async function addProof(slot, file){
@@ -552,27 +777,283 @@ async function addProof(slot, file){
   if(isVid && file.size > PROOF_MAX_VIDEO){ proofError = 'That video is over 50 MB. Use a shorter clip.'; return renderToday(); }
   if(!proofDb){ proofError = 'This browser can’t store proof. Private browsing blocks it.'; return renderToday(); }
   try{
-    const blob = isImg ? await shrinkImage(file) : file;
-    await proofTx('readwrite', s=>s.put({blob, kind:isImg?'image':'video', addedAt:Date.now()}, todayStr()+':'+slot));
+    let rec;
+    if(isImg){ const p = await shrinkImage(file); rec = {blob:p.full, thumb:p.thumb, kind:'image'}; }
+    else { const p = await videoStill(file); rec = {blob:file, still:p.still, thumb:p.thumb, kind:'video'}; }
+    rec.addedAt = Date.now();
+    await proofTx('readwrite', s=>s.put(rec, viewDate()+':'+slot));
   }catch(e){ proofError = 'Couldn’t save that file. Your device may be out of space.'; return renderToday(); }
-  await loadTodayProof();
-  commitToday();
+  await loadDayProof();
+  // proof of a habit means it happened, so it checks the habit off too
+  const box=document.getElementById('f_'+slot); if(box) box.checked=true;
+  commitDay();
+  syncPhotos();
 }
 async function removeProof(slot){
   proofError = '';
-  if(proofDb){ try{ await proofTx('readwrite', s=>s.delete(todayStr()+':'+slot)); }catch(e){} }
-  await loadTodayProof();
-  commitToday();
+  const id = viewDate()+':'+slot;
+  if(proofDb){ try{ await proofTx('readwrite', s=>s.delete(id)); }catch(e){} }
+  proofGone = proofGone.filter(g=>g.id!==id).concat({id, t:Date.now()});
+  persist(LS.proofGone, proofGone);
+  await loadDayProof();
+  commitDay();
+  syncPhotos();
 }
-// proof older than 30 days is deleted; the log itself (and the rank it earned) stays
+// videos older than 30 days become their still frame; photos, and the log itself, stay
 async function pruneProof(){
   if(!proofDb) return;
-  const d = new Date(); d.setDate(d.getDate()-30);
-  const cutoff = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  const cutoff = shiftDay(todayStr(), -VIDEO_KEEP_DAYS);
   try{
     const keys = await proofTx('readonly', s=>s.getAllKeys());
-    for(const k of keys||[]){ if(String(k).slice(0,10) < cutoff) await proofTx('readwrite', s=>s.delete(k)); }
+    for(const k of keys||[]){
+      if(String(k).slice(0,10) >= cutoff) continue;
+      const rec = await proofTx('readonly', s=>s.get(k));
+      if(!rec || rec.kind!=='video') continue;
+      if(rec.still) await proofTx('readwrite', s=>s.put({blob:rec.still, thumb:rec.thumb, kind:'image', fromVideo:true, addedAt:rec.addedAt}, k));
+      else await proofTx('readwrite', s=>s.delete(k));
+    }
   }catch(e){}
+}
+
+/* ---------------- Photo backup: proof photos saved under the licence key too ---------------- */
+// Runs after each backup of the arc and whenever proof is added or removed. Photos this phone has
+// and the backup doesn't are uploaded; photos the backup has and this phone doesn't are downloaded.
+// A removed photo is remembered in proofGone (part of the synced arc), so every phone deletes it
+// instead of uploading it again. Videos are backed up as their still frame. See api/arc-photos.js.
+let photoBusy = false, photoAgain = false, photoStatus = {state:'idle', total:0, left:0};
+const photoUrlId = id => id.replace(':','_');
+function photoApi(path, opts){
+  opts = opts || {};
+  return fetch('/api/arc-photos'+path, {method:opts.method||'GET', body:opts.body,
+    headers:Object.assign({'X-Arc-Key':licenceKey()}, opts.headers||{})});
+}
+function goneAt(id){ const g = proofGone.find(x=>x.id===id); return g ? g.t : -1; }
+async function syncPhotos(){
+  if(!proofDb || !licenceKey()) return;
+  if(photoBusy){ photoAgain = true; return; }
+  photoBusy = true;
+  let changedHere = false;
+  try{
+    const res = await photoApi('');
+    const out = await res.json().catch(()=>({ok:false}));
+    if(!out.ok){ setPhotoStatus(out.reason==='not_configured' ? 'off' : 'error'); return; }
+    const cloud = new Map(out.photos.map(p=>[p.id.replace('_',':'), p]));
+    const keys = (await proofTx('readonly', s=>s.getAllKeys())) || [];
+    const local = new Map();
+    for(const k of keys) local.set(String(k), await proofTx('readonly', s=>s.get(k)));
+    const uploads = [], downloads = [], removes = [];
+    local.forEach((rec, id)=>{
+      if(goneAt(id) >= (rec.addedAt||0)){ removes.push(id); return; }
+      const c = cloud.get(id);
+      if(!c || c.t < (rec.addedAt||0)) uploads.push(id);
+    });
+    cloud.forEach((c, id)=>{
+      if(goneAt(id) >= c.t){ photoApi('/'+photoUrlId(id), {method:'DELETE'}).catch(()=>{}); return; }
+      const rec = local.get(id);
+      if(!rec || (rec.addedAt||0) < c.t) downloads.push(id);
+    });
+    for(const id of removes){ await proofTx('readwrite', s=>s.delete(id)); changedHere = true; }
+    photoStatus = {state:'busy', total:local.size - removes.length + downloads.length, left:uploads.length + downloads.length};
+    setPhotoStatus('busy');
+    for(const id of uploads){
+      const rec = local.get(id);
+      const full = rec.kind==='video' ? rec.still : rec.blob;
+      if(full){
+        const headers = {'X-Arc-T':String(rec.addedAt||0), 'X-Arc-Kind':rec.kind, 'Content-Type':'image/jpeg'};
+        const put = part=>photoApi('/'+photoUrlId(id)+'/'+part, {method:'PUT', body:part==='full'?full:rec.thumb, headers}).then(r=>{ if(!r.ok) throw new Error('upload'); });
+        await put('full');
+        if(rec.thumb) await put('thumb');
+      }
+      photoStatus.left--; setPhotoStatus('busy');
+    }
+    for(const id of downloads){
+      const c = cloud.get(id);
+      const get = part=>photoApi('/'+photoUrlId(id)+'/'+part).then(r=>{ if(!r.ok) throw new Error('download'); return r.blob(); });
+      const blob = await get('full');
+      const thumb = c.parts.includes('thumb') ? await get('thumb').catch(()=>null) : null;
+      await proofTx('readwrite', s=>s.put({blob, thumb, kind:'image', fromVideo:c.kind==='video', addedAt:c.t}, id));
+      changedHere = true;
+      photoStatus.left--; setPhotoStatus('busy');
+    }
+    setPhotoStatus('ok');
+  }catch(e){ setPhotoStatus(navigator.onLine===false ? 'offline' : 'error'); }
+  finally{
+    photoBusy = false;
+    if(changedHere){ await loadDayProof(); renderToday(); renderGallery(); }
+    if(photoAgain){ photoAgain = false; syncPhotos(); }
+  }
+}
+function setPhotoStatus(state){ photoStatus.state = state; setSyncStatus(syncStatus); }
+function photoLine(){
+  const p = photoStatus;
+  if(p.state==='busy' && p.left>0) return 'Backing up photos… '+p.left+' to go.';
+  if(p.state==='ok') return p.total ? 'Photos: all '+p.total+' backed up.' : 'Photos: nothing to back up yet.';
+  if(p.state==='off') return 'Photo backup isn’t switched on yet. Your photos are safe on this phone.';
+  if(p.state==='offline') return 'Photos back up when you’re online.';
+  if(p.state==='error') return 'Some photos didn’t back up. They’ll try again.';
+  return '';
+}
+
+/* ---------------- Look back: the monthly recap and the 30-full-clear reveal ---------------- */
+// The first time the tracker opens in a new month, last month's recap plays: its proof photos, full
+// clears, best streak, Second Winds and best win line. Reaching 30 full clears plays a one-off "30
+// days of proof" reveal. Both can be replayed from the Progress tab.
+const PROOF_MILESTONE = 30;
+const MONTH_KEY = 'arc_recaps_seen';
+const ymOf = d => d.slice(0,7);
+function monthName(ym, withYear){ const p=ym.split('-').map(Number); return new Date(p[0],p[1]-1,1).toLocaleDateString(undefined, withYear?{month:'long',year:'numeric'}:{month:'long'}); }
+function prevMonth(ym){ const p=ym.split('-').map(Number); const d=new Date(p[0],p[1]-2,1); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); }
+// months with anything logged, newest first, not counting the one in progress
+function pastMonths(){ const now=ymOf(todayStr()); return [...new Set(log.map(e=>ymOf(e.date)))].filter(m=>m<now).sort().reverse(); }
+function monthSummary(ym){
+  const days = log.filter(e=>ymOf(e.date)===ym && !(e.repaired && !e.h1)).sort((a,b)=>a.date.localeCompare(b.date));
+  const by = Object.fromEntries(log.map(e=>[e.date,e]));
+  let best = 0;
+  days.forEach(e=>{ if(e.h1) best = Math.max(best, streakEndingAt(e.date, Object.fromEntries(Object.entries(by).filter(([d])=>ymOf(d)===ym)))); });
+  const notes = days.map(e=>(e.note||'').trim()).filter(Boolean);
+  return {
+    logged: days.length,
+    fullClears: days.filter(e=>e.h1&&e.h2&&e.h3).length,
+    best,
+    secondWinds: secondWinds.filter(s=>ymOf(s.missed)===ym).length,
+    // the longest win line tends to be the one with the most in it
+    win: notes.sort((a,b)=>b.length-a.length)[0] || ''
+  };
+}
+function proofMosaic(pics, max){
+  // when there are more than fit, the last tile becomes "+N" so the grid stays a clean rectangle
+  const shown = pics.length > max ? pics.slice(0,max-1) : pics, extra = pics.length - shown.length;
+  return '<div class="recap-grid'+(shown.length>9?' dense':'')+'">'+shown.map((x,i)=>'<img src="'+x.thumbUrl+'" alt="" style="animation-delay:'+(0.9+i*0.05).toFixed(2)+'s;">').join('')+
+    (extra>0?'<span class="recap-more">+'+extra+'</span>':'')+'</div>';
+}
+function recapStat(num,lbl){ return '<div class="recap-stat"><b>'+num+'</b><span>'+lbl+'</span></div>'; }
+
+function showMonthRecap(ym, onDone){
+  const arche = getArchetype(profile.archetypeKey);
+  const m = monthSummary(ym);
+  loadGallery().catch(()=>[]).then(all=>{
+    const pics = all.filter(x=>ymOf(x.date)===ym).reverse(); // oldest first, so the month reads in order
+    const next = monthName(shiftDay(ym+'-28',7).slice(0,7));
+    const inner = '<div class="month-recap">'+
+      '<div class="cel-kicker">YOUR '+escapeHtml(monthName(ym).toUpperCase())+' ARC</div>'+
+      '<div class="cel-title">'+(m.fullClears ? m.fullClears+' full '+(m.fullClears===1?'clear':'clears')+'.' : m.logged+' '+(m.logged===1?'day':'days')+' logged.')+'</div>'+
+      (pics.length ? proofMosaic(pics, 12) : '<p class="cel-sub">No proof this month. Add a photo of your non-negotiable and next month’s recap fills with your days.</p>')+
+      '<div class="recap-stats">'+recapStat(m.logged,'days logged')+recapStat('🔥 '+m.best,'best streak')+recapStat(m.secondWinds,m.secondWinds===1?'Second Wind':'Second Winds')+'</div>'+
+      (m.win ? '<p class="recap-win">“'+escapeHtml(m.win)+'”<span>Your best win line</span></p>' : '')+
+      '<button class="btn" id="celOk">On to '+escapeHtml(next)+'</button></div>';
+    mountCelebration(arche, inner, 10*60*1000, ()=>{ freeGallery(all); onDone&&onDone(); }, false);
+  });
+}
+
+function showProofMilestone(onDone){
+  const arche = getArchetype(profile.archetypeKey);
+  loadGallery().catch(()=>[]).then(all=>{
+    const pics = all.slice(0,PROOF_MILESTONE).reverse();
+    const inner = '<div class="month-recap">'+
+      '<div class="cel-kicker">'+PROOF_MILESTONE+' DAYS OF PROOF</div>'+
+      '<div class="cel-title">'+PROOF_MILESTONE+' full clears.</div>'+
+      (pics.length ? proofMosaic(pics, PROOF_MILESTONE) : '')+
+      '<p class="cel-sub">A month of showing up, all three, every time it counted. '+(arche?escapeHtml(arche.title)+' isn’t a plan any more. It’s a record.':'')+'</p>'+
+      '<button class="btn" id="celOk">Keep building</button></div>';
+    mountCelebration(arche, inner, 10*60*1000, ()=>{ freeGallery(all); onDone&&onDone(); }, false);
+    setTimeout(()=>spawnConfetti(arche?arche.hue:45), 600);
+  });
+}
+
+// on opening the tracker: last month's recap, once, if anything was logged in it
+function maybeShowMonthRecap(){
+  const last = prevMonth(ymOf(todayStr()));
+  const seen = load(MONTH_KEY, []);
+  if(seen.includes(last) || !log.some(e=>ymOf(e.date)===last)) return;
+  persist(MONTH_KEY, [...seen, last].slice(-24));
+  queueCelebration(done=>showMonthRecap(last, done));
+}
+
+// the "Look back" row on Progress: replay any past month, and the 30-day reveal once earned
+function lookBackHtml(stats){
+  const months = pastMonths().slice(0,12);
+  const milestone = stats.fullClear >= PROOF_MILESTONE;
+  if(!months.length && !milestone) return '';
+  return '<div class="lookback"><div class="card-kicker">Look back</div><div class="lookback-row">'+
+    (milestone?'<button type="button" class="chip-btn gold" data-milestone>'+PROOF_MILESTONE+' days of proof</button>':'')+
+    months.map(ym=>'<button type="button" class="chip-btn" data-recap="'+ym+'">'+escapeHtml(monthName(ym, ym.slice(0,4)!==todayStr().slice(0,4)))+'</button>').join('')+
+    '</div></div>';
+}
+function wireLookBack(el){
+  el.querySelectorAll('[data-recap]').forEach(b=>b.addEventListener('click',()=>queueCelebration(done=>showMonthRecap(b.dataset.recap, done))));
+  el.querySelectorAll('[data-milestone]').forEach(b=>b.addEventListener('click',()=>queueCelebration(done=>showProofMilestone(done))));
+}
+
+/* ---------------- Arc gallery: every proof, newest first ---------------- */
+// loadGallery makes a thumbnail URL per item; whoever asked for them frees them with freeGallery
+let galleryItems = [], galleryShowAll = false;
+function freeGallery(items){ (items||[]).forEach(x=>URL.revokeObjectURL(x.thumbUrl)); }
+async function loadGallery(){
+  if(!proofDb) return [];
+  const keys = await proofTx('readonly', s=>s.getAllKeys());
+  const recs = await proofTx('readonly', s=>s.getAll());
+  const items = (keys||[]).map((k,i)=>({date:String(k).slice(0,10), slot:String(k).slice(11), rec:recs[i]}))
+    .filter(x=>x.rec && x.rec.blob && (x.rec.thumb || x.rec.still || x.rec.kind==='image'))
+    .sort((a,b)=>b.date.localeCompare(a.date));
+  items.forEach(x=>{ x.thumbUrl = URL.createObjectURL(x.rec.thumb || x.rec.still || x.rec.blob); });
+  return items;
+}
+async function renderGallery(){
+  const el = document.getElementById('arcGallery');
+  if(!el) return;
+  const items = await loadGallery().catch(()=>[]);
+  freeGallery(galleryItems); galleryItems = items;
+  let html = '<h2 class="section-title" style="margin-top:26px;">Your arc in pictures</h2>'+lookBackHtml(computeStats());
+  if(!items.length){
+    el.innerHTML = html+'<div class="card gallery-empty"><p>Add a photo or video of your non-negotiable on the <b>Today</b> tab. Every one lands here, so you can scroll back and see how far you’ve come.</p><button type="button" class="btn ghost go" data-goto="today">Go to Today →</button></div>';
+    wireLookBack(el);
+    return;
+  }
+  const shown = galleryShowAll ? items : items.slice(0,12);
+  html += '<p class="section-sub">'+items.length+' '+(items.length===1?'day':'days')+' of proof. Tap one to look back.</p>';
+  html += '<div class="gallery">'+shown.map((x,i)=>'<button type="button" class="gal-item" data-gal="'+i+'" aria-label="Proof from '+fmtDate(x.date)+'">'+
+    '<img src="'+x.thumbUrl+'" alt="" loading="lazy">'+(x.rec.kind==='video'?'<span class="gal-play" aria-hidden="true">▶</span>':'')+
+    '<span class="gal-date">'+fmtDate(x.date)+'</span></button>').join('')+'</div>';
+  if(items.length>shown.length) html += '<button type="button" class="btn ghost" id="galMore" style="margin-top:10px;">Show all '+items.length+'</button>';
+  html += '<p class="card-note">Backed up with your key. Videos turn into a still after '+VIDEO_KEEP_DAYS+' days to save space, and back up as that still.</p>';
+  el.innerHTML = html;
+  el.querySelectorAll('[data-gal]').forEach(b=>b.addEventListener('click',()=>openViewer(shown, +b.dataset.gal)));
+  wireLookBack(el);
+  const more=document.getElementById('galMore'); if(more) more.addEventListener('click',()=>{ galleryShowAll=true; renderGallery(); });
+}
+// full-screen look back at one day: the proof, the date, and that day's win line
+function openViewer(items, start){
+  const root = document.querySelector('.arc-root');
+  let i = start, url = '';
+  const el = document.createElement('div');
+  el.className = 'proof-viewer'; el.setAttribute('role','dialog'); el.setAttribute('aria-label','Proof');
+  root.appendChild(el);
+  const draw = ()=>{
+    if(url) URL.revokeObjectURL(url);
+    const x = items[i]; url = URL.createObjectURL(x.rec.blob);
+    const entry = log.find(e=>e.date===x.date);
+    const habit = habits[x.slot] && habits[x.slot].habit;
+    const media = x.rec.kind==='video' ? '<video src="'+url+'" controls playsinline autoplay muted></video>' : '<img src="'+url+'" alt="">';
+    el.innerHTML = '<button type="button" class="pv-close" aria-label="Close">×</button>'+
+      '<div class="pv-media">'+media+'</div>'+
+      '<div class="pv-info"><div class="pv-date">'+dfs(x.date).toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric',year:'numeric'})+'</div>'+
+      (habit?'<div class="pv-habit">'+escapeHtml(habit)+'</div>':'')+
+      (entry && (entry.note||'').trim()?'<p class="pv-note">“'+escapeHtml(entry.note)+'”</p>':'')+
+      '<div class="pv-nav"><button type="button" class="btn ghost" data-pv="-1"'+(i>0?'':' disabled')+'>← Newer</button>'+
+      '<span>'+(i+1)+' / '+items.length+'</span>'+
+      '<button type="button" class="btn ghost" data-pv="1"'+(i<items.length-1?'':' disabled')+'>Older →</button></div></div>';
+    el.querySelector('.pv-close').addEventListener('click', close);
+    el.querySelectorAll('[data-pv]').forEach(b=>b.addEventListener('click',()=>step(+b.dataset.pv)));
+  };
+  const step = d=>{ const n=i+d; if(n>=0 && n<items.length){ i=n; draw(); } };
+  const close = ()=>{ if(url) URL.revokeObjectURL(url); el.remove(); document.removeEventListener('keydown', onKey); document.body.style.overflow=''; };
+  const onKey = e=>{ if(e.key==='Escape') close(); else if(e.key==='ArrowLeft') step(-1); else if(e.key==='ArrowRight') step(1); };
+  let touchX = null;
+  el.addEventListener('touchstart', e=>{ touchX = e.touches[0].clientX; }, {passive:true});
+  el.addEventListener('touchend', e=>{ if(touchX==null) return; const dx = e.changedTouches[0].clientX - touchX; touchX = null; if(Math.abs(dx)>50) step(dx<0?1:-1); });
+  document.addEventListener('keydown', onKey);
+  document.body.style.overflow='hidden';
+  draw();
 }
 
 function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
@@ -600,79 +1081,78 @@ function renderProgress(){
   const el=document.getElementById('tab-progress');
   const arche=getArchetype(profile.archetypeKey);
   const stats=computeStats();
-  let html='<h2 class="section-title">Progress</h2><p class="section-sub">No math on you \u2014 this is calculated straight from your daily log.</p>';
+  let html='<h2 class="section-title">Progress</h2><p class="section-sub">Calculated straight from your daily log. No math on you.</p>';
 
-  if(stats.totalDays>0){
-    html += '<div class="card recap-card"><div class="tag">Your arc so far</div><p>'+buildRecap(stats, arche)+'</p></div>';
+  // rank leads: it's the number the whole system is built around
+  if(arche && arche.ranks){
+    const ri = rankInfo(arche, stats.fullClear);
+    html += '<div class="card accent rank-card"><div class="rank-head">'+iconSVG(arche,56)+'<div><div class="card-kicker">'+escapeHtml(arche.title)+'</div><div class="rank-name">'+escapeHtml(ri.cur.name)+'</div></div></div>';
+    if(ri.next){
+      const pct = Math.min(100, Math.round((stats.fullClear-ri.cur.ms)/(ri.next.ms-ri.cur.ms)*100));
+      html += '<div class="xpbar-outer"><div class="xpbar-inner" style="width:'+pct+'%;"></div></div>';
+      html += '<div class="card-note">'+(ri.next.ms-stats.fullClear)+' more full-clear days to reach '+escapeHtml(ri.next.name)+'. Rank is earned by full-clear days, not time on the calendar.</div>';
+    } else {
+      html += '<div class="card-note">Top rank reached. That’s the ceiling for this archetype — the grind now is just staying there.</div>';
+    }
+    html += '<div class="emblem-row">'+arche.ranks.map((r,i)=>{
+      const reached = stats.fullClear>=r.ms;
+      const isTop = i===arche.ranks.length-1;
+      const nameClass = 'emblem-name'+(reached?' reached':'')+(reached&&isTop?' top':'');
+      return '<div class="emblem-wrap"><div class="emblem" data-tier="'+(reached?i:0)+'" style="--hue:'+arche.hue+';">'+
+        '<div class="ring ring-outer"></div><div class="ring ring-mid"></div><div class="glow"></div><div class="icon">'+iconSVG(arche,40)+'</div>'+
+        '</div><div class="'+nameClass+'">'+escapeHtml(r.name)+'</div></div>';
+    }).join('')+'</div>';
+    if(stats.totalDays>0) html += '<p class="recap">'+buildRecap(stats, arche)+'</p>';
+    html += '</div>';
+  } else {
+    html += '<div class="banner info"><div>Pick an archetype to unlock your rank ladder. <button type="button" class="linkbtn" data-goto="archetypes">Choose one</button></div></div>';
   }
 
-  html += '<div class="row" style="margin-bottom:14px;">';
-  html += stat(stats.totalDays,'Days logged');
-  html += stat(stats.currentStreak,'Current streak');
+  html += '<div class="stat-row">';
+  html += stat('\u{1F525} '+stats.currentStreak,'Current streak');
   html += stat(stats.longest,'Longest streak');
-  html += stat(stats.fullClear,'Full-clear days');
+  html += stat(stats.fullClear,'Full clears');
   html += '</div>';
 
   const level = Math.floor(stats.xp/100)+1;
   const inLevel = stats.xp%100;
-  html += '<div class="card"><div style="display:flex;justify-content:space-between;font-size:13px;color:var(--text-dim);"><span>Level '+level+'</span><span>'+stats.xp+' XP total</span></div>';
+  html += '<div class="card"><div class="level-head"><span>Level '+level+'</span><span>'+stats.xp+' XP earned</span></div>';
   html += '<div class="xpbar-outer"><div class="xpbar-inner" style="width:'+inLevel+'%;"></div></div>';
-  html += '<div class="helptext" style="margin-top:0;">'+(100-inLevel)+' XP to level '+(level+1)+' \u2014 earned from real check-ins (10/5/5 for non-negotiable/habit 2/habit 3, +2 for a reflection line).</div></div>';
+  html += '<div class="card-note">'+(100-inLevel)+' XP to level '+(level+1)+'. Non-negotiable 10 · habits 2 and 3: 5 each · shadow-check 5 · proof of your non-negotiable +'+PROOF_XP+' · win line 2.</div>'+
+    '<div class="wallet"><span><b>'+stats.wallet+' XP</b> to spend</span><span>Second Wind: '+SECOND_WIND_COST+' XP</span></div>'+
+    '<div class="card-note">Spending XP never lowers your level. A Second Wind repairs a missed day so your streak survives, once a week.</div></div>';
 
-  if(arche && arche.ranks){
-    const ri = rankInfo(arche, stats.fullClear);
-    html += '<div class="card accent"><div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">';
-    html += '<span>'+iconSVG(arche,34)+'</span><div><div style="font-family:var(--font-display);font-weight:700;font-size:17px;">'+ri.cur.name+'</div><div class="helptext" style="margin:0;">'+arche.title+' \u00b7 rank is earned by full-clear days, not time on the calendar</div></div></div>';
-    if(ri.next){
-      const pct = Math.min(100, Math.round((stats.fullClear-ri.cur.ms)/(ri.next.ms-ri.cur.ms)*100));
-      html += '<div class="helptext" style="margin-bottom:4px;">'+(ri.next.ms-stats.fullClear)+' more full-clear days to reach '+ri.next.name+'</div>';
-      html += '<div class="xpbar-outer"><div class="xpbar-inner" style="width:'+pct+'%;"></div></div>';
-    } else {
-      html += '<div class="helptext" style="margin:0;">Top rank reached. That\u2019s the ceiling for this archetype \u2014 the grind now is just staying there.</div>';
-    }
-    html += '<div class="emblem-row">'+arche.ranks.map((r,i)=>{
-      const tier = i; // 0..4, matches milestone index
-      const reached = stats.fullClear>=r.ms;
-      const isTop = i===arche.ranks.length-1;
-      const nameClass = 'emblem-name'+(reached?' reached':'')+(reached&&isTop?' top':'');
-      return '<div class="emblem-wrap"><div class="emblem" data-tier="'+(reached?tier:0)+'" style="--hue:'+arche.hue+';">'+
-        '<div class="ring ring-outer"></div><div class="ring ring-mid"></div><div class="glow"></div><div class="icon">'+iconSVG(arche,40)+'</div>'+
-        '</div><div class="'+nameClass+'">'+escapeHtml(r.name)+'</div></div>';
-    }).join('')+'</div>';
+  if(arche && arche.shadowOptions){
+    html += '<div class="card"><div class="card-kicker gold">Shadow-check</div>';
+    html += '<div class="stat-row inset">'+stat(stats.shadowStreak,'Current streak')+stat(stats.shadowTotal,'Total done')+'</div>';
+    const earnedShadow = SHADOW_BADGES.filter(b=>stats.shadowTotal>=b.n);
+    if(earnedShadow.length) html += '<div class="badgechips">'+earnedShadow.map(b=>'<span class="chip">'+b.name+'</span>').join('')+'</div>';
+    else html += '<div class="card-note">10 shadow-checks unlocks your first badge — tracked separately from your rank.</div>';
     html += '</div>';
-
-    if(arche.shadowOptions){
-      html += '<div class="card"><div style="font-size:11.5px;font-weight:700;color:var(--gold);letter-spacing:0.3px;margin-bottom:6px;">SHADOW-CHECK PROGRESS</div>';
-      html += '<div class="row" style="margin-bottom:8px;">'+stat(stats.shadowStreak,'Current streak')+stat(stats.shadowTotal,'Total completed')+'</div>';
-      const earnedShadow = SHADOW_BADGES.filter(b=>stats.shadowTotal>=b.n);
-      if(earnedShadow.length) html += '<div class="badgechips">'+earnedShadow.map(b=>'<span class="chip">'+b.name+'</span>').join('')+'</div>';
-      else html += '<div class="helptext" style="margin:0;">10 shadow-checks unlocks your first badge \u2014 tracked separately from your rank.</div>';
-      html += '</div>';
-    }
-  } else {
-    html += '<div class="banner info">Pick an archetype in the Archetypes tab to unlock your rank ladder.</div>';
   }
 
-  html += '<div class="card"><div style="font-size:13px;color:var(--text-dim);margin-bottom:6px;">Last 30 days \u2014 darker means more of the three habits landed</div>';
+  html += '<div class="card"><div style="font-size:13px;color:var(--text-dim);margin-bottom:6px;">Last 30 days \u2014 brighter means more of the three habits landed</div>';
   html += '<div class="heatgrid">'+heatCells(30)+'</div></div>';
 
+  html += '<div id="arcGallery"></div>';
   html += weeklyReviewBlock();
 
   el.innerHTML = html;
   wireWeeklyReview();
+  renderGallery();
 
   function stat(num,lbl){ return '<div class="stat"><div class="num">'+num+'</div><div class="lbl">'+lbl+'</div></div>'; }
 
   function heatCells(n){
     const map = {};
-    log.forEach(e=>{ map[e.date] = (e.h1?1:0)+(e.h2?1:0)+(e.h3?1:0); });
+    log.forEach(e=>{ map[e.date] = e.repaired && !e.h1 ? 'r' : (e.h1?1:0)+(e.h2?1:0)+(e.h3?1:0); });
     let out='';
     const t = dfs(todayStr());
     for(let i=n-1;i>=0;i--){
       const d = new Date(t); d.setDate(d.getDate()-i);
       const key = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
       const lvl = map[key]||0;
-      out += '<div class="cell" data-lvl="'+lvl+'" title="'+key+' \u00b7 '+lvl+'/3"></div>';
+      out += '<div class="cell" data-lvl="'+lvl+'" title="'+key+' \u00b7 '+(lvl==='r'?'repaired with a Second Wind':lvl+'/3')+'"></div>';
     }
     return out;
   }
@@ -700,6 +1180,8 @@ function wireWeeklyReview(){
   if(!btn) return;
   btn.addEventListener('click',()=>{
     weekly.push({
+      id: Date.now().toString(36),
+      t: Date.now(),
       date: todayStr(),
       went: document.getElementById('wr_went').value.slice(0,400),
       wins: document.getElementById('wr_wins').value.slice(0,400),
@@ -738,6 +1220,7 @@ function renderArchetypes(){
   el.querySelectorAll('[data-pick]').forEach(btn=>{
     btn.addEventListener('click',()=>{
       profile.archetypeKey = btn.dataset.pick;
+      profile.t = Date.now();
       persist(LS.profile, profile);
       if(pushState==='on') pushSync().catch(()=>{});
             renderAll();
@@ -807,6 +1290,9 @@ function renderSetup(){
 
   html += '<button class="btn" id="saveHabitsBtn" style="margin-top:6px;">Save character & habits</button>';
 
+  html += '<h2 class="section-title" style="font-size:16px;margin-top:30px;">Backup</h2><p class="section-sub">Your arc is saved to your licence key. Sign in with the same key on a new phone and everything comes back: habits, log, streaks, XP, reviews and your proof photos. Videos are backed up as a still frame.</p>';
+  html += '<div class="card" id="syncBox">'+syncBoxHtml()+'</div>';
+
   html += '<h2 class="section-title" style="font-size:16px;margin-top:30px;">Daily reminder</h2><p class="section-sub">Get a notification on this device if you haven\u2019t cleared today by your reminder time. It arrives even when Arc Tracker is closed.</p>';
   html += '<div class="card"><label for="r_time">Reminder time</label><input type="time" id="r_time" value="'+(reminder.time||'08:00')+'">';
   html += '<div id="pushBox">'+pushBoxHtml()+'</div></div>';
@@ -828,7 +1314,7 @@ function renderSetup(){
   }
 
   html += '<h2 class="section-title" style="font-size:16px;margin-top:30px;">Reset</h2>';
-  html += '<div class="card"><p class="section-sub" style="margin-bottom:12px;">Clears your log, habits, and character on this device.</p><button class="btn danger" id="resetBtn">Reset all local data</button></div>';
+  html += '<div class="card"><p class="section-sub" style="margin-bottom:12px;">Clears your log, habits, character and proof, here and in your backup.</p><button class="btn danger" id="resetBtn">Reset my arc</button></div>';
 
   el.innerHTML = html;
 
@@ -864,6 +1350,7 @@ function renderSetup(){
     if(document.getElementById('sc_cue')){
       habits.sc = {cue:document.getElementById('sc_cue').value.trim(), habit:document.getElementById('sc_habit').value.trim()};
     }
+    profile.t = habits.t = Date.now();
     persist(LS.profile, profile);
     persist(LS.habits, habits);
         renderAll();
@@ -908,6 +1395,7 @@ function renderSetup(){
     if(pushState==='on') pushSync().catch(()=>{});
   });
   wirePushBox();
+  wireSyncBox();
 
   if(DEMO){
   document.getElementById('previewRankUpBtn').addEventListener('click', ()=>{
@@ -924,12 +1412,15 @@ function renderSetup(){
   }
 
   document.getElementById('resetBtn').addEventListener('click',()=>{
-    if(!confirm('Reset all local Arc Tracker data on this device? This can\u2019t be undone.')) return;
+    if(!confirm('Reset your whole arc? This clears your log, habits, character and proof on this device, and your backup too, so other devices signed in with your key are reset as well. This can\u2019t be undone.')) return;
     if(proofDb){ proofTx('readwrite', s=>s.clear()).catch(()=>{}); }
-    Object.keys(todayProof).forEach(k=>URL.revokeObjectURL(todayProof[k].url)); todayProof={}; proofError='';
+    Object.keys(dayProof).forEach(k=>URL.revokeObjectURL(dayProof[k].url)); dayProof={}; proofError='';
     profile={name:'',archetypeKey:''}; habits={h1:{cue:'',habit:''},h2:{cue:'',habit:''},h3:{cue:'',habit:''},sc:{cue:'',habit:''}}; log=[]; weekly=[];
-    persist(LS.profile,profile); persist(LS.habits,habits); persist(LS.log,log); persist(LS.weekly,weekly);
+    secondWinds=[]; proofGone=[];
+    persist(LS.proofGone,proofGone);
+    persist(LS.profile,profile); persist(LS.habits,habits); persist(LS.log,log); persist(LS.weekly,weekly); persist(LS.secondWinds,secondWinds);
     renderAll();
+    syncNow({reset:true});
   });
 }
 
@@ -1024,79 +1515,54 @@ function wirePushBox(){
 function refreshPushBox(){
   const el=document.getElementById('pushBox');
   if(el){ el.innerHTML=pushBoxHtml(); wirePushBox(); }
+  renderGuide(); // its setup checklist ticks off the reminder step
 }
 
-/* ---------------- Start Here tab (the setup guide, from the Notion "Arc Tracker" page) ---------------- */
+/* ---------------- Start Here tab: how the system works and how to set it up in this app ---------------- */
 function renderGuide(){
   const el=document.getElementById('tab-guide');
-  const starters=ARCHETYPES.filter(a=>a.ranks);
-  const endgame=ARCHETYPES.find(a=>a.endgame);
-  const list=items=>'<ul>'+items.map(t=>'<li>'+escapeHtml(t)+'</li>').join('')+'</ul>';
+  const arche=getArchetype(profile.archetypeKey);
+  const named=['h1','h2','h3'].filter(k=>habits[k] && habits[k].habit).length;
+  const go=(tab,label)=>'<button type="button" class="btn ghost go" data-goto="'+tab+'">'+label+' →</button>';
+  const step=(done,title,body,action)=>'<li class="'+(done?'done':'')+'"><span class="step-mark" aria-hidden="true">'+(done?'✓':'')+'</span><div><b>'+title+'</b><p>'+body+'</p>'+(action||'')+'</div></li>';
   let html=`
   <div class="banner info"><div><b>One system. Nine arcs. Pick yours and start today.</b><br>
-  This is the system every Anime Mindset archetype runs on. The habit science is from Atomic Habits. Your archetype’s identity, shadow, and rank ladder sit on top. Rank, XP, and level calculate themselves. You never do math.</div></div>
+  The habit science comes from Atomic Habits. Your archetype’s identity, shadow and rank ladder sit on top. Rank, XP and level work themselves out. You never do math.</div></div>
 
-  <h2 class="section-title">Setup (15 minutes, one time)</h2>
-  <div class="card"><ol>
-    <li><b>Know your archetype.</b> Open the toggles in <i>Know Your Archetype</i> below and find the one that stings a little. That’s usually yours.</li>
-    <li><b>Set up your character.</b> In the Character Profile below, rename <b>Your Name Here</b> to your name and pick your <b>Archetype</b>. Your rank ladder switches to your archetype automatically.</li>
-    <li><b>Pick 3 habits, max.</b> One Non-Negotiable plus two supporting habits. Each archetype toggle has ideas built for it. Size each one to the <b>two-minute rule</b>: “open the book,” not “read 30 pages.”</li>
-    <li><b>Pick one shadow-check.</b> This is separate from your 3 habits and works against your archetype’s specific failure mode. Ideas are in your archetype toggle.</li>
-    <li><b>Write your habit stacks</b> in the Habit Stacking section so each habit rides on something you already do.</li>
-    <li><b>Rename the Daily Log columns.</b> Click the <i>Habit 2</i> and <i>Habit 3</i> column headers and rename them to your actual habits, so check-off reads like your life, not a template.</li>
-  </ol></div>
+  <h2 class="section-title">Setup (about 5 minutes, once)</h2>
+  <ol class="steps">`+
+    step(!!arche,'Pick your archetype','Open the <b>Archetypes</b> tab and read the self-checks. Not sure? Pick the one that stings a little. That’s usually yours.', arche?'':go('archetypes','Choose an archetype'))+
+    step(named===3,'Name 3 habits, max','In <b>Setup</b>: one non-negotiable plus two supporting habits. Size each one to the <b>two-minute rule</b>: “open the book,” not “read 30 pages.” Your archetype has ideas you can tap to fill in.', named===3?'':go('setup','Open Setup'))+
+    step(!!(habits.sc && habits.sc.habit),'Pick one shadow-check','Also in <b>Setup</b>. It’s separate from your 3 habits and works against your archetype’s specific failure mode.')+
+    step(!!(habits.h1 && habits.h1.cue),'Stack each habit on something you already do','Fill the “After I…” box for each habit: your morning coffee, sitting down at your desk, brushing your teeth. <i>After I pour my coffee, I will open my book and read one page.</i>')+
+    step(IS_STANDALONE,'Add Arc Tracker to your Home Screen','On iPhone: tap Share, then <b>Add to Home Screen</b>. On Android: the browser menu, then <b>Install app</b>. It opens full screen and can send reminders. Your arc is backed up to your key, so a new phone picks up where you left off.')+
+    step(pushState==='on','Turn on your daily reminder','In <b>Setup</b>, pick a time. If you haven’t cleared the day by then, you get a nudge.')+
+  `</ol>
   <div class="banner note"><div>If setup is taking longer than 15 minutes, you’re overbuilding it. Three habits and one shadow-check. That’s the whole system.</div></div>
 
-  <h2 class="section-title">Your Character</h2>
-  <div class="banner info"><div><b>Your progress is automatic.</b> Ranks are earned by <b>full-clear days</b> (all 3 habits on the same day), not by time on the calendar. Coasting doesn’t move you up. Check the Rank Progress bar after each log.</div></div>
-
-  <h2 class="section-title">The Daily Loop (under 5 minutes)</h2>
+  <h2 class="section-title">The daily loop (under a minute)</h2>
   <div class="card"><ol>
-    <li>Add today’s row in the Daily Log below and check off what you did, <b>even on a miss.</b> An honest empty box keeps your rank real.</li>
-    <li>Check <b>Shadow-Check</b> if you did it.</li>
+    <li>Open <b>Today</b> and tap each habit you did. It saves as you tap.</li>
+    <li>Want the extra push? Add a photo or video of your <b>non-negotiable</b>. It’s optional, worth <b>+${PROOF_XP} XP</b>, and builds your arc gallery on <b>Progress</b>, so you can look back at every day you showed up.</li>
+    <li>Tap your <b>shadow-check</b> if you did it.</li>
     <li>Write <b>one line</b>: a win or something you’re grateful for (+2 XP).</li>
-    <li>Watch the <b>Status</b> column. All three habits gives you <img class="kbolt" src="/assets/kaminari-bolt.png" alt="" width="12" height="16"> Day Cleared.</li>
+    <li>All three habits on the same day is a <img class="kbolt" src="/assets/kaminari-bolt.png" alt="" width="12" height="16"> <b>Day Cleared</b>.</li>
   </ol></div>
-  <div class="banner warn"><div><b>Never Miss Twice.</b> Missing one day is an accident. Missing two is the start of a new (worse) habit. If you miss a day, the only rule is: don’t miss the next one.</div></div>
-  <div class="banner note"><div><b>XP breakdown:</b> Non-Negotiable 10 · Habit 2: 5 · Habit 3: 5 · Shadow-Check 5 · Win line 2. Every 100 XP is a new level.</div></div>
+  <div class="banner warn"><div><b>Never miss twice.</b> Missing one day is an accident. Missing two is the start of a new (worse) habit. If you miss a day, the only rule is: don’t miss the next one. Forgot to log before midnight? Switch to <b>Yesterday</b> on the Today tab.</div></div>
 
-  <h2 class="section-title">Habit Stacking Setup (fill once, then leave alone)</h2>
-  <p class="guide-p"><b>The formula:</b> “After I [thing I already do], I will [new habit].” Your morning coffee, sitting down at your desk, brushing your teeth: all reliable enough to build on. Example: <i>After I pour my morning coffee, I will open my book and read one page.</i></p>
-  <div class="banner info"><div>
-    <b>Non-Negotiable:</b> After I (existing habit), I will (new habit).<br>
-    <b>Habit 2:</b> After I (existing habit), I will (new habit).<br>
-    <b>Habit 3:</b> After I (existing habit), I will (new habit).<br>
-    <b>Shadow-Check:</b> After I (existing habit), I will (shadow-check).
-  </div></div>
-  <p class="guide-p"><i>Each one should take 2 minutes or less to start. The goal is showing up, not going hard.</i></p>
+  <h2 class="section-title">How you level up</h2>
+  <div class="card"><ol>
+    <li><b>Rank</b> is earned by <b>full-clear days</b> (all 3 habits on the same day), not by time on the calendar. Coasting doesn’t move you up. Every archetype has five ranks, at 0, 10, 25, 50 and 100 full clears.</li>
+    <li><b>XP</b> is what you spend. Non-negotiable 10 · habits 2 and 3: 5 each · shadow-check 5 · proof of your non-negotiable +${PROOF_XP} · win line 2. Every 100 XP you earn is a new level, and spending never lowers it.</li>
+    <li><b>Second Wind:</b> miss a day, then clear all three the next day, and you can spend <b>${SECOND_WIND_COST} XP</b> to repair the miss and keep your streak. Once every ${SECOND_WIND_EVERY} days, only for yesterday. The repaired day doesn’t count as a full clear, so rank stays earned. Two misses in a row can’t be repaired.</li>
+    <li><b>Shadow badges</b> unlock at 10, 25 and 50 shadow-checks, tracked separately from rank.</li>
+    <li><b>Look back:</b> the first time you open the tracker each month, you get a recap of the month before: your proof, full clears, best streak and best win line. At ${PROOF_MILESTONE} full clears you get a \u201c${PROOF_MILESTONE} days of proof\u201d reveal. Replay any of them on <b>Progress</b>.</li>
+  </ol></div>
 
-  <h2 class="section-title">Weekly Review (5 minutes, once a week)</h2>
-  <p class="guide-p">Pick a day (Sunday night works for most people). Add a row below and answer the prompts. It’s the only place you actually see your patterns instead of just grinding through days.</p>
+  <h2 class="section-title">Weekly review (5 minutes)</h2>
+  <p class="guide-p">Pick a day (Sunday night works for most people) and answer the four prompts at the bottom of <b>Progress</b>. It’s the only place you actually see your patterns instead of just grinding through days. If a habit keeps getting missed, make it smaller.</p>
 
-  <h2 class="section-title">Know Your Archetype</h2>
-  <p class="guide-p">Open your toggle. Each one has a self-check, your Light and Shadow, habit ideas built for your archetype, shadow-check ideas, and your rank ladder.</p>`;
-  starters.forEach(a=>{
-    html+='<details class="arche"><summary><span class="em">'+iconSVG(a,34)+'</span>'+a.title+' · '+a.alias+'</summary><div class="body">'+
-      '<p class="quote">'+escapeHtml(a.quote)+'</p>'+
-      '<div class="fieldrow"><b>You might be this if:</b> '+a.check+'</div>'+
-      '<div class="fieldrow"><b>Light:</b> '+a.light+'</div>'+
-      '<div class="fieldrow"><b>Shadow (the demon):</b> '+a.shadow+'</div>'+
-      '<div class="fieldrow"><b>Integration:</b> '+a.integration+'</div>'+
-      '<div class="fieldrow"><b>Anime:</b> '+a.anime+'</div>'+
-      '<div class="fieldrow"><b>Habit ideas that build your Light:</b>'+list(a.lightHabits)+'</div>'+
-      '<div class="fieldrow"><b>Shadow-check ideas</b> (pick one, log it in the Shadow-Check column):'+list(a.shadowOptions)+'</div>'+
-      '<div class="fieldrow"><b>Rank ladder</b> (full-clear days): '+a.ranks.map(r=>escapeHtml(r.name)+' '+r.ms).join(' → ')+'</div>'+
-      '</div></details>';
-  });
-  if(endgame){
-    html+='<details class="arche"><summary><span class="em">'+iconSVG(endgame,34)+'</span>'+endgame.title+' · '+endgame.alias+' (the endgame)</summary><div class="body">'+
-      '<p class="quote">'+escapeHtml(endgame.quote)+'</p>'+
-      '<div class="fieldrow">Not a starting archetype. This is where every arc is headed: the version of you that has done the shadow work.</div>'+
-      '<div class="fieldrow"><b>Shadow:</b> '+endgame.shadow+'</div>'+
-      '<div class="fieldrow"><b>Integration:</b> '+endgame.integration+'</div>'+
-      '<div class="fieldrow"><b>Anime:</b> '+endgame.anime+'</div></div></details>';
-  }
-  html+='<div class="banner note" style="margin-top:18px;"><div><b>Final Rule of the System</b><br><i>You do not wait to feel different. You act different until you become different.</i></div></div>';
+  <div class="banner note" style="margin-top:18px;"><div><b>Final rule of the system</b><br><i>You do not wait to feel different. You act different until you become different.</i></div></div>`;
   el.innerHTML='<div class="guide">'+html+'</div>';
 }
 
@@ -1111,8 +1577,9 @@ function renderAll(){
 }
 renderAll();
 // someone who hasn't picked an archetype yet lands on the setup guide first
-if(!getArchetype(profile.archetypeKey)) document.querySelector('nav.tabs button[data-tab="guide"]').click();
+if(!getArchetype(profile.archetypeKey)) showTab('guide');
 pushInit();
+syncNow();
 // opened from a quote notification: play the reveal
 if(location.hash==='#quote'){
   history.replaceState(null, '', location.pathname + location.search);
@@ -1121,5 +1588,5 @@ if(location.hash==='#quote'){
 if('serviceWorker' in navigator) navigator.serviceWorker.addEventListener('message', (e)=>{ if(e.data && e.data.arc==='quote') showQuoteReveal(); });
 document.addEventListener('click', (e)=>{ if(e.target.closest && e.target.closest('#dailyQuoteBtn')) showQuoteReveal(); });
 // load today's proof, then draw again so habits with proof show as done
-openProofDb().then(db=>{ proofDb=db; return loadTodayProof(); }).then(()=>{ renderToday(); pruneProof(); }).catch(()=>{});
+openProofDb().then(db=>{ proofDb=db; return loadDayProof(); }).then(()=>{ renderToday(); pruneProof(); }).catch(()=>{}).then(()=>{ maybeShowMonthRecap(); syncPhotos(); });
 })();

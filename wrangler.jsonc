@@ -16,9 +16,14 @@
     // everything is served as a plain file except the /api addresses
     "run_worker_first": ["/api/*"]
   },
-  // Arc Tracker notifications: where device subscriptions are stored, and the timer that sends reminders
+  // Arc Tracker storage: notification devices (sub:), cloud backups (arc:) and recent licence checks (lic:),
+  // plus the timer that sends reminders
   "kv_namespaces": [
     { "binding": "ARC_PUSH", "id": "72b27370d6d847e6a9cec0ddc94b867e" }
+  ],
+  // Arc Tracker proof photo backups. Create this bucket in Cloudflare (R2 > Create bucket) before deploying.
+  "r2_buckets": [
+    { "binding": "ARC_PHOTOS", "bucket_name": "kaminari-arc-photos" }
   ],
   "triggers": { "crons": ["*/5 * * * *"] },
   "vars": {

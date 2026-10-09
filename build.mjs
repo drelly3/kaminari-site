@@ -90,6 +90,7 @@ write('/arc-tracker/app', {
   head: `<meta name="robots" content="noindex">\n<link rel="manifest" href="/arc-tracker.webmanifest">\n<meta name="theme-color" content="#0A0D13">\n<meta name="mobile-web-app-capable" content="yes">\n<meta name="apple-mobile-web-app-capable" content="yes">\n<meta name="apple-mobile-web-app-title" content="Arc Tracker">\n<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">\n<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">\n<link rel="stylesheet" href="/arc-tracker.css">`,
   tracking: false, // habit logs are private: no analytics on this page unless Drelly says otherwise
   listed: false,
+  chrome: false, // a full-screen app: no site header, footer or newsletter popup
   body: pages.arcTracker(),
 });
 write('/404', { title: 'Page Not Found | Kaminari', body: pages.notFound() });
