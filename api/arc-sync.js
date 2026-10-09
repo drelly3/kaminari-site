@@ -1,6 +1,6 @@
 // Arc Tracker cloud backup (runs on the Cloudflare Worker).
 //
-// A member's arc (character, habits, daily log, weekly reviews, Second Winds) is stored under their
+// A member's arc (character, habits, daily log, weekly reviews, Second Winds, challenges) is stored under their
 // licence key, so entering the key on a new phone brings everything back. Proof photos are backed up
 // separately, in R2 (see api/arc-photos.js).
 //
@@ -49,6 +49,8 @@ export function mergeArc(stored = {}, incoming = {}) {
     secondWinds: mergeList('secondWinds', s => s.missed).sort((x, y) => String(x.on).localeCompare(String(y.on))),
     // removed proof photos, so another phone deletes its copy instead of backing it up again
     proofGone: mergeList('proofGone', g => g.id),
+    // character challenges taken on, one per week
+    challenges: mergeList('challenges', c => c.id),
   };
 }
 

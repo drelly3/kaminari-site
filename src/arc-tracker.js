@@ -154,7 +154,7 @@ function iconSVG(arche, size){
 }
 
 /* ---------------- Storage ---------------- */
-const LS = {profile:'arc_profile',habits:'arc_habits',log:'arc_log',weekly:'arc_weekly',reminder:'arc_reminder',secondWinds:'arc_second_winds',proofGone:'arc_proof_gone'};
+const LS = {profile:'arc_profile',habits:'arc_habits',log:'arc_log',weekly:'arc_weekly',reminder:'arc_reminder',secondWinds:'arc_second_winds',proofGone:'arc_proof_gone',challenges:'arc_challenges'};
 function load(k,fb){ try{ const r=localStorage.getItem(k); return r?JSON.parse(r):fb; }catch(e){ return fb; } }
 function persist(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} if(SYNCED.includes(k) && !applyingSync){ editSeq++; scheduleSync(); } }
 
@@ -163,6 +163,7 @@ let habits  = load(LS.habits,{h1:{cue:'',habit:''},h2:{cue:'',habit:''},h3:{cue:
 let log     = load(LS.log,[]);
 let weekly  = load(LS.weekly,[]);
 let reminder= load(LS.reminder,{enabled:false,time:'08:00',lastFired:''});
+let challenges = load(LS.challenges,[]); // [{id, week, key, days:[dates], dropped, t}]: character challenges taken on
 let proofGone = load(LS.proofGone,[]); // [{id, t}]: proof photos removed, so other phones drop them too
 let secondWinds= load(LS.secondWinds,[]); // [{missed, on, cost}]: each Second Wind: an XP-paid streak repair
 
@@ -170,7 +171,7 @@ let secondWinds= load(LS.secondWinds,[]); // [{missed, on, cost}]: each Second W
 // Every change is sent a couple of seconds after it's made; the server merges it with the backup and
 // sends the merged arc back, so a second phone picks up days logged on the first. See api/arc-sync.js.
 // Proof photos stay on the device.
-const SYNCED = [LS.profile, LS.habits, LS.log, LS.weekly, LS.secondWinds, LS.proofGone];
+const SYNCED = [LS.profile, LS.habits, LS.log, LS.weekly, LS.secondWinds, LS.proofGone, LS.challenges];
 const SYNC_DELAY = 2500;
 let sync = load('arc_sync', {at:0, owner:'', resetAt:0}); // last good backup, whose key the local arc belongs to
 let editSeq = 0; // bumped on every local change, so a backup reply never overwrites a newer tap
@@ -189,9 +190,9 @@ async function syncNow(opts){
   if(syncBusy){ syncAgain = true; return; }
   // a different key on this device means the local arc is someone else's: start from their backup instead
   if(sync.owner && sync.owner !== key){
-    profile=blankProfile(); habits=blankHabits(); log=[]; weekly=[]; secondWinds=[]; proofGone=[];
+    profile=blankProfile(); habits=blankHabits(); log=[]; weekly=[]; secondWinds=[]; proofGone=[]; challenges=[];
     applyingSync = true;
-    persist(LS.profile,profile); persist(LS.habits,habits); persist(LS.log,log); persist(LS.weekly,weekly); persist(LS.secondWinds,secondWinds); persist(LS.proofGone,proofGone);
+    persist(LS.profile,profile); persist(LS.habits,habits); persist(LS.log,log); persist(LS.weekly,weekly); persist(LS.secondWinds,secondWinds); persist(LS.proofGone,proofGone); persist(LS.challenges,challenges);
     applyingSync = false;
     if(proofDb) proofTx('readwrite', s=>s.clear()).catch(()=>{});
     sync = {at:0, owner:key, resetAt:0};
@@ -201,7 +202,7 @@ async function syncNow(opts){
   const seq = editSeq;
   try{
     const res = await fetch('/api/arc-sync', {method:'POST', headers:{'Content-Type':'application/json'}, keepalive:!!opts.keepalive,
-      body: JSON.stringify({key, reset:!!opts.reset, state:{profile, habits, log, weekly, secondWinds, proofGone, resetAt:sync.resetAt||0}})});
+      body: JSON.stringify({key, reset:!!opts.reset, state:{profile, habits, log, weekly, secondWinds, proofGone, challenges, resetAt:sync.resetAt||0}})});
     const out = await res.json().catch(()=>({ok:false}));
     if(out.ok && editSeq !== seq){ syncAgain = true; setSyncStatus('busy'); } // changed mid-flight: send again, apply that reply
     else if(out.ok){
@@ -220,14 +221,14 @@ async function syncNow(opts){
 function applyBackup(st){
   const next = {
     profile: st.profile || blankProfile(), habits: st.habits || blankHabits(),
-    log: st.log || [], weekly: st.weekly || [], secondWinds: st.secondWinds || [], proofGone: st.proofGone || []
+    log: st.log || [], weekly: st.weekly || [], secondWinds: st.secondWinds || [], proofGone: st.proofGone || [], challenges: st.challenges || []
   };
-  const changed = JSON.stringify(next) !== JSON.stringify({profile, habits, log, weekly, secondWinds, proofGone});
+  const changed = JSON.stringify(next) !== JSON.stringify({profile, habits, log, weekly, secondWinds, proofGone, challenges});
   if(!changed) return;
   const hadArchetype = !!getArchetype(profile.archetypeKey);
-  profile=next.profile; habits=next.habits; log=next.log; weekly=next.weekly; secondWinds=next.secondWinds; proofGone=next.proofGone;
+  profile=next.profile; habits=next.habits; log=next.log; weekly=next.weekly; secondWinds=next.secondWinds; proofGone=next.proofGone; challenges=next.challenges;
   applyingSync = true;
-  persist(LS.profile,profile); persist(LS.habits,habits); persist(LS.log,log); persist(LS.weekly,weekly); persist(LS.secondWinds,secondWinds); persist(LS.proofGone,proofGone);
+  persist(LS.profile,profile); persist(LS.habits,habits); persist(LS.log,log); persist(LS.weekly,weekly); persist(LS.secondWinds,secondWinds); persist(LS.proofGone,proofGone); persist(LS.challenges,challenges);
   applyingSync = false;
   const a = document.activeElement;
   if(a && /^(INPUT|TEXTAREA)$/.test(a.tagName) && a.type!=='checkbox' && a.type!=='file') renderWhenIdle = true;
@@ -302,6 +303,7 @@ function computeStats(){
     xp += (e.h1?10:0)+(e.h2?5:0)+(e.h3?5:0)+(e.sc?5:0)+((e.note||'').trim()?2:0)+PROOF_SLOTS.filter(k=>e[k]&&pf[k]).length*PROOF_XP;
   });
   // XP is earned for good (it sets your level) and spent on secondWinds (it fills your wallet)
+  xp += challenges.filter(challengeDone).length * CHALLENGE_XP;
   const spent = secondWinds.reduce((n,c)=>n+(c.cost||0),0);
   // today only counts once its non-negotiable is done; until then the streak runs to yesterday
   const t=todayStr();
@@ -361,12 +363,319 @@ function secondWindCard(stats){
 
 const SHADOW_BADGES=[{name:'Shadow Aware',n:10},{name:'Shadow Tamed',n:25},{name:'Shadow Integrated',n:50}];
 
-function rankInfo(archetype, fullClear){
-  if(!archetype || !archetype.ranks) return null;
-  let idx=0;
-  for(let i=0;i<archetype.ranks.length;i++){ if(fullClear>=archetype.ranks[i].ms) idx=i; }
-  return {cur:archetype.ranks[idx], next:archetype.ranks[idx+1]||null, idx};
+/* ---------------- Holding rank: ranks are earned by full clears and kept by consistency ---------------- */
+// Full clears unlock a rank (10, 25, 50, 100); to claim it and keep it you need enough full clears in
+// the last 14 days. Fall short for 7 days in a row and you drop one rank. Climb back the same way.
+// Worked out from the log every time, so it's the same on every device.
+const RANK_HOLD = [0, 4, 5, 6, 8];
+const HOLD_WINDOW = 14, HOLD_GRACE = 7;
+function isFull(e){ return !!(e && e.h1 && e.h2 && e.h3); }
+function rankState(arche){
+  if(!arche || !arche.ranks) return null;
+  const by = Object.fromEntries(log.map(e=>[e.date,e]));
+  const t = todayStr();
+  const first = log.reduce((m,e)=>(!m || e.date<m) ? e.date : m, '');
+  let held = 0, below = 0, total = 0, recent = 0, earned = 0;
+  if(first){
+    const win = [];
+    for(let d = first; d <= t; d = shiftDay(d,1)){
+      const f = isFull(by[d]) ? 1 : 0;
+      total += f; win.push(f); recent += f;
+      if(win.length > HOLD_WINDOW) recent -= win.shift();
+      earned = 0;
+      arche.ranks.forEach((r,i)=>{ if(total >= r.ms) earned = i; });
+      if(held > earned) held = earned; // only if days were un-checked
+      while(held < earned && recent >= RANK_HOLD[held+1]) held++;
+      // a day only counts against you once it's over
+      if(d < t){
+        if(held > 0 && recent < RANK_HOLD[held]){ if(++below >= HOLD_GRACE){ held--; below = 0; } }
+        else below = 0;
+      }
+    }
+  }
+  const nextEarned = earned > held; // unlocked by full clears, waiting on consistency to claim it
+  return {idx:held, cur:arche.ranks[held], next:arche.ranks[held+1]||null, prev:arche.ranks[held-1]||null,
+    total, recent, need:RANK_HOLD[held], needNext:RANK_HOLD[held+1], atRisk: held>0 && recent < RANK_HOLD[held],
+    daysLeft: HOLD_GRACE - below, nextEarned};
 }
+// "Rank at risk" warning, shown on Today and on the rank card
+function rankRiskHtml(arche, rs){
+  if(!rs || !rs.atRisk) return '';
+  return '<div class="banner warn"><span>⚠️</span><div><b>Your '+escapeHtml(rs.cur.name)+' rank is at risk.</b> Holding it takes '+rs.need+
+    ' full clears in the last '+HOLD_WINDOW+' days. You have '+rs.recent+'. Clear today. '+
+    (rs.daysLeft<=1 ? 'You drop to '+escapeHtml(rs.prev.name)+' tomorrow if this doesn’t change.' : rs.daysLeft+' days before you drop to '+escapeHtml(rs.prev.name)+'.')+'</div></div>';
+}
+// a lost rank gets said out loud once, the next time the tracker opens
+const RANK_SEEN = 'arc_rank_seen';
+function checkRankChange(){
+  const arche = getArchetype(profile.archetypeKey), rs = rankState(arche);
+  if(!rs) return;
+  const seen = load(RANK_SEEN, null);
+  persist(RANK_SEEN, {key:arche.key, idx:rs.idx});
+  if(seen && seen.key===arche.key && rs.idx < seen.idx){
+    const was = arche.ranks[seen.idx];
+    queueCelebration(done=>showRankDown(arche, was, rs.cur, done));
+  }
+}
+function showRankDown(arche, was, now, onDone){
+  const inner = avatarStage(arche, '')+
+    '<div class="cel-kicker">RANK LOST</div>'+
+    '<div class="cel-title">'+escapeHtml(now.name)+'</div>'+
+    '<div class="cel-path"><span class="old">'+escapeHtml(was.name)+'</span><span class="arrow">➜</span><span class="new">'+escapeHtml(now.name)+'</span></div>'+
+    '<p class="cel-sub">A rank isn’t owned, it’s held. Get back to '+RANK_HOLD[arche.ranks.indexOf(was)]+' full clears in '+HOLD_WINDOW+' days and '+escapeHtml(was.name)+' is yours again.</p>'+
+    '<button class="btn" id="celOk">Take it back</button>';
+  mountCelebration(arche, inner, 12000, onDone, false);
+}
+
+/* ---------------- Ring meter: one value filling a circle ---------------- */
+function ringMeter(frac, size, stroke, hue, inner, label){
+  const r = (size-stroke)/2, c = 2*Math.PI*r, f = Math.max(0, Math.min(1, frac));
+  return '<div class="ring-meter" style="width:'+size+'px;height:'+size+'px;--hue:'+hue+';" role="img" aria-label="'+escapeHtml(label)+'">'+
+    '<svg viewBox="0 0 '+size+' '+size+'" width="'+size+'" height="'+size+'" aria-hidden="true">'+
+    '<circle class="rm-track" cx="'+size/2+'" cy="'+size/2+'" r="'+r+'" stroke-width="'+stroke+'"/>'+
+    (f>0 ? '<circle class="rm-fill" cx="'+size/2+'" cy="'+size/2+'" r="'+r+'" stroke-width="'+stroke+'" stroke-dasharray="'+c.toFixed(2)+'" style="--c:'+c.toFixed(2)+';stroke-dashoffset:'+(c*(1-f)).toFixed(2)+';" transform="rotate(-90 '+size/2+' '+size/2+')"/>' : '')+
+    '</svg><div class="rm-inner">'+inner+'</div></div>';
+}
+
+/* ---------------- Character challenges: optional weekly missions, one per week ---------------- */
+// For anyone who doesn't know where to start, or just wants more. Take one on, tap "Done today" on
+// each day you do it, finish it before the week ends for +15 XP and a Courage boost.
+const CHALLENGE_XP = 15;
+const CHALLENGES = {
+  'strategist': [
+    {id:'shikamaru-plan', name:'The Shikamaru Challenge', task:'Spend 20 minutes planning tomorrow.', target:5},
+    {id:'l-assumption', name:'The L Challenge', task:'Write down one assumption you’re making, then test it.', target:3},
+    {id:'senku-experiment', name:'The Senku Challenge', task:'Run one small experiment toward a goal.', target:2}],
+  'demon-grind': [
+    {id:'goku-train', name:'The Goku Challenge', task:'Train 5× this week.', target:5},
+    {id:'guts-finish', name:'The Guts Challenge', task:'Finish one hard thing you’d normally quit halfway through.', target:3},
+    {id:'zoro-rest', name:'The Zoro Challenge', task:'Take one full rest day. No work, no guilt.', target:1}],
+  'prodigy': [
+    {id:'rocklee-avoid', name:'The Rock Lee Challenge', task:'Do the thing you’re avoiding.', target:3},
+    {id:'deku-study', name:'The Deku Challenge', task:'Study someone better than you for 15 minutes and take notes.', target:4},
+    {id:'killua-new', name:'The Killua Challenge', task:'Try one thing you’ve never done.', target:2}],
+  'reborn': [
+    {id:'zuko-amends', name:'The Zuko Challenge', task:'Make one thing right that you got wrong.', target:1},
+    {id:'vegeta-record', name:'The Vegeta Challenge', task:'Beat your own number from last week.', target:1},
+    {id:'naruto-showup', name:'The Naruto Challenge', task:'Show up on the day you least want to.', target:3}],
+  'beacon': [
+    {id:'allmight-help', name:'The All Might Challenge', task:'Help someone without being asked.', target:3},
+    {id:'whitebeard-crew', name:'The Whitebeard Challenge', task:'Check in on one person in your crew.', target:3},
+    {id:'toshinori-no', name:'The Toshinori Challenge', task:'Say no to one request that drains you.', target:1}],
+  'social-commander': [
+    {id:'lelouch-moves', name:'The Lelouch Challenge', task:'Write this week’s goal and the three moves that get you there.', target:1},
+    {id:'erwin-lead', name:'The Erwin Challenge', task:'Start one thing and invite others in.', target:1},
+    {id:'hange-listen', name:'The Hange Challenge', task:'Ask someone a real question and just listen.', target:3}],
+  'believer': [
+    {id:'luffy-goal', name:'The Luffy Challenge', task:'Take one action toward your biggest goal.', target:3},
+    {id:'tanjiro-breath', name:'The Tanjiro Challenge', task:'Five minutes of slow breathing before you start your day.', target:5},
+    {id:'gon-crew', name:'The Gon Challenge', task:'Get a friend to do one of your habits with you.', target:1}],
+  'underdog': [
+    {id:'yuji-pushups', name:'The Yuji Challenge', task:'20 push-ups, every day you can.', target:5},
+    {id:'krillin-share', name:'The Krillin Challenge', task:'Tell one person what you’re working on.', target:1},
+    {id:'saitama-train', name:'The Saitama Challenge', task:'Do your workout four times, no matter how small.', target:4}],
+  'free-spirit': [
+    {id:'gintoki-overdue', name:'The Gintoki Challenge', task:'Finish one thing you’ve put off for weeks.', target:1},
+    {id:'bonclay-kind', name:'The Bon Clay Challenge', task:'Do something kind for a friend, for no reason.', target:2},
+    {id:'jiraiya-create', name:'The Jiraiya Challenge', task:'Make something for fun for 15 minutes: draw, write, play.', target:3}]
+};
+function allChallenges(){ return Object.entries(CHALLENGES).flatMap(([k,list])=>list.map(c=>Object.assign({arche:k}, c))); }
+function findChallenge(id){ return allChallenges().find(c=>c.id===id); }
+function weekStart(d){ const x = dfs(d); const dow = (x.getDay()+6)%7; return shiftDay(d, -dow); } // Monday
+function activeChallenge(){
+  const wk = weekStart(todayStr());
+  const c = challenges.find(x=>x.week===wk && !x.dropped);
+  if(!c) return null;
+  const def = findChallenge(c.key);
+  return def ? {rec:c, def, done:c.days.length >= def.target} : null;
+}
+function challengeDone(c){ const def = findChallenge(c.key); return !c.dropped && def && c.days.length >= def.target; }
+function saveChallenges(){ persist(LS.challenges, challenges); }
+function takeChallenge(key){
+  if(activeChallenge()) return;
+  const wk = weekStart(todayStr());
+  challenges = challenges.filter(x=>!(x.week===wk && x.dropped)).concat({id:wk+':'+key, week:wk, key, days:[], t:Date.now()});
+  saveChallenges();
+  showTab('today'); renderAll();
+  showToast('Challenge accepted. Tap “Done today” each day you do it.');
+}
+function tickChallenge(){
+  const a = activeChallenge(); if(!a) return;
+  const t = todayStr(), was = a.done;
+  a.rec.days = a.rec.days.includes(t) ? a.rec.days.filter(d=>d!==t) : a.rec.days.concat(t);
+  a.rec.t = Date.now();
+  saveChallenges();
+  if(!was && a.rec.days.length >= a.def.target){
+    const arche = getArchetype(profile.archetypeKey);
+    showToast(a.def.name+' complete. +'+CHALLENGE_XP+' XP');
+    spawnConfetti(arche?arche.hue:45, {center:false});
+  }
+  renderAll();
+}
+function dropChallenge(){
+  const a = activeChallenge(); if(!a) return;
+  a.rec.dropped = true; a.rec.t = Date.now();
+  saveChallenges(); renderAll();
+}
+// Today tab: the week's challenge, or one suggestion to start with
+function challengeCardHtml(){
+  const a = activeChallenge();
+  const arche = getArchetype(profile.archetypeKey);
+  if(a){
+    const t = todayStr(), doneToday = a.rec.days.includes(t);
+    const dots = Array.from({length:a.def.target}, (_,i)=>'<span class="ch-dot'+(i<a.rec.days.length?' on':'')+'"></span>').join('');
+    return '<div class="card challenge'+(a.done?' complete':'')+'"><div class="card-kicker">This week’s challenge</div>'+
+      '<div class="ch-name">'+escapeHtml(a.def.name)+'</div><p class="ch-task">'+escapeHtml(a.def.task)+'</p>'+
+      '<div class="ch-progress"><div class="ch-dots">'+dots+'</div><span>'+Math.min(a.rec.days.length,a.def.target)+' of '+a.def.target+'</span></div>'+
+      (a.done ? '<p class="card-note good">Complete. +'+CHALLENGE_XP+' XP and a Courage boost. A new one opens Monday.</p>'+(doneToday?'':'') :
+        '<div class="ch-actions"><button type="button" class="btn" data-ch-tick>'+(doneToday?'Done today ✓ (undo)':'Done today')+'</button>'+
+        (a.rec.days.length ? '' : '<button type="button" class="linkbtn" data-ch-drop>Drop it</button>')+'</div>'+
+        '<p class="card-note">Finish by Sunday for +'+CHALLENGE_XP+' XP.</p>')+
+      '</div>';
+  }
+  const pick = arche && CHALLENGES[arche.key] ? CHALLENGES[arche.key].find(c=>!challenges.some(x=>x.key===c.id && challengeDone(x))) || CHALLENGES[arche.key][0] : null;
+  if(!pick) return '';
+  return '<div class="card challenge suggest"><div class="card-kicker">Optional challenge</div>'+
+    '<div class="ch-name">'+escapeHtml(pick.name)+'</div><p class="ch-task">'+escapeHtml(pick.task)+(pick.target>1?' '+pick.target+' days this week.':'')+'</p>'+
+    '<div class="ch-actions"><button type="button" class="btn ghost" data-ch-take="'+pick.id+'">Take it on</button><button type="button" class="linkbtn" data-goto="archetypes">See all challenges</button></div></div>';
+}
+function wireChallenges(el){
+  el.querySelectorAll('[data-ch-take]').forEach(b=>b.addEventListener('click',()=>takeChallenge(b.dataset.chTake)));
+  el.querySelectorAll('[data-ch-tick]').forEach(b=>b.addEventListener('click',tickChallenge));
+  el.querySelectorAll('[data-ch-drop]').forEach(b=>b.addEventListener('click',dropChallenge));
+}
+// Archetypes tab: every challenge, yours first
+function challengeListHtml(){
+  const arche = getArchetype(profile.archetypeKey), a = activeChallenge();
+  const row = c => {
+    const done = challenges.filter(x=>x.key===c.id && challengeDone(x)).length;
+    const isActive = a && a.def.id===c.id;
+    return '<div class="ch-row"><div class="ch-row-txt"><b>'+escapeHtml(c.name)+'</b><span>'+escapeHtml(c.task)+(c.target>1?' '+c.target+' days.':'')+(done?' · completed '+done+'×':'')+'</span></div>'+
+      (isActive ? '<span class="ch-tag">This week</span>' : a ? '' : '<button type="button" class="btn ghost ch-take" data-ch-take="'+c.id+'">Take it on</button>')+'</div>';
+  };
+  const mine = arche && CHALLENGES[arche.key] ? CHALLENGES[arche.key] : [];
+  const others = allChallenges().filter(c=>!arche || c.arche!==arche.key);
+  let html = '<h2 class="section-title">Character challenges</h2><p class="section-sub">Optional. One a week, inspired by the characters behind each archetype. Good when you don’t know where to start, or want more.'+(a?' You’ve got one running this week.':'')+'</p>';
+  if(mine.length) html += '<div class="card ch-list">'+mine.map(row).join('')+'</div>';
+  html += '<details class="arche ch-more"><summary>More challenges from other archetypes</summary><div class="body ch-list">'+others.map(row).join('')+'</div></details>';
+  return html;
+}
+
+/* ---------------- Character profile: four traits shaped by what you actually do ---------------- */
+const TRAITS = [
+  {key:'discipline', name:'Discipline', from:'your non-negotiable'},
+  {key:'consistency', name:'Consistency', from:'full clears and streaks'},
+  {key:'courage', name:'Courage', from:'shadow-checks and challenges'},
+  {key:'focus', name:'Focus', from:'habits 2 and 3, and win lines'}];
+// points a day's log adds to each trait
+function dayTraitPoints(e, streakLen){
+  const p = {discipline:0, consistency:0, courage:0, focus:0};
+  if(!e) return p;
+  if(e.h1) p.discipline += 1;
+  if(isFull(e)) p.consistency += 1;
+  if(e.h1 && streakLen >= 7) p.consistency += 0.5; // a long streak keeps building it
+  if(e.sc) p.courage += 1;
+  p.focus += ((e.h2?1:0) + (e.h3?1:0)) * 0.5 + ((e.note||'').trim() ? 0.5 : 0);
+  return p;
+}
+// level n needs 5 + 10 + ... + 5(n-1) points, so early levels come fast and later ones take real work
+const traitLevel = p => Math.floor((1 + Math.sqrt(1 + 8*p/5)) / 2);
+const traitFloor = n => 5*n*(n-1)/2;
+function characterProfile(){
+  const by = Object.fromEntries(log.map(e=>[e.date,e]));
+  const total = {discipline:0, consistency:0, courage:0, focus:0}, week = {discipline:0, consistency:0, courage:0, focus:0};
+  const weekFrom = shiftDay(todayStr(), -6);
+  [...log].sort((a,b)=>a.date.localeCompare(b.date)).forEach(e=>{
+    const p = dayTraitPoints(e, streakEndingAt(e.date, by));
+    Object.keys(p).forEach(k=>{ total[k] += p[k]; if(e.date >= weekFrom) week[k] += p[k]; });
+  });
+  challenges.forEach(c=>{
+    if(c.dropped) return;
+    const bonus = challengeDone(c) ? 3 : 0, recent = c.days.filter(d=>d>=weekFrom).length;
+    total.courage += c.days.length + bonus;
+    week.courage += recent + (bonus && recent ? bonus : 0);
+  });
+  return TRAITS.map(t=>{
+    const p = total[t.key], lv = traitLevel(p), lo = traitFloor(lv), hi = traitFloor(lv+1);
+    return Object.assign({}, t, {points:p, level:lv, frac:(p-lo)/(hi-lo), gained:Math.round(week[t.key]*10)/10});
+  });
+}
+function profileHtml(){
+  const arche = getArchetype(profile.archetypeKey);
+  const rows = characterProfile();
+  return '<div class="card char-profile"><div class="card-kicker">Character profile</div>'+
+    '<p class="card-note" style="margin:2px 0 10px;">Shaped by what you actually do. It grows every day you show up.</p>'+
+    rows.map(r=>'<div class="trait"><div class="trait-top"><b>'+r.name+'</b><span>Level '+r.level+'</span></div>'+
+      '<div class="trait-bar" style="--hue:'+(arche?arche.hue:192)+';"><i style="width:'+Math.round(r.frac*100)+'%"></i></div>'+
+      '<div class="trait-sub"><span>From '+r.from+'</span>'+(r.gained>0?'<span class="up">+'+r.gained+' this week</span>':'<span>No change this week</span>')+'</div></div>').join('')+
+    '</div>';
+}
+
+/* ---------------- Weekly Arc Review: the week in numbers, Monday to Sunday ---------------- */
+// Missions are the daily habits plus the shadow-check. The strongest and weakest traits compare
+// how often each kind of mission landed this week.
+const WEEK_SEEN = 'arc_week_seen';
+function weekReview(start){
+  const t = todayStr(), end = shiftDay(start, 6), last = end < t ? end : t;
+  const by = Object.fromEntries(log.map(e=>[e.date,e]));
+  const perDay = 3 + (habits.sc && habits.sc.habit ? 1 : 0);
+  let days = 0, done = 0, h1 = 0, full = 0, sc = 0, h23 = 0, logged = 0;
+  for(let d = start; d <= last; d = shiftDay(d,1)){
+    days++;
+    const e = by[d]; if(!e) continue;
+    logged++;
+    h1 += e.h1?1:0; full += isFull(e)?1:0; sc += e.sc?1:0; h23 += (e.h2?1:0)+(e.h3?1:0);
+    done += (e.h1?1:0)+(e.h2?1:0)+(e.h3?1:0)+(perDay>3 && e.sc?1:0);
+  }
+  if(!days) return null;
+  const ch = challenges.find(x=>x.week===start && !x.dropped);
+  const chDef = ch && findChallenge(ch.key);
+  const rates = {Discipline:h1/days, Consistency:full/days, Focus:h23/(2*days)};
+  if(perDay>3 || ch) rates.Courage = ((perDay>3 ? sc/days : 0) + (chDef ? Math.min(1, ch.days.length/chDef.target) : 0)) / ((perDay>3?1:0) + (chDef?1:0));
+  const ranked = Object.entries(rates).sort((a,b)=>b[1]-a[1]);
+  const flat = ranked[0][1] - ranked[ranked.length-1][1] < 0.05;
+  return {start, end, days, logged, done, possible:days*perDay, pct:Math.round(done/(days*perDay)*100),
+    strongest: flat ? '' : ranked[0][0], weakest: flat ? '' : ranked[ranked.length-1][0],
+    challenge: chDef ? {name:chDef.name, done:ch.days.length, target:chDef.target} : null};
+}
+function weekReviewLines(w, stats){
+  return '<ul class="wr-lines">'+
+    '<li>You completed <b>'+w.pct+'%</b> of your missions.</li>'+
+    (w.strongest ? '<li>Your strongest trait this week was <b>'+w.strongest+'</b>.</li><li>You struggled most with <b>'+w.weakest+'</b>.</li>' : '<li>No weak spot: every trait landed about evenly.</li>')+
+    '<li>You completed <b>'+w.done+'</b> missions.</li>'+
+    '<li>Your longest streak: <b>'+stats.longest+' '+(stats.longest===1?'day':'days')+'</b>.</li>'+
+    (w.challenge ? '<li>'+escapeHtml(w.challenge.name)+': <b>'+Math.min(w.challenge.done,w.challenge.target)+' of '+w.challenge.target+'</b>'+(w.challenge.done>=w.challenge.target?' ✓':'')+'.</li>' : '')+
+    '</ul>';
+}
+let reviewWeek = 'this';
+function weekReviewCardHtml(stats){
+  const thisStart = weekStart(todayStr()), lastStart = shiftDay(thisStart, -7);
+  const hasLast = log.some(e=>e.date>=lastStart && e.date<thisStart);
+  if(reviewWeek==='last' && !hasLast) reviewWeek = 'this';
+  const w = weekReview(reviewWeek==='last' ? lastStart : thisStart);
+  if(!w || !log.length) return '';
+  return '<div class="card week-review"><div class="wr-head"><div class="card-kicker">Weekly Arc Review</div>'+
+    (hasLast ? '<div class="wr-switch"><button type="button" data-wr="this" class="'+(reviewWeek==='this'?'on':'')+'">This week</button><button type="button" data-wr="last" class="'+(reviewWeek==='last'?'on':'')+'">Last week</button></div>' : '')+
+    '</div><div class="wr-range">'+fmtDate(w.start)+' – '+fmtDate(w.end)+(reviewWeek==='this'?' · so far':'')+'</div>'+weekReviewLines(w, stats)+'</div>';
+}
+function wireWeekReviewCard(el){
+  el.querySelectorAll('[data-wr]').forEach(b=>b.addEventListener('click',()=>{ reviewWeek=b.dataset.wr; renderProgress(); }));
+}
+// the first time the tracker opens in a new week, last week's review plays full screen
+function maybeShowWeekReview(){
+  const last = shiftDay(weekStart(todayStr()), -7);
+  if(load(WEEK_SEEN,'') >= last || !log.some(e=>e.date>=last && e.date<shiftDay(last,7))) return;
+  persist(WEEK_SEEN, last);
+  queueCelebration(done=>{
+    const arche = getArchetype(profile.archetypeKey), w = weekReview(last);
+    const inner = '<div class="month-recap"><div class="cel-kicker">WEEKLY ARC REVIEW</div>'+
+      '<div class="cel-title">'+w.pct+'% of missions.</div><div class="wr-range light">'+fmtDate(w.start)+' – '+fmtDate(w.end)+'</div>'+
+      weekReviewLines(w, computeStats())+'<p class="cel-sub">Take five minutes for your reflection on the Progress tab.</p>'+
+      '<button class="btn" id="celOk">New week. Let’s go.</button></div>';
+    mountCelebration(arche, inner, 10*60*1000, done, false);
+  });
+}
+
 
 /* ---------------- Tabs ---------------- */
 function showTab(name){
@@ -388,7 +697,7 @@ function renderHeader(){
   const arche=getArchetype(profile.archetypeKey);
   if(!arche){ el.textContent='Set up your character in Setup \u2192'; return; }
   const stats=computeStats();
-  const ri=rankInfo(arche, stats.fullClear);
+  const ri=rankState(arche);
   el.innerHTML = iconSVG(arche,18)+' <b>'+(ri?ri.cur.name:arche.alias)+'</b> &nbsp;\u00b7&nbsp; <span class="flame">\u{1F525}'+stats.currentStreak+'</span>';
 }
 
@@ -577,6 +886,7 @@ function renderToday(){
   const dq = dailyQuote(arche, t);
   if(dq) html += '<button type="button" class="daily-quote" id="dailyQuoteBtn" title="Replay the reveal"><p class="q">“'+escapeHtml(dq.q)+'”</p><div class="by">Inspired by '+escapeHtml(dq.c)+' · New quote every Monday and Thursday</div></button>';
 
+  if(viewDay==='today' && arche && arche.ranks) html += rankRiskHtml(arche, rankState(arche));
   const yMissing = stats.totalDays>0 && !yEntry;
   html += '<div class="day-switch" role="group" aria-label="Day to log">'+
     '<button type="button" data-day="today" class="'+(viewDay==='today'?'on':'')+'">Today · '+fmtDate(t)+'</button>'+
@@ -600,6 +910,8 @@ function renderToday(){
     html += checkline('f_sc',sc,vals.sc,'Shadow-check (name it in Setup)');
     html += '</div>';
   }
+
+  if(viewDay==='today' && arche) html += challengeCardHtml();
 
   html += '<div class="card"><label for="f_note">One line — a win or something you’re grateful for <span class="xp-tag">+2 XP</span></label>';
   html += '<textarea id="f_note" placeholder="Small counts." maxlength="280">'+escapeHtml(vals.note||'')+'</textarea>';
@@ -639,6 +951,7 @@ function renderToday(){
   ['f_h1','f_h2','f_h3','f_sc'].forEach(id=>{ const c=document.getElementById(id); if(c) c.addEventListener('change', commitDay); });
   el.querySelectorAll('[data-proof]').forEach(inp=>inp.addEventListener('change',()=>{ if(inp.files && inp.files[0]) addProof(inp.dataset.proof, inp.files[0]); }));
   el.querySelectorAll('[data-proof-remove]').forEach(b=>b.addEventListener('click',()=>removeProof(b.dataset.proofRemove)));
+  wireChallenges(el);
   const cbBtn=document.getElementById('secondWindBtn'); if(cbBtn) cbBtn.addEventListener('click', useSecondWind);
   const note=document.getElementById('f_note');
   note.addEventListener('change', commitDay);
@@ -651,6 +964,7 @@ function commitDay(){
   const d = viewDate();
   const existing = log.find(e=>e.date===d);
   const before = computeStats().fullClear;
+  const rankBefore = rankState(getArchetype(profile.archetypeKey));
   const wasFull = !!(existing && existing.h1 && existing.h2 && existing.h3);
   const box = (id, k)=>{ const c=document.getElementById(id); return c ? c.checked : !!(existing && existing[k]); };
   const noteEl = document.getElementById('f_note');
@@ -679,8 +993,9 @@ function commitDay(){
     queueCelebration(done=>showDayCleared(arche2, streakNow, names, done, hint));
   }
   if(arche2 && arche2.ranks){
-    const beforeRank = rankInfo(arche2, before);
-    const afterRank = rankInfo(arche2, after);
+    const beforeRank = rankBefore;
+    const afterRank = rankState(arche2);
+    if(afterRank) persist(RANK_SEEN, {key:arche2.key, idx:afterRank.idx});
     if(afterRank && beforeRank && afterRank.idx > beforeRank.idx){
       queueCelebration(done=>loadGallery().catch(()=>[]).then(pics=>showRankUpModal(arche2, afterRank.cur, beforeRank.cur, ()=>{ freeGallery(pics); done(); }, pics)));
     }
@@ -1068,10 +1383,7 @@ function buildRecap(stats, arche){
   if(stats.fullClear>0){
     bits.push(stats.fullClear+' full-clear '+(stats.fullClear===1?'day':'days')+' banked');
   }
-  if(arche && arche.ranks){
-    const ri = rankInfo(arche, stats.fullClear);
-    bits.push('sitting at '+ri.cur.name);
-  }
+  if(arche && arche.ranks) bits.push('sitting at '+rankState(arche).cur.name);
   if(!bits.length) return 'Log your first day to start your arc.';
   return bits.join(', ')+'. Next arc starts the moment you check today\u2019s box.';
 }
@@ -1081,28 +1393,37 @@ function renderProgress(){
   const el=document.getElementById('tab-progress');
   const arche=getArchetype(profile.archetypeKey);
   const stats=computeStats();
-  let html='<h2 class="section-title">Progress</h2><p class="section-sub">Calculated straight from your daily log. No math on you.</p>';
+  let html='<h2 class="section-title">Progress</h2><p class="section-sub">Worked out from your daily log. No math on you.</p>';
 
-  // rank leads: it's the number the whole system is built around
+  // rank leads: a ring fills toward the next rank, or shows how firmly the top rank is held
   if(arche && arche.ranks){
-    const ri = rankInfo(arche, stats.fullClear);
-    html += '<div class="card accent rank-card"><div class="rank-head">'+iconSVG(arche,56)+'<div><div class="card-kicker">'+escapeHtml(arche.title)+'</div><div class="rank-name">'+escapeHtml(ri.cur.name)+'</div></div></div>';
-    if(ri.next){
-      const pct = Math.min(100, Math.round((stats.fullClear-ri.cur.ms)/(ri.next.ms-ri.cur.ms)*100));
-      html += '<div class="xpbar-outer"><div class="xpbar-inner" style="width:'+pct+'%;"></div></div>';
-      html += '<div class="card-note">'+(ri.next.ms-stats.fullClear)+' more full-clear days to reach '+escapeHtml(ri.next.name)+'. Rank is earned by full-clear days, not time on the calendar.</div>';
+    const rs = rankState(arche);
+    let frac, inner, line1, line2;
+    if(rs.next){
+      const span = rs.next.ms - rs.cur.ms, have = Math.max(0, Math.min(span, rs.total - rs.cur.ms));
+      frac = have/span;
+      inner = iconSVG(arche,64);
+      line1 = rs.nextEarned ? '<b>'+escapeHtml(rs.next.name)+'</b> unlocked' : Math.round(frac*100)+'% to <b>'+escapeHtml(rs.next.name)+'</b>';
+      line2 = rs.nextEarned ? 'Claim it with '+rs.needNext+' full clears in '+HOLD_WINDOW+' days. You have '+rs.recent+'.' : (rs.next.ms - rs.total)+' more full clears';
     } else {
-      html += '<div class="card-note">Top rank reached. That’s the ceiling for this archetype — the grind now is just staying there.</div>';
+      frac = Math.min(1, rs.recent / rs.need);
+      inner = iconSVG(arche,64);
+      line1 = 'Top rank \u00b7 holding';
+      line2 = rs.recent+' of '+rs.need+' full clears in the last '+HOLD_WINDOW+' days';
     }
+    html += '<div class="card accent rank-card"><div class="rank-head">'+
+      ringMeter(frac, 104, 8, arche.hue, inner, line1.replace(/<[^>]+>/g,''))+
+      '<div><div class="card-kicker">'+escapeHtml(arche.title)+'</div><div class="rank-name">'+escapeHtml(rs.cur.name)+'</div>'+
+      '<div class="rank-line">'+line1+'</div><div class="rank-sub">'+line2+'</div></div></div>';
+    html += rankRiskHtml(arche, rs);
     html += '<div class="emblem-row">'+arche.ranks.map((r,i)=>{
-      const reached = stats.fullClear>=r.ms;
+      const reached = i <= rs.idx;
       const isTop = i===arche.ranks.length-1;
       const nameClass = 'emblem-name'+(reached?' reached':'')+(reached&&isTop?' top':'');
       return '<div class="emblem-wrap"><div class="emblem" data-tier="'+(reached?i:0)+'" style="--hue:'+arche.hue+';">'+
         '<div class="ring ring-outer"></div><div class="ring ring-mid"></div><div class="glow"></div><div class="icon">'+iconSVG(arche,40)+'</div>'+
         '</div><div class="'+nameClass+'">'+escapeHtml(r.name)+'</div></div>';
     }).join('')+'</div>';
-    if(stats.totalDays>0) html += '<p class="recap">'+buildRecap(stats, arche)+'</p>';
     html += '</div>';
   } else {
     html += '<div class="banner info"><div>Pick an archetype to unlock your rank ladder. <button type="button" class="linkbtn" data-goto="archetypes">Choose one</button></div></div>';
@@ -1114,20 +1435,21 @@ function renderProgress(){
   html += stat(stats.fullClear,'Full clears');
   html += '</div>';
 
-  const level = Math.floor(stats.xp/100)+1;
-  const inLevel = stats.xp%100;
-  html += '<div class="card"><div class="level-head"><span>Level '+level+'</span><span>'+stats.xp+' XP earned</span></div>';
-  html += '<div class="xpbar-outer"><div class="xpbar-inner" style="width:'+inLevel+'%;"></div></div>';
-  html += '<div class="card-note">'+(100-inLevel)+' XP to level '+(level+1)+'. Non-negotiable 10 · habits 2 and 3: 5 each · shadow-check 5 · proof of your non-negotiable +'+PROOF_XP+' · win line 2.</div>'+
-    '<div class="wallet"><span><b>'+stats.wallet+' XP</b> to spend</span><span>Second Wind: '+SECOND_WIND_COST+' XP</span></div>'+
-    '<div class="card-note">Spending XP never lowers your level. A Second Wind repairs a missed day so your streak survives, once a week.</div></div>';
+  html += weekReviewCardHtml(stats);
+  html += profileHtml();
+
+  // level: a small ring for progress to the next level, and the XP you can spend
+  const level = Math.floor(stats.xp/100)+1, inLevel = stats.xp%100;
+  html += '<div class="card level-card">'+ringMeter(inLevel/100, 64, 6, arche?arche.hue:192, '<span class="lv-num">'+level+'</span>', 'Level '+level+', '+inLevel+' of 100 XP')+
+    '<div class="lv-txt"><b>Level '+level+'</b><span>'+(100-inLevel)+' XP to Level '+(level+1)+'</span></div>'+
+    '<div class="lv-wallet"><b>'+stats.wallet+'</b><span>XP to spend</span></div></div>';
 
   if(arche && arche.shadowOptions){
     html += '<div class="card"><div class="card-kicker gold">Shadow-check</div>';
     html += '<div class="stat-row inset">'+stat(stats.shadowStreak,'Current streak')+stat(stats.shadowTotal,'Total done')+'</div>';
     const earnedShadow = SHADOW_BADGES.filter(b=>stats.shadowTotal>=b.n);
     if(earnedShadow.length) html += '<div class="badgechips">'+earnedShadow.map(b=>'<span class="chip">'+b.name+'</span>').join('')+'</div>';
-    else html += '<div class="card-note">10 shadow-checks unlocks your first badge — tracked separately from your rank.</div>';
+    else html += '<div class="card-note">10 shadow-checks unlocks your first badge.</div>';
     html += '</div>';
   }
 
@@ -1139,6 +1461,7 @@ function renderProgress(){
 
   el.innerHTML = html;
   wireWeeklyReview();
+  wireWeekReviewCard(el);
   renderGallery();
 
   function stat(num,lbl){ return '<div class="stat"><div class="num">'+num+'</div><div class="lbl">'+lbl+'</div></div>'; }
@@ -1159,7 +1482,7 @@ function renderProgress(){
 }
 
 function weeklyReviewBlock(){
-  let html = '<h2 class="section-title" style="margin-top:26px;">Weekly review</h2><p class="section-sub">Five minutes, once a week \u2014 this is the only place patterns actually show up instead of just grinding through days.</p>';
+  let html = '<h2 class="section-title" style="margin-top:26px;">Your weekly reflection</h2><p class="section-sub">Five minutes, once a week. The numbers above say what happened; this is where you work out why.</p>';
   html += '<div class="card"><label for="wr_went">How did the week go?</label><textarea id="wr_went"></textarea>';
   html += '<label for="wr_wins">Wins</label><textarea id="wr_wins"></textarea>';
   html += '<label for="wr_advice">Advice for next week\u2019s you</label><textarea id="wr_advice"></textarea>';
@@ -1196,7 +1519,10 @@ function wireWeeklyReview(){
 /* ---------------- Archetypes tab ---------------- */
 function renderArchetypes(){
   const el=document.getElementById('tab-archetypes');
-  let html = '<h2 class="section-title">Know your archetype</h2><p class="section-sub">Open a card and run the self-check. Not sure yet? Pick the one that stings a little \u2014 that\u2019s usually the right one.</p>';
+  const picked = !!getArchetype(profile.archetypeKey);
+  // with an archetype picked, its challenges lead the tab; before that, choosing comes first
+  let html = picked ? challengeListHtml() : '';
+  html += '<h2 class="section-title"'+(picked?' style="margin-top:26px;"':'')+'>Know your archetype</h2><p class="section-sub">Open a card and run the self-check. Not sure yet? Pick the one that stings a little \u2014 that\u2019s usually the right one.</p>';
   ARCHETYPES.forEach(a=>{
     const isCurrent = profile.archetypeKey===a.key;
     html += '<details class="arche"'+(isCurrent?' open':'')+'><summary><span class="em">'+iconSVG(a,34)+'</span>'+a.title+(a.alias?' \u00b7 '+a.alias:'')+(isCurrent?' <span class="sub">current</span>':'')+'</summary><div class="body">';
@@ -1206,9 +1532,11 @@ function renderArchetypes(){
     html += '<div class="fieldrow"><b>Shadow:</b> '+a.shadow+'</div>';
     html += '<div class="fieldrow"><b>Integration:</b> '+a.integration+'</div>';
     html += '<div class="fieldrow"><b>Anime:</b> '+a.anime+'</div>';
+    if(CHALLENGES[a.key]) html += '<div class="fieldrow"><b>Challenges:</b><ul class="ch-mini">'+CHALLENGES[a.key].map(c=>'<li><b>'+escapeHtml(c.name)+'</b> \u2014 '+escapeHtml(c.task)+'</li>').join('')+'</ul></div>';
     if(a.ranks){
-      html += '<table class="ranks"><thead><tr><th>Rank</th><th>Full-clear days</th></tr></thead><tbody>';
-      a.ranks.forEach(r=>{ html += '<tr class="'+(isCurrent && computeStats().fullClear>=r.ms && (a.ranks[a.ranks.indexOf(r)+1]? computeStats().fullClear<a.ranks[a.ranks.indexOf(r)+1].ms : true) ?'current':'')+'"><td>'+r.name+'</td><td>'+r.ms+'</td></tr>'; });
+      const held = isCurrent ? rankState(a).idx : -1;
+      html += '<table class="ranks"><thead><tr><th>Rank</th><th>Unlock</th><th>Hold</th></tr></thead><tbody>';
+      a.ranks.forEach((r,i)=>{ html += '<tr class="'+(i===held?'current':'')+'"><td>'+r.name+'</td><td>'+r.ms+' full clears</td><td>'+(RANK_HOLD[i]?RANK_HOLD[i]+' in '+HOLD_WINDOW+' days':'\u2014')+'</td></tr>'; });
       html += '</tbody></table>';
       html += '<button class="btn" style="margin-top:12px;" data-pick="'+a.key+'">'+(isCurrent?'This is your archetype':'Choose this archetype')+'</button>';
     } else {
@@ -1217,6 +1545,8 @@ function renderArchetypes(){
     html += '</div></details>';
   });
   el.innerHTML = html;
+  if(!picked) el.insertAdjacentHTML('beforeend', challengeListHtml());
+  wireChallenges(el);
   el.querySelectorAll('[data-pick]').forEach(btn=>{
     btn.addEventListener('click',()=>{
       profile.archetypeKey = btn.dataset.pick;
@@ -1416,8 +1746,8 @@ function renderSetup(){
     if(proofDb){ proofTx('readwrite', s=>s.clear()).catch(()=>{}); }
     Object.keys(dayProof).forEach(k=>URL.revokeObjectURL(dayProof[k].url)); dayProof={}; proofError='';
     profile={name:'',archetypeKey:''}; habits={h1:{cue:'',habit:''},h2:{cue:'',habit:''},h3:{cue:'',habit:''},sc:{cue:'',habit:''}}; log=[]; weekly=[];
-    secondWinds=[]; proofGone=[];
-    persist(LS.proofGone,proofGone);
+    secondWinds=[]; proofGone=[]; challenges=[];
+    persist(LS.proofGone,proofGone); persist(LS.challenges,challenges);
     persist(LS.profile,profile); persist(LS.habits,habits); persist(LS.log,log); persist(LS.weekly,weekly); persist(LS.secondWinds,secondWinds);
     renderAll();
     syncNow({reset:true});
@@ -1546,21 +1876,43 @@ function renderGuide(){
     <li>Want the extra push? Add a photo or video of your <b>non-negotiable</b>. It’s optional, worth <b>+${PROOF_XP} XP</b>, and builds your arc gallery on <b>Progress</b>, so you can look back at every day you showed up.</li>
     <li>Tap your <b>shadow-check</b> if you did it.</li>
     <li>Write <b>one line</b>: a win or something you’re grateful for (+2 XP).</li>
+    <li>Got a <b>challenge</b> running? Tap <b>Done today</b> on its card.</li>
     <li>All three habits on the same day is a <img class="kbolt" src="/assets/kaminari-bolt.png" alt="" width="12" height="16"> <b>Day Cleared</b>.</li>
   </ol></div>
   <div class="banner warn"><div><b>Never miss twice.</b> Missing one day is an accident. Missing two is the start of a new (worse) habit. If you miss a day, the only rule is: don’t miss the next one. Forgot to log before midnight? Switch to <b>Yesterday</b> on the Today tab.</div></div>
 
-  <h2 class="section-title">How you level up</h2>
+  <h2 class="section-title">Your rank: earned, then held</h2>
   <div class="card"><ol>
-    <li><b>Rank</b> is earned by <b>full-clear days</b> (all 3 habits on the same day), not by time on the calendar. Coasting doesn’t move you up. Every archetype has five ranks, at 0, 10, 25, 50 and 100 full clears.</li>
-    <li><b>XP</b> is what you spend. Non-negotiable 10 · habits 2 and 3: 5 each · shadow-check 5 · proof of your non-negotiable +${PROOF_XP} · win line 2. Every 100 XP you earn is a new level, and spending never lowers it.</li>
-    <li><b>Second Wind:</b> miss a day, then clear all three the next day, and you can spend <b>${SECOND_WIND_COST} XP</b> to repair the miss and keep your streak. Once every ${SECOND_WIND_EVERY} days, only for yesterday. The repaired day doesn’t count as a full clear, so rank stays earned. Two misses in a row can’t be repaired.</li>
-    <li><b>Shadow badges</b> unlock at 10, 25 and 50 shadow-checks, tracked separately from rank.</li>
-    <li><b>Look back:</b> the first time you open the tracker each month, you get a recap of the month before: your proof, full clears, best streak and best win line. At ${PROOF_MILESTONE} full clears you get a \u201c${PROOF_MILESTONE} days of proof\u201d reveal. Replay any of them on <b>Progress</b>.</li>
+    <li><b>Unlock</b> a rank with <b>full-clear days</b> (all 3 habits on the same day). Every archetype has five ranks, unlocked at 0, 10, 25, 50 and 100 full clears.</li>
+    <li><b>Hold</b> it with consistency. Each rank needs a number of full clears in your last ${HOLD_WINDOW} days: ${RANK_HOLD.slice(1).join(', ')} from the second rank up to the top. The ring on <b>Progress</b> shows how close you are.</li>
+    <li><b>Slip</b> below that for ${HOLD_GRACE} days in a row and you drop one rank. You get a warning on Today first. Even Grandmaster has to be held.</li>
+    <li><b>Climb back</b> the same way: hit the number again and the rank is yours.</li>
   </ol></div>
 
-  <h2 class="section-title">Weekly review (5 minutes)</h2>
-  <p class="guide-p">Pick a day (Sunday night works for most people) and answer the four prompts at the bottom of <b>Progress</b>. It’s the only place you actually see your patterns instead of just grinding through days. If a habit keeps getting missed, make it smaller.</p>
+  <h2 class="section-title">XP and Second Wind</h2>
+  <div class="card"><ol>
+    <li><b>XP:</b> non-negotiable 10 · habits 2 and 3: 5 each · shadow-check 5 · proof +${PROOF_XP} · win line 2 · finished challenge +${CHALLENGE_XP}. Every 100 XP is a new level, and spending XP never lowers it.</li>
+    <li><b>Second Wind:</b> miss a day, clear all three the next day, then spend <b>${SECOND_WIND_COST} XP</b> to repair the miss and keep your streak. Once every ${SECOND_WIND_EVERY} days, only for yesterday. It doesn’t count as a full clear, and two misses in a row can’t be repaired.</li>
+  </ol></div>
+
+  <h2 class="section-title">Character challenges (optional)</h2>
+  <p class="guide-p">Not sure where to start, or want more? Take on one challenge a week, inspired by the characters behind each archetype: <i>The Goku Challenge</i>, <i>The Shikamaru Challenge</i>, <i>The Rock Lee Challenge</i> and more. Pick one on <b>Archetypes</b>, tap <b>Done today</b> on Today each day you do it, and finish by Sunday for <b>+${CHALLENGE_XP} XP</b> and a Courage boost.</p>
+
+  <h2 class="section-title">Your character profile</h2>
+  <p class="guide-p">Four traits on <b>Progress</b> that grow from what you actually do:</p>
+  <div class="card"><ol>
+    <li><b>Discipline</b> from your non-negotiable.</li>
+    <li><b>Consistency</b> from full clears and long streaks.</li>
+    <li><b>Courage</b> from shadow-checks and challenges.</li>
+    <li><b>Focus</b> from habits 2 and 3, and your win lines.</li>
+  </ol></div>
+  <p class="guide-p">Early levels come fast; later ones take real work. Each trait shows what it gained this week.</p>
+
+  <h2 class="section-title">Weekly Arc Review</h2>
+  <p class="guide-p">Every week gets a report card on <b>Progress</b>: how many of your missions you completed, your strongest trait, the one you struggled with, and your longest streak. The first time you open the tracker each week, last week’s review plays. Then take five minutes for the reflection prompts below it. If a habit keeps getting missed, make it smaller.</p>
+
+  <h2 class="section-title">Look back</h2>
+  <p class="guide-p">Each new month opens with a recap of the last one: your proof photos, full clears, best streak and best win line. At ${PROOF_MILESTONE} full clears you get a “${PROOF_MILESTONE} days of proof” reveal. Replay any of them on <b>Progress</b>. Shadow badges unlock at 10, 25 and 50 shadow-checks.</p>
 
   <div class="banner note" style="margin-top:18px;"><div><b>Final rule of the system</b><br><i>You do not wait to feel different. You act different until you become different.</i></div></div>`;
   el.innerHTML='<div class="guide">'+html+'</div>';
@@ -1588,5 +1940,5 @@ if(location.hash==='#quote'){
 if('serviceWorker' in navigator) navigator.serviceWorker.addEventListener('message', (e)=>{ if(e.data && e.data.arc==='quote') showQuoteReveal(); });
 document.addEventListener('click', (e)=>{ if(e.target.closest && e.target.closest('#dailyQuoteBtn')) showQuoteReveal(); });
 // load today's proof, then draw again so habits with proof show as done
-openProofDb().then(db=>{ proofDb=db; return loadDayProof(); }).then(()=>{ renderToday(); pruneProof(); }).catch(()=>{}).then(()=>{ maybeShowMonthRecap(); syncPhotos(); });
+openProofDb().then(db=>{ proofDb=db; return loadDayProof(); }).then(()=>{ renderToday(); pruneProof(); }).catch(()=>{}).then(()=>{ maybeShowMonthRecap(); maybeShowWeekReview(); checkRankChange(); syncPhotos(); });
 })();
