@@ -1330,6 +1330,71 @@ function wireLookBack(el){
   el.querySelectorAll('[data-milestone]').forEach(b=>b.addEventListener('click',()=>queueCelebration(done=>showProofMilestone(done))));
 }
 
+/* ---------------- Your year: every month of the arc, kept for good ---------------- */
+// Twelve month tiles for the chosen year; tap one for its calendar and numbers. Nothing in the log
+// is ever trimmed, so earlier years stay here too.
+let yearView = 0, monthView = '';
+const daysIn = ym => { const p = ym.split('-').map(Number); return new Date(p[0], p[1], 0).getDate(); };
+function monthProgress(ym){
+  const t = todayStr(), s = monthSummary(ym);
+  const elapsed = ym < ymOf(t) ? daysIn(ym) : ym === ymOf(t) ? Number(t.slice(8)) : 0;
+  const shown = log.filter(e=>ymOf(e.date)===ym && e.h1).length;
+  return Object.assign(s, {ym, elapsed, shown, rate: elapsed ? Math.round(s.fullClears/elapsed*100) : 0});
+}
+function yearCardHtml(){
+  if(!log.length) return '';
+  const t = todayStr(), nowYear = Number(t.slice(0,4));
+  const firstYear = Number(log.map(e=>e.date).sort()[0].slice(0,4));
+  if(!yearView || yearView < firstYear || yearView > nowYear) yearView = nowYear;
+  const months = Array.from({length:12}, (_,i)=>monthProgress(yearView+'-'+pad2(i+1)));
+  const inYear = log.filter(e=>e.date.slice(0,4)===String(yearView));
+  const by = Object.fromEntries(inYear.map(e=>[e.date,e]));
+  let best = 0; inYear.forEach(e=>{ if(e.h1) best = Math.max(best, streakEndingAt(e.date, by)); });
+  let html = '<div class="card year-card"><div class="wr-head"><div class="card-kicker">Your year</div>'+
+    '<div class="yr-nav"><button type="button" data-yr="-1" aria-label="Previous year"'+(yearView<=firstYear?' disabled':'')+'>‹</button><b>'+yearView+'</b>'+
+    '<button type="button" data-yr="1" aria-label="Next year"'+(yearView>=nowYear?' disabled':'')+'>›</button></div></div>'+
+    '<p class="card-note" style="margin:2px 0 12px;">Every month you’ve logged is kept here. Tap a month to open it.</p>'+
+    '<div class="yr-stats">'+recapStat(inYear.length,'days logged')+recapStat(inYear.filter(isFull).length,'full clears')+recapStat('🔥 '+best,'best streak')+'</div>'+
+    '<div class="yr-grid">'+months.map(m=>{
+      const label = new Date(yearView, Number(m.ym.slice(5))-1, 1).toLocaleDateString(undefined,{month:'short'});
+      return '<button type="button" class="yr-m'+(m.logged?'':' empty')+(monthView===m.ym?' on':'')+'" data-month="'+m.ym+'"'+(m.elapsed?'':' disabled')+'>'+
+        '<b>'+label+'</b><span>'+(m.logged ? m.fullClears+' full '+(m.fullClears===1?'clear':'clears') : (m.elapsed?'No days':'—'))+'</span>'+
+        '<i><u style="width:'+m.rate+'%"></u></i></button>';
+    }).join('')+'</div>';
+  if(monthView && monthView.slice(0,4)===String(yearView)) html += monthDetailHtml(monthView);
+  return html+'</div>';
+}
+function monthDetailHtml(ym){
+  const m = monthProgress(ym), t = todayStr(), by = Object.fromEntries(log.map(e=>[e.date,e]));
+  const lead = (new Date(Number(ym.slice(0,4)), Number(ym.slice(5))-1, 1).getDay()+6)%7; // Monday first
+  let cells = ''; for(let i=0;i<lead;i++) cells += '<i class="pad"></i>';
+  for(let d=1; d<=daysIn(ym); d++){
+    const date = ym+'-'+pad2(d), e = by[date];
+    const cls = date > t ? 'future' : isFull(e) ? 'full' : (e && (e.h1||e.h2||e.h3)) ? 'part' : 'miss';
+    cells += '<i class="'+cls+'">'+d+'</i>';
+  }
+  const prev = monthProgress(prevMonth(ym)), diff = m.fullClears - prev.fullClears;
+  const trend = !prev.logged ? '' : diff > 0 ? '▲ '+diff+' more full '+(diff===1?'clear':'clears')+' than '+monthName(prev.ym)
+    : diff < 0 ? '▼ '+(-diff)+' fewer full '+(diff===-1?'clear':'clears')+' than '+monthName(prev.ym) : 'Level with '+monthName(prev.ym);
+  return '<div class="yr-detail"><div class="yr-detail-head"><b>'+escapeHtml(monthName(ym,true))+'</b>'+(trend?'<span class="'+(diff>0?'up':diff<0?'down':'')+'">'+escapeHtml(trend)+'</span>':'')+'</div>'+
+    '<div class="cal-dow"><i>M</i><i>T</i><i>W</i><i>T</i><i>F</i><i>S</i><i>S</i></div><div class="cal">'+cells+'</div>'+
+    '<div class="cal-key"><span><i class="full"></i>Full clear</span><span><i class="part"></i>Some done</span><span><i class="miss"></i>Nothing logged</span></div>'+
+    '<ul class="wr-lines" style="margin-top:12px;">'+
+      '<li><b>'+m.fullClears+'</b> full '+(m.fullClears===1?'clear':'clears')+' in '+m.elapsed+' '+(m.elapsed===1?'day':'days')+' (<b>'+m.rate+'%</b>)</li>'+
+      '<li>Non-negotiable done on <b>'+m.shown+'</b> '+(m.shown===1?'day':'days')+'</li>'+
+      '<li>Best streak inside the month: <b>'+m.best+' '+(m.best===1?'day':'days')+'</b></li>'+
+      (m.win?'<li>Best win line: <b>“'+escapeHtml(m.win)+'”</b></li>':'')+
+    '</ul>'+
+    (ym < ymOf(t) && m.logged ? '<button type="button" class="btn ghost go" data-recap="'+ym+'" style="margin-top:12px;">Replay this month’s recap</button>' : '')+'</div>';
+}
+function wireYearCard(el){
+  el.querySelectorAll('[data-yr]').forEach(b=>b.addEventListener('click',()=>{ yearView += Number(b.dataset.yr); monthView=''; renderProgress(); keepInView('.year-card'); }));
+  el.querySelectorAll('[data-month]').forEach(b=>b.addEventListener('click',()=>{ monthView = monthView===b.dataset.month ? '' : b.dataset.month; renderProgress(); keepInView(monthView ? '.yr-detail' : '.year-card'); }));
+  el.querySelectorAll('.yr-detail [data-recap]').forEach(b=>b.addEventListener('click',()=>queueCelebration(done=>showMonthRecap(b.dataset.recap, done))));
+}
+// the Progress tab is redrawn on every tap; bring the part that was tapped back into view
+function keepInView(sel){ const x = document.querySelector('#tab-progress '+sel); if(x) x.scrollIntoView({block:'nearest'}); }
+
 /* ---------------- Arc gallery: every proof, newest first ---------------- */
 // loadGallery makes a thumbnail URL per item; whoever asked for them frees them with freeGallery
 let galleryItems = [], galleryShowAll = false;
@@ -1468,6 +1533,7 @@ function renderProgress(){
 
   html += weekReviewCardHtml();
   html += profileHtml();
+  html += yearCardHtml();
 
   // level: a small ring for progress to the next level, and the XP you can spend
   const level = Math.floor(stats.xp/100)+1, inLevel = stats.xp%100;
@@ -1493,6 +1559,7 @@ function renderProgress(){
   el.innerHTML = html;
   wireWeeklyReview();
   wireWeekReviewCard(el);
+  wireYearCard(el);
   renderGallery();
 
   function stat(num,lbl){ return '<div class="stat"><div class="num">'+num+'</div><div class="lbl">'+lbl+'</div></div>'; }
@@ -1943,10 +2010,10 @@ function renderGuide(){
   <p class="guide-p">Every <b>Sunday</b> you get a personal report: <i>Your Week 04 Report</i>. It shows your missions completed, your commitment completion rate, your strongest area, your biggest obstacle, and one improvement for next week. With reminders on, it arrives as a notification. Then it asks you to <b>reflect</b> on what worked and <b>adjust</b> next week’s commitments. If a habit keeps slipping, make it smaller. You can reread any week’s report on <b>Progress</b>.</p>
 
   <h2 class="section-title">Coming from another tracker?</h2>
-  <p class="guide-p">Don’t lose what you’ve built. In <b>Setup</b>, under <b>Bring over past progress</b>, upload an export from your old habit tracker or enter the streak you’re carrying over.</p>
+  <p class="guide-p">Don’t lose what you’ve built. In <b>Setup</b>, under <b>Bring over past progress</b>, upload an export from your old habit tracker (up to a year of history) or enter the streak you’re carrying over (up to 90 days).</p>
 
   <h2 class="section-title">Look back</h2>
-  <p class="guide-p">Each new month opens with a recap of the last one: your proof photos, full clears, best streak and best win line. At ${PROOF_MILESTONE} full clears you get a “${PROOF_MILESTONE} days of proof” reveal. Replay any of them on <b>Progress</b>. Shadow badges unlock at 10, 25 and 50 shadow-checks.</p>
+  <p class="guide-p"><b>Your year</b> on <b>Progress</b> keeps every month you’ve logged: tap a month for its calendar, its numbers, and how it compares with the month before. Nothing is ever cleared out, so you can flip back through earlier years too. Each new month opens with a recap of the last one: your proof photos, full clears, best streak and best win line. At ${PROOF_MILESTONE} full clears you get a “${PROOF_MILESTONE} days of proof” reveal. Replay any of them on <b>Progress</b>. Shadow badges unlock at 10, 25 and 50 shadow-checks.</p>
 
   <div class="banner note" style="margin-top:18px;"><div><b>Final rule of the system</b><br><i>You do not wait to feel different. You act different until you become different.</i></div></div>`;
   el.innerHTML='<div class="guide">'+html+'</div>';
@@ -2024,6 +2091,7 @@ function showArchetypePicker(done){
 // A member can upload an export (CSV) from the habit tracker they used before, match its habits to
 // their three, and have those days added to their log. Or, with no file, carry a streak over by hand.
 // Days already logged here are never overwritten.
+const IMPORT_DAYS = 365, IMPORT_STREAK = 90; // how far back an upload reaches, and the longest typed-in streak
 let importState = null; // {habits:[names], days:{date:[names]}, map:{h1,h2,h3}, error}
 function parseCsv(text){
   const first = text.split(/\r?\n/)[0] || '';
@@ -2105,13 +2173,14 @@ function parseImport(text){
 }
 // the days the upload would add, with the current matching
 function importPlan(){
-  const t = todayStr(), have = new Set(log.map(e=>e.date));
-  const all = Object.keys(importState.days).filter(d=>d<=t).sort().map(d=>{
+  const t = todayStr(), from = shiftDay(t, -IMPORT_DAYS), have = new Set(log.map(e=>e.date));
+  const tooOld = Object.keys(importState.days).filter(d=>d<from).length;
+  const all = Object.keys(importState.days).filter(d=>d<=t && d>=from).sort().map(d=>{
     const l = importState.days[d], m = importState.map;
     return {date:d, h1:!!m.h1 && l.includes(m.h1), h2:!!m.h2 && l.includes(m.h2), h3:!!m.h3 && l.includes(m.h3)};
   }).filter(e=>e.h1||e.h2||e.h3);
   const fresh = all.filter(e=>!have.has(e.date));
-  return {fresh, skipped:all.length-fresh.length, full:fresh.filter(isFull).length};
+  return {fresh, skipped:all.length-fresh.length, tooOld, full:fresh.filter(isFull).length};
 }
 function addImportedDays(list){
   const now = Date.now();
@@ -2122,7 +2191,7 @@ function importBoxHtml(){
   const s = importState;
   let html = '<label for="impFile">Upload an export from your old tracker (CSV file)</label>'+
     '<input type="file" id="impFile" accept=".csv,.tsv,.txt,text/csv,text/plain">'+
-    '<div class="helptext" style="margin:8px 0 0;">Most habit trackers have an <b>Export</b> option in their settings. The file needs a date and your habits: one row per day, or one row per completed habit.</div>';
+    '<div class="helptext" style="margin:8px 0 0;">Most habit trackers have an <b>Export</b> option in their settings. The file needs a date and your habits: one row per day, or one row per completed habit. You can bring over up to <b>one year</b> of history.</div>';
   if(s && s.error) html += '<div class="proof-error" role="alert" style="margin-top:10px;">'+escapeHtml(s.error)+'</div>';
   if(s && s.habits){
     const plan = importPlan();
@@ -2134,11 +2203,12 @@ function importBoxHtml(){
       '<div class="imp-sum">'+(plan.fresh.length
         ? '<b>'+plan.fresh.length+'</b> '+(plan.fresh.length===1?'day':'days')+' to bring over, from '+fmtDate(plan.fresh[0].date)+' to '+fmtDate(plan.fresh[plan.fresh.length-1].date)+'. <b>'+plan.full+'</b> full '+(plan.full===1?'clear':'clears')+'.'
         : 'Nothing new to bring over with this matching.')+
-        (plan.skipped ? ' '+plan.skipped+' '+(plan.skipped===1?'day is':'days are')+' already in your log and will be left alone.' : '')+'</div>'+
+        (plan.skipped ? ' '+plan.skipped+' '+(plan.skipped===1?'day is':'days are')+' already in your log and will be left alone.' : '')+
+        (plan.tooOld ? ' '+plan.tooOld+' '+(plan.tooOld===1?'day is':'days are')+' more than a year old and won’t come over.' : '')+'</div>'+
       '<div class="row" style="gap:8px;margin-top:12px;"><button class="btn" id="impGoBtn"'+(plan.fresh.length?'':' disabled')+'>Bring these days over</button><button class="btn ghost" id="impCancelBtn">Cancel</button></div></div>';
   }
   html += '<div class="imp-manual"><label for="impStreak">No file? Enter the streak you’re carrying over</label>'+
-    '<div class="row" style="gap:8px;align-items:center;"><input type="number" id="impStreak" min="1" max="365" inputmode="numeric" placeholder="Days in a row" style="flex:1;min-width:120px;">'+
+    '<div class="row" style="gap:8px;align-items:center;"><input type="number" id="impStreak" min="1" max="'+IMPORT_STREAK+'" inputmode="numeric" placeholder="Days in a row (up to '+IMPORT_STREAK+')" style="flex:1;min-width:120px;">'+
     '<button class="btn ghost" id="impStreakBtn">Add these days</button></div>'+
     '<div class="helptext" style="margin:8px 0 0;">Adds that many days, ending yesterday, with all three habits done. Be honest with it: it’s your arc.</div></div>';
   return html;
@@ -2168,7 +2238,7 @@ function wireImportBox(){
   const sb = document.getElementById('impStreakBtn');
   if(sb) sb.addEventListener('click', ()=>{
     const n = Math.floor(Number(document.getElementById('impStreak').value));
-    if(!(n >= 1 && n <= 365)){ showToast('Enter a number of days from 1 to 365.'); return; }
+    if(!(n >= 1 && n <= IMPORT_STREAK)){ showToast('Enter a number of days from 1 to '+IMPORT_STREAK+'. For more, upload an export.'); return; }
     const have = new Set(log.map(e=>e.date)), t = todayStr(), list = [];
     for(let i=1;i<=n;i++){ const d = shiftDay(t,-i); if(!have.has(d)) list.push({date:d, h1:true, h2:true, h3:true}); }
     if(!list.length){ showToast('Those days are already in your log.'); return; }

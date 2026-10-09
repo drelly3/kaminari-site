@@ -580,3 +580,32 @@ body.app main{display:block;}
 .arc-root .imp-sum{margin-top:12px;font-size:13.5px;line-height:1.5;color:var(--text-dim);}
 .arc-root .imp-sum b{color:var(--text);}
 .arc-root .imp-manual{margin-top:18px;padding-top:16px;border-top:1px solid var(--border);}
+/* ---------- Your year: month tiles and a month's calendar ---------- */
+.arc-root .yr-nav{display:flex;align-items:center;gap:8px;font-size:14px;}
+.arc-root .yr-nav button{appearance:none;width:30px;height:30px;border-radius:6px;border:1px solid var(--border);background:var(--surface-2);color:var(--text);font-size:18px;line-height:1;cursor:pointer;}
+.arc-root .yr-nav button:disabled{opacity:.3;cursor:default;}
+.arc-root .yr-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;}
+.arc-root .yr-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
+.arc-root .yr-m{appearance:none;display:flex;flex-direction:column;gap:3px;align-items:flex-start;text-align:left;padding:9px 9px 8px;border-radius:8px;border:1px solid var(--border);background:var(--surface-2);color:var(--text);font:inherit;cursor:pointer;min-width:0;}
+.arc-root .yr-m b{font-size:13.5px;}
+.arc-root .yr-m span{font-size:11px;color:var(--text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
+.arc-root .yr-m i{display:block;width:100%;height:4px;border-radius:2px;background:var(--border);margin-top:3px;overflow:hidden;}
+.arc-root .yr-m u{display:block;height:100%;background:var(--accent);border-radius:2px;}
+.arc-root .yr-m.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent);}
+.arc-root .yr-m.empty b,.arc-root .yr-m.empty span{color:var(--text-faint);}
+.arc-root .yr-m:disabled{opacity:.4;cursor:default;}
+.arc-root .yr-detail{margin-top:14px;padding-top:14px;border-top:1px solid var(--border);}
+.arc-root .yr-detail-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:10px;font-size:15px;}
+.arc-root .yr-detail-head span{font-size:12px;color:var(--text-dim);}
+.arc-root .yr-detail-head span.up{color:var(--success);}
+.arc-root .yr-detail-head span.down{color:var(--danger);}
+.arc-root .cal,.arc-root .cal-dow{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;max-width:340px;}
+.arc-root .cal-dow i{font-style:normal;font-size:10.5px;text-align:center;color:var(--text-faint);margin-bottom:2px;}
+.arc-root .cal i{font-style:normal;aspect-ratio:1;display:flex;align-items:center;justify-content:center;border-radius:6px;font-size:11.5px;font-weight:600;}
+.arc-root .cal i.full,.arc-root .cal-key i.full{background:var(--accent);color:#04121A;}
+.arc-root .cal i.part,.arc-root .cal-key i.part{background:var(--accent-soft);color:var(--accent);}
+.arc-root .cal i.miss,.arc-root .cal-key i.miss{background:var(--surface-2);color:var(--text-faint);}
+.arc-root .cal i.future{color:var(--text-faint);opacity:.4;}
+.arc-root .cal-key{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px;font-size:11.5px;color:var(--text-dim);}
+.arc-root .cal-key span{display:flex;align-items:center;gap:5px;}
+.arc-root .cal-key i{display:inline-block;width:11px;height:11px;border-radius:3px;}
