@@ -158,6 +158,16 @@ const LS = {profile:'arc_profile',habits:'arc_habits',log:'arc_log',weekly:'arc_
 function load(k,fb){ try{ const r=localStorage.getItem(k); return r?JSON.parse(r):fb; }catch(e){ return fb; } }
 function persist(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} if(SYNCED.includes(k) && !applyingSync){ editSeq++; scheduleSync(); } }
 
+// Testing aid for the local preview only: adding ?fresh to the address starts as a brand-new member
+// (no archetype, no log, and an emptied preview backup) so the first-visit screens can be replayed.
+// It does nothing on the real site.
+let startFresh = false;
+if(/^(localhost|127.0.0.1)$/.test(location.hostname) && new URLSearchParams(location.search).has('fresh')){
+  try{ Object.keys(localStorage).filter(k=>k.startsWith('arc_') && !k.startsWith('arc_license')).forEach(k=>localStorage.removeItem(k)); }catch(e){}
+  startFresh = true;
+  const q = new URLSearchParams(location.search); q.delete('fresh');
+  history.replaceState(null, '', location.pathname + (q.toString() ? '?'+q.toString().replace(/=(&|$)/g,'$1') : ''));
+}
 let profile = load(LS.profile,{name:'',archetypeKey:''});
 let habits  = load(LS.habits,{h1:{cue:'',habit:''},h2:{cue:'',habit:''},h3:{cue:'',habit:''},sc:{cue:'',habit:''}});
 let log     = load(LS.log,[]);
@@ -2265,7 +2275,7 @@ if(!getArchetype(profile.archetypeKey)) showTab('guide');
 const OPENED_BY = location.hash;
 if(OPENED_BY!=='#quote' && OPENED_BY!=='#review') queueCelebration(done=>getArchetype(profile.archetypeKey) ? showWelcomeBack(done) : showFirstRun(done));
 pushInit();
-syncNow();
+syncNow(startFresh ? {reset:true} : undefined);
 // opened from a quote notification: play the reveal
 if(location.hash==='#quote'){
   history.replaceState(null, '', location.pathname + location.search);
