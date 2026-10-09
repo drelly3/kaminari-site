@@ -2,7 +2,7 @@
 import { QUOTES } from './api/arc-quotes.js';
 import fs from 'node:fs';
 import path from 'node:path';
-import { site, kinds, authors } from './site.config.mjs';
+import { site, kinds, authors, archetypes } from './site.config.mjs';
 import { layout, esc, abs } from './src/templates/layout.mjs';
 import * as pages from './src/templates/pages.mjs';
 
@@ -41,7 +41,9 @@ fs.copyFileSync('src/styles.css', path.join(DIST, 'styles.css'));
 fs.copyFileSync('src/main.js', path.join(DIST, 'main.js'));
 fs.copyFileSync('src/arc-tracker.css', path.join(DIST, 'arc-tracker.css'));
 // the tracker script, with the daily quotes list added on top
-fs.writeFileSync(path.join(DIST, 'arc-tracker.js'), 'window.ARC_QUOTES=' + JSON.stringify(QUOTES) + ';\n' + fs.readFileSync('src/arc-tracker.js', 'utf8'));
+// ...and the website's description of each archetype, for the "choose your archetype" screen
+const blurbs = Object.fromEntries(archetypes.map(a => [a[6], { line: a[2], about: a[4] }]));
+fs.writeFileSync(path.join(DIST, 'arc-tracker.js'), 'window.ARC_QUOTES=' + JSON.stringify(QUOTES) + ';\nwindow.ARC_BLURBS=' + JSON.stringify(blurbs) + ';\n' + fs.readFileSync('src/arc-tracker.js', 'utf8'));
 fs.copyFileSync('src/arc-gate.js', path.join(DIST, 'arc-gate.js'));
 fs.copyFileSync('src/quiz.html', path.join(DIST, 'quiz.html')); // the archetype quiz is a self-contained page
 
