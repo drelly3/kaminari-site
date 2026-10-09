@@ -611,10 +611,17 @@ function profileHtml(){
     '</div>';
 }
 
-/* ---------------- Weekly Arc Review: the week in numbers, Monday to Sunday ---------------- */
-// Missions are the daily habits plus the shadow-check. The strongest and weakest traits compare
-// how often each kind of mission landed this week.
+/* ---------------- Weekly Arc Review: a personal report every Sunday, Monday to Sunday ---------------- */
+// Missions are the daily habits plus the shadow-check. The strongest area and biggest obstacle
+// compare how often each kind of mission landed that week.
 const WEEK_SEEN = 'arc_week_seen';
+// the obstacle each weak area usually points to, and the one thing to change next week
+const OBSTACLES = {
+  Discipline: {name:'Procrastination', fix:()=>'Do your non-negotiable first, before anything else. If it keeps slipping, shrink it to two minutes.'},
+  Consistency: {name:'Inconsistency', fix:w=>'Go for '+Math.min(7,w.full+1)+' full-clear '+(Math.min(7,w.full+1)===1?'day':'days')+'. That’s one more than this week.'},
+  Focus: {name:'Distraction', fix:()=>'Stack habits 2 and 3 straight after your non-negotiable so they ride along with it.'},
+  Courage: {name:'Avoidance', fix:w=>'Do your shadow-check on '+Math.min(7,w.sc+1)+' '+(Math.min(7,w.sc+1)===1?'day':'days')+'. Tie it to something you already do.'}
+};
 function weekReview(start){
   const t = todayStr(), end = shiftDay(start, 6), last = end < t ? end : t;
   const by = Object.fromEntries(log.map(e=>[e.date,e]));
@@ -634,21 +641,30 @@ function weekReview(start){
   if(perDay>3 || ch) rates.Courage = ((perDay>3 ? sc/days : 0) + (chDef ? Math.min(1, ch.days.length/chDef.target) : 0)) / ((perDay>3?1:0) + (chDef?1:0));
   const ranked = Object.entries(rates).sort((a,b)=>b[1]-a[1]);
   const flat = ranked[0][1] - ranked[ranked.length-1][1] < 0.05;
-  return {start, end, days, logged, done, possible:days*perDay, pct:Math.round(done/(days*perDay)*100),
+  const w = {start, end, days, logged, done, full, sc, possible:days*perDay, pct:Math.round(done/(days*perDay)*100),
     strongest: flat ? '' : ranked[0][0], weakest: flat ? '' : ranked[ranked.length-1][0],
     challenge: chDef ? {name:chDef.name, done:ch.days.length, target:chDef.target} : null};
+  // the week of the arc this is: week 1 is the week of the first logged day
+  const first = log.length ? weekStart(log.map(e=>e.date).sort()[0]) : start;
+  w.no = Math.max(1, Math.round(dayGap(first, start)/7) + 1);
+  const ob = OBSTACLES[w.weakest];
+  w.obstacle = ob ? ob.name : (w.pct >= 80 ? 'None stood out' : 'Getting started');
+  w.improve = ob ? ob.fix(w) : (w.pct >= 80 ? 'Hold the line. If it felt easy, make one habit slightly harder.' : 'Give your non-negotiable one fixed time of day and protect it.');
+  return w;
 }
-function weekReviewLines(w, stats){
+function weekReportTitle(w){ return 'Your Week '+String(w.no).padStart(2,'0')+' Report'; }
+function weekReviewLines(w){
   return '<ul class="wr-lines">'+
-    '<li>You completed <b>'+w.pct+'%</b> of your missions.</li>'+
-    (w.strongest ? '<li>Your strongest trait this week was <b>'+w.strongest+'</b>.</li><li>You struggled most with <b>'+w.weakest+'</b>.</li>' : '<li>No weak spot: every trait landed about evenly.</li>')+
-    '<li>You completed <b>'+w.done+'</b> missions.</li>'+
-    '<li>Your longest streak: <b>'+stats.longest+' '+(stats.longest===1?'day':'days')+'</b>.</li>'+
-    (w.challenge ? '<li>'+escapeHtml(w.challenge.name)+': <b>'+Math.min(w.challenge.done,w.challenge.target)+' of '+w.challenge.target+'</b>'+(w.challenge.done>=w.challenge.target?' ✓':'')+'.</li>' : '')+
+    '<li><b>'+w.done+'</b> '+(w.done===1?'mission':'missions')+' completed</li>'+
+    '<li><b>'+w.pct+'%</b> commitment completion rate</li>'+
+    '<li>Strongest area: <b>'+(w.strongest || 'Balanced across the board')+'</b></li>'+
+    '<li>Biggest obstacle: <b>'+w.obstacle+'</b></li>'+
+    '<li>One improvement for next week: <b>'+escapeHtml(w.improve)+'</b></li>'+
+    (w.challenge ? '<li>'+escapeHtml(w.challenge.name)+': <b>'+Math.min(w.challenge.done,w.challenge.target)+' of '+w.challenge.target+'</b>'+(w.challenge.done>=w.challenge.target?' ✓':'')+'</li>' : '')+
     '</ul>';
 }
 let reviewWeek = 'this';
-function weekReviewCardHtml(stats){
+function weekReviewCardHtml(){
   const thisStart = weekStart(todayStr()), lastStart = shiftDay(thisStart, -7);
   const hasLast = log.some(e=>e.date>=lastStart && e.date<thisStart);
   if(reviewWeek==='last' && !hasLast) reviewWeek = 'this';
@@ -656,23 +672,38 @@ function weekReviewCardHtml(stats){
   if(!w || !log.length) return '';
   return '<div class="card week-review"><div class="wr-head"><div class="card-kicker">Weekly Arc Review</div>'+
     (hasLast ? '<div class="wr-switch"><button type="button" data-wr="this" class="'+(reviewWeek==='this'?'on':'')+'">This week</button><button type="button" data-wr="last" class="'+(reviewWeek==='last'?'on':'')+'">Last week</button></div>' : '')+
-    '</div><div class="wr-range">'+fmtDate(w.start)+' – '+fmtDate(w.end)+(reviewWeek==='this'?' · so far':'')+'</div>'+weekReviewLines(w, stats)+'</div>';
+    '</div><div class="wr-title">'+weekReportTitle(w)+'</div><div class="wr-range">'+fmtDate(w.start)+' – '+fmtDate(w.end)+(reviewWeek==='this'?' · so far':'')+'</div>'+weekReviewLines(w)+
+    '<button type="button" class="btn ghost go" id="wrReflectBtn" style="margin-top:12px;">Reflect and adjust ↓</button></div>';
+}
+function goToReflection(){
+  showTab('progress');
+  setTimeout(()=>{ const el=document.getElementById('weekReflect'); if(el) el.scrollIntoView({behavior:'smooth', block:'start'}); }, 120);
 }
 function wireWeekReviewCard(el){
   el.querySelectorAll('[data-wr]').forEach(b=>b.addEventListener('click',()=>{ reviewWeek=b.dataset.wr; renderProgress(); }));
+  const r=el.querySelector('#wrReflectBtn'); if(r) r.addEventListener('click', goToReflection);
 }
-// the first time the tracker opens in a new week, last week's review plays full screen
-function maybeShowWeekReview(){
-  const last = shiftDay(weekStart(todayStr()), -7);
-  if(load(WEEK_SEEN,'') >= last || !log.some(e=>e.date>=last && e.date<shiftDay(last,7))) return;
-  persist(WEEK_SEEN, last);
+// The report is delivered on Sunday: the first time the tracker opens that day, the week's report
+// plays full screen. Miss Sunday and it plays the next time the tracker opens instead.
+// force = opened from the Sunday notification, so it plays even if it has been seen.
+function maybeShowWeekReview(force){
+  const t = todayStr(), thisStart = weekStart(t), lastStart = shiftDay(thisStart, -7);
+  const hasLogs = s => log.some(e=>e.date>=s && e.date<shiftDay(s,7));
+  let target = (dayGap(thisStart, t)===6 && hasLogs(thisStart)) ? thisStart : lastStart;
+  if(!hasLogs(target)){ if(force && hasLogs(thisStart)) target = thisStart; else return; }
+  const seen = load(WEEK_SEEN,'');
+  if(!force && seen >= target) return;
+  if(target > seen) persist(WEEK_SEEN, target);
   queueCelebration(done=>{
-    const arche = getArchetype(profile.archetypeKey), w = weekReview(last);
+    const arche = getArchetype(profile.archetypeKey), w = weekReview(target);
     const inner = '<div class="month-recap"><div class="cel-kicker">WEEKLY ARC REVIEW</div>'+
-      '<div class="cel-title">'+w.pct+'% of missions.</div><div class="wr-range light">'+fmtDate(w.start)+' – '+fmtDate(w.end)+'</div>'+
-      weekReviewLines(w, computeStats())+'<p class="cel-sub">Take five minutes for your reflection on the Progress tab.</p>'+
-      '<button class="btn" id="celOk">New week. Let’s go.</button></div>';
+      '<div class="cel-title">'+weekReportTitle(w).toUpperCase()+'</div><div class="wr-range light">'+fmtDate(w.start)+' – '+fmtDate(w.end)+'</div>'+
+      weekReviewLines(w)+'<p class="cel-sub">What worked this week? Take two minutes to reflect, then adjust next week’s commitments.</p>'+
+      '<button class="btn" id="celOk">Reflect and adjust</button><br><button class="btn ghost" id="celLater" style="margin-top:8px;">Later</button></div>';
     mountCelebration(arche, inner, 10*60*1000, done, false);
+    const ok = document.getElementById('celOk'), later = document.getElementById('celLater'), back = document.getElementById('celBack');
+    if(ok) ok.addEventListener('click', goToReflection);
+    if(later && back) later.addEventListener('click', ()=>back.click());
   });
 }
 
@@ -1435,7 +1466,7 @@ function renderProgress(){
   html += stat(stats.fullClear,'Full clears');
   html += '</div>';
 
-  html += weekReviewCardHtml(stats);
+  html += weekReviewCardHtml();
   html += profileHtml();
 
   // level: a small ring for progress to the next level, and the XP you can spend
@@ -1482,12 +1513,12 @@ function renderProgress(){
 }
 
 function weeklyReviewBlock(){
-  let html = '<h2 class="section-title" style="margin-top:26px;">Your weekly reflection</h2><p class="section-sub">Five minutes, once a week. The numbers above say what happened; this is where you work out why.</p>';
-  html += '<div class="card"><label for="wr_went">How did the week go?</label><textarea id="wr_went"></textarea>';
-  html += '<label for="wr_wins">Wins</label><textarea id="wr_wins"></textarea>';
-  html += '<label for="wr_advice">Advice for next week\u2019s you</label><textarea id="wr_advice"></textarea>';
-  html += '<label for="wr_adjust">Does a habit need to get easier or harder?</label><textarea id="wr_adjust"></textarea>';
-  html += '<button class="btn" id="wrSaveBtn">Save this week\u2019s review</button></div>';
+  let html = '<h2 class="section-title" id="weekReflect" style="margin-top:26px;scroll-margin-top:16px;">Weekly Arc Review: reflect and adjust</h2><p class="section-sub">Your report says what happened. This is where you work out why, and set up next week.</p>';
+  html += '<div class="card"><label for="wr_went">What worked this week?</label><textarea id="wr_went"></textarea>';
+  html += '<label for="wr_wins">Wins worth remembering</label><textarea id="wr_wins"></textarea>';
+  html += '<label for="wr_advice">What got in the way, and what will you do about it?</label><textarea id="wr_advice"></textarea>';
+  html += '<label for="wr_adjust">Next week\u2019s commitments: does a habit need to get easier, harder, or swapped?</label><textarea id="wr_adjust"></textarea>';
+  html += '<div class="row" style="gap:8px;"><button class="btn" id="wrSaveBtn">Save this week\u2019s review</button><button type="button" class="btn ghost go" data-goto="setup">Adjust my habits \u2192</button></div></div>';
   if(weekly.length){
     html += '<div class="card">'+[...weekly].reverse().map(w=>(
       '<div style="padding:10px 0;border-bottom:1px solid var(--border);"><div style="font-weight:600;font-size:13px;margin-bottom:4px;">'+fmtDate(w.date)+'</div>'+
@@ -1549,11 +1580,7 @@ function renderArchetypes(){
   wireChallenges(el);
   el.querySelectorAll('[data-pick]').forEach(btn=>{
     btn.addEventListener('click',()=>{
-      profile.archetypeKey = btn.dataset.pick;
-      profile.t = Date.now();
-      persist(LS.profile, profile);
-      if(pushState==='on') pushSync().catch(()=>{});
-            renderAll();
+      chooseArchetype(btn.dataset.pick);
     });
   });
 }
@@ -1642,6 +1669,9 @@ function renderSetup(){
   html += '<div style="display:flex;flex-direction:column;gap:8px;"><button class="btn" id="previewLevelBtn">\u25B6 Emblem level-up</button><button class="btn" id="previewDayBtn">\u25B6 Day cleared (all 3 habits)</button><button class="btn ghost" id="previewRankUpBtn">\u25B6 Rank-up</button></div>';
   html += '</div></div>';
   }
+
+  html += '<h2 class="section-title" style="font-size:16px;margin-top:30px;">Bring over past progress</h2><p class="section-sub">Coming from another habit tracker? Don\u2019t start from zero. Days you bring over count toward your streak, full clears and rank.</p>';
+  html += '<div class="card" id="impBox">'+importBoxHtml()+'</div>';
 
   html += '<h2 class="section-title" style="font-size:16px;margin-top:30px;">Reset</h2>';
   html += '<div class="card"><p class="section-sub" style="margin-bottom:12px;">Clears your log, habits, character and proof, here and in your backup.</p><button class="btn danger" id="resetBtn">Reset my arc</button></div>';
@@ -1741,6 +1771,7 @@ function renderSetup(){
   });
   }
 
+  wireImportBox();
   document.getElementById('resetBtn').addEventListener('click',()=>{
     if(!confirm('Reset your whole arc? This clears your log, habits, character and proof on this device, and your backup too, so other devices signed in with your key are reset as well. This can\u2019t be undone.')) return;
     if(proofDb){ proofTx('readwrite', s=>s.clear()).catch(()=>{}); }
@@ -1909,13 +1940,243 @@ function renderGuide(){
   <p class="guide-p">Early levels come fast; later ones take real work. Each trait shows what it gained this week.</p>
 
   <h2 class="section-title">Weekly Arc Review</h2>
-  <p class="guide-p">Every week gets a report card on <b>Progress</b>: how many of your missions you completed, your strongest trait, the one you struggled with, and your longest streak. The first time you open the tracker each week, last week’s review plays. Then take five minutes for the reflection prompts below it. If a habit keeps getting missed, make it smaller.</p>
+  <p class="guide-p">Every <b>Sunday</b> you get a personal report: <i>Your Week 04 Report</i>. It shows your missions completed, your commitment completion rate, your strongest area, your biggest obstacle, and one improvement for next week. With reminders on, it arrives as a notification. Then it asks you to <b>reflect</b> on what worked and <b>adjust</b> next week’s commitments. If a habit keeps slipping, make it smaller. You can reread any week’s report on <b>Progress</b>.</p>
+
+  <h2 class="section-title">Coming from another tracker?</h2>
+  <p class="guide-p">Don’t lose what you’ve built. In <b>Setup</b>, under <b>Bring over past progress</b>, upload an export from your old habit tracker or enter the streak you’re carrying over.</p>
 
   <h2 class="section-title">Look back</h2>
   <p class="guide-p">Each new month opens with a recap of the last one: your proof photos, full clears, best streak and best win line. At ${PROOF_MILESTONE} full clears you get a “${PROOF_MILESTONE} days of proof” reveal. Replay any of them on <b>Progress</b>. Shadow badges unlock at 10, 25 and 50 shadow-checks.</p>
 
   <div class="banner note" style="margin-top:18px;"><div><b>Final rule of the system</b><br><i>You do not wait to feel different. You act different until you become different.</i></div></div>`;
   el.innerHTML='<div class="guide">'+html+'</div>';
+}
+
+/* ---------------- Opening screens ---------------- */
+// First visit: a question, then the nine archetypes to choose from, then Start Here.
+// Every visit after: the member's archetype and its line for a few seconds. A tap skips either one.
+const INTRO_MS = 2800;
+function openIntro(inner, cls){
+  const el = document.createElement('div');
+  el.className = 'arc-intro '+cls;
+  el.innerHTML = inner;
+  document.querySelector('.arc-root').appendChild(el);
+  return el;
+}
+function closeIntro(el, then){
+  if(el.dataset.closing) return;
+  el.dataset.closing = '1';
+  el.classList.add('out');
+  setTimeout(()=>{ el.remove(); if(then) then(); }, 380);
+}
+function chooseArchetype(key){
+  profile.archetypeKey = key;
+  profile.t = Date.now();
+  persist(LS.profile, profile);
+  if(pushState==='on') pushSync().catch(()=>{});
+  renderAll();
+}
+function showWelcomeBack(done){
+  const arche = getArchetype(profile.archetypeKey);
+  if(!arche){ done(); return; }
+  const el = openIntro('<div class="intro-box"><div class="intro-avatar" style="--hue:'+arche.hue+';">'+iconSVG(arche,132)+'</div>'+
+    '<div class="intro-kicker">'+(profile.name ? 'Welcome back, '+escapeHtml(profile.name) : 'Welcome back')+'</div>'+
+    '<div class="intro-title">'+escapeHtml(arche.title)+'</div>'+
+    '<p class="intro-quote">“'+escapeHtml(arche.quote)+'”</p>'+
+    '<div class="intro-skip">Tap anywhere to skip</div></div>', 'splash');
+  const go = ()=>closeIntro(el, done);
+  el.addEventListener('click', go);
+  setTimeout(go, INTRO_MS);
+}
+function showFirstRun(done){
+  const el = openIntro('<div class="intro-box"><div class="intro-kicker">Arc Tracker</div>'+
+    '<div class="intro-title big">Who are you trying to become?</div>'+
+    '<div class="intro-skip">Tap to continue</div></div>', 'ask');
+  let moved = false;
+  const next = ()=>{
+    if(moved) return; moved = true;
+    // a backup restored while the question was up means this isn't a first visit after all
+    if(getArchetype(profile.archetypeKey)) closeIntro(el, ()=>{ showTab('today'); showWelcomeBack(done); });
+    else closeIntro(el, ()=>showArchetypePicker(done));
+  };
+  el.addEventListener('click', next);
+  setTimeout(next, INTRO_MS);
+}
+function showArchetypePicker(done){
+  const cards = ARCHETYPES.filter(a=>a.ranks).map(a=>
+    '<button type="button" class="pick-card" data-intro-pick="'+a.key+'" style="--hue:'+a.hue+';">'+iconSVG(a,84)+
+    '<b>'+escapeHtml(a.title)+'</b><span>“'+escapeHtml(a.quote)+'”</span></button>').join('');
+  const el = openIntro('<div class="pick-wrap"><div class="intro-kicker">Choose your archetype</div>'+
+    '<div class="intro-title">Which one is you?</div>'+
+    '<p class="pick-sub">Tap the one that sounds most like you. You can change it later.</p>'+
+    '<div class="pick-grid">'+cards+'</div>'+
+    '<a class="pick-quiz" href="/quiz" target="_blank" rel="noopener">Don’t know? Take the archetype quiz to figure it out →</a>'+
+    '<button type="button" class="pick-later">Skip for now</button></div>', 'picker');
+  let watch = null;
+  const finish = (tab)=>{ clearInterval(watch); closeIntro(el, ()=>{ showTab(tab); done(); }); };
+  el.querySelectorAll('[data-intro-pick]').forEach(b=>b.addEventListener('click',()=>{ chooseArchetype(b.dataset.introPick); finish('guide'); }));
+  el.querySelector('.pick-later').addEventListener('click',()=>finish('guide'));
+  // a backup that arrives with an archetype already chosen closes the picker
+  watch = setInterval(()=>{ if(getArchetype(profile.archetypeKey)) finish('today'); }, 500);
+}
+
+/* ---------------- Bring over progress from another tracker ---------------- */
+// A member can upload an export (CSV) from the habit tracker they used before, match its habits to
+// their three, and have those days added to their log. Or, with no file, carry a streak over by hand.
+// Days already logged here are never overwritten.
+let importState = null; // {habits:[names], days:{date:[names]}, map:{h1,h2,h3}, error}
+function parseCsv(text){
+  const first = text.split(/\r?\n/)[0] || '';
+  const delim = ['\t',';',','].map(d=>[d, first.split(d).length]).sort((a,b)=>b[1]-a[1])[0][0];
+  const rows = []; let row = [], cell = '', quoted = false;
+  for(let i=0;i<text.length;i++){
+    const c = text[i];
+    if(quoted){
+      if(c==='"'){ if(text[i+1]==='"'){ cell += '"'; i++; } else quoted = false; }
+      else cell += c;
+    } else if(c==='"') quoted = true;
+    else if(c===delim){ row.push(cell); cell = ''; }
+    else if(c==='\n' || c==='\r'){ if(c==='\r' && text[i+1]==='\n') i++; row.push(cell); cell = ''; if(row.some(x=>x.trim())) rows.push(row); row = []; }
+    else cell += c;
+  }
+  row.push(cell); if(row.some(x=>x.trim())) rows.push(row);
+  return rows.map(r=>r.map(x=>x.trim()));
+}
+const pad2 = n => String(n).padStart(2,'0');
+function validYmd(y,m,d){ const dt = new Date(y, m-1, d); return (y>1990 && y<2100 && dt.getMonth()===m-1 && dt.getDate()===d) ? y+'-'+pad2(m)+'-'+pad2(d) : ''; }
+// dayFirst settles 03/04/2026: true reads it as 3 April, false as March 4
+function parseDay(v, dayFirst){
+  const s = String(v||'').trim(); let m;
+  if((m = s.match(/^(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})/))) return validYmd(+m[1], +m[2], +m[3]);
+  if((m = s.match(/^(\d{4})(\d{2})(\d{2})$/))) return validYmd(+m[1], +m[2], +m[3]);
+  if((m = s.match(/^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{2,4})/))){
+    const y = +m[3] < 100 ? 2000 + +m[3] : +m[3];
+    return dayFirst ? validYmd(y, +m[2], +m[1]) : validYmd(y, +m[1], +m[2]);
+  }
+  if(/[a-z]{3}/i.test(s)){ const dt = new Date(s); if(!isNaN(dt)) return validYmd(dt.getFullYear(), dt.getMonth()+1, dt.getDate()); }
+  return '';
+}
+function cellDone(v){
+  const s = String(v==null?'':v).trim().toLowerCase();
+  if(!s) return false;
+  if(/^(no|n|false|f|-|✗|✘|❌|skip|skipped|missed|fail|failed|unchecked|not done|incomplete)$/.test(s)) return false;
+  const n = Number(s.replace(',','.'));
+  if(!isNaN(n)) return n > 0;
+  return true;
+}
+function parseImport(text){
+  const rows = parseCsv(text.replace(/^﻿/, ''));
+  if(rows.length < 2) return {error:'That file looks empty.'};
+  const head = rows[0], body = rows.slice(1), cols = head.map((_,i)=>i);
+  const share = (i, test) => body.filter(r=>test(r[i])).length / body.length;
+  // which column holds the date
+  const looksDate = v => !!(parseDay(v,false) || parseDay(v,true));
+  const dateCol = cols.filter(i=>share(i, looksDate) >= 0.6).sort((a,b)=>(/date|day/i.test(head[b])?1:0)-(/date|day/i.test(head[a])?1:0))[0];
+  if(dateCol==null) return {error:'Couldn’t find a date column in that file. It needs one column of dates.'};
+  const firstParts = body.map(r=>String(r[dateCol]).match(/^(\d{1,2})[-\/.](\d{1,2})[-\/.]/)).filter(Boolean);
+  const dayFirst = firstParts.some(m=>+m[1] > 12) && !firstParts.some(m=>+m[2] > 12);
+  const dayOf = r => parseDay(r[dateCol], dayFirst);
+  const days = {}, add = (d, name)=>{ if(!d || !name) return; (days[d] = days[d] || []); if(!days[d].includes(name)) days[d].push(name); };
+  // one row per completed habit (a habit-name column), or one row per day (a column per habit)?
+  const isText = v => !!v && isNaN(Number(v)) && !looksDate(v);
+  const nameCol = cols.filter(i=>i!==dateCol && /habit|task|name|title|activity/i.test(head[i]) && share(i, isText) >= 0.8)
+    .find(i=>new Set(body.map(r=>r[i])).size <= Math.max(1, body.length*0.6));
+  if(nameCol!=null){
+    const valueCol = cols.find(i=>i!==dateCol && i!==nameCol && /value|status|done|complet|check|count|amount|score/i.test(head[i]));
+    body.forEach(r=>{ if(valueCol==null || cellDone(r[valueCol])) add(dayOf(r), r[nameCol]); });
+  } else {
+    const habitCols = cols.filter(i=>i!==dateCol && head[i] && !/^(id|notes?|comments?|week|month|year|total|score|mood|created.*|updated.*)$/i.test(head[i]));
+    body.forEach(r=>{ habitCols.forEach(i=>{ if(cellDone(r[i])) add(dayOf(r), head[i]); }); });
+  }
+  const names = [...new Set(Object.values(days).flat())];
+  if(!names.length) return {error:'Couldn’t find any completed habits in that file.'};
+  // most-done habits first, and a first guess at which is which
+  const count = n => Object.values(days).filter(l=>l.includes(n)).length;
+  names.sort((a,b)=>count(b)-count(a));
+  const map = {}, left = [...names];
+  ['h1','h2','h3'].forEach(k=>{
+    const mine = ((habits[k]||{}).habit||'').toLowerCase();
+    let hit = mine ? left.find(n=>n.toLowerCase().includes(mine) || mine.includes(n.toLowerCase())) : null;
+    map[k] = hit || '';
+    if(hit) left.splice(left.indexOf(hit),1);
+  });
+  ['h1','h2','h3'].forEach(k=>{ if(!map[k] && left.length) map[k] = left.shift(); });
+  return {habits:names, days, map};
+}
+// the days the upload would add, with the current matching
+function importPlan(){
+  const t = todayStr(), have = new Set(log.map(e=>e.date));
+  const all = Object.keys(importState.days).filter(d=>d<=t).sort().map(d=>{
+    const l = importState.days[d], m = importState.map;
+    return {date:d, h1:!!m.h1 && l.includes(m.h1), h2:!!m.h2 && l.includes(m.h2), h3:!!m.h3 && l.includes(m.h3)};
+  }).filter(e=>e.h1||e.h2||e.h3);
+  const fresh = all.filter(e=>!have.has(e.date));
+  return {fresh, skipped:all.length-fresh.length, full:fresh.filter(isFull).length};
+}
+function addImportedDays(list){
+  const now = Date.now();
+  list.forEach(e=>log.push({date:e.date, h1:e.h1, h2:e.h2, h3:e.h3, sc:false, note:'', proof:{}, imported:true, t:now}));
+  persist(LS.log, log);
+}
+function importBoxHtml(){
+  const s = importState;
+  let html = '<label for="impFile">Upload an export from your old tracker (CSV file)</label>'+
+    '<input type="file" id="impFile" accept=".csv,.tsv,.txt,text/csv,text/plain">'+
+    '<div class="helptext" style="margin:8px 0 0;">Most habit trackers have an <b>Export</b> option in their settings. The file needs a date and your habits: one row per day, or one row per completed habit.</div>';
+  if(s && s.error) html += '<div class="proof-error" role="alert" style="margin-top:10px;">'+escapeHtml(s.error)+'</div>';
+  if(s && s.habits){
+    const plan = importPlan();
+    const opts = sel => '<option value="">Not in my old tracker</option>'+s.habits.map(n=>'<option'+(n===sel?' selected':'')+'>'+escapeHtml(n)+'</option>').join('');
+    const slot = (k, label) => '<label for="imp_'+k+'" style="margin-top:10px;">'+label+((habits[k]||{}).habit ? ': '+escapeHtml(habits[k].habit) : '')+'</label><select id="imp_'+k+'" data-imp-map="'+k+'">'+opts(s.map[k])+'</select>';
+    html += '<div class="imp-match"><div class="card-kicker" style="margin-top:16px;">Match your habits</div>'+
+      '<p class="card-note" style="margin:2px 0 4px;">Found '+s.habits.length+' '+(s.habits.length===1?'habit':'habits')+' in the file. Pick which one counts as each of yours.</p>'+
+      slot('h1','Your non-negotiable')+slot('h2','Habit 2')+slot('h3','Habit 3')+
+      '<div class="imp-sum">'+(plan.fresh.length
+        ? '<b>'+plan.fresh.length+'</b> '+(plan.fresh.length===1?'day':'days')+' to bring over, from '+fmtDate(plan.fresh[0].date)+' to '+fmtDate(plan.fresh[plan.fresh.length-1].date)+'. <b>'+plan.full+'</b> full '+(plan.full===1?'clear':'clears')+'.'
+        : 'Nothing new to bring over with this matching.')+
+        (plan.skipped ? ' '+plan.skipped+' '+(plan.skipped===1?'day is':'days are')+' already in your log and will be left alone.' : '')+'</div>'+
+      '<div class="row" style="gap:8px;margin-top:12px;"><button class="btn" id="impGoBtn"'+(plan.fresh.length?'':' disabled')+'>Bring these days over</button><button class="btn ghost" id="impCancelBtn">Cancel</button></div></div>';
+  }
+  html += '<div class="imp-manual"><label for="impStreak">No file? Enter the streak you’re carrying over</label>'+
+    '<div class="row" style="gap:8px;align-items:center;"><input type="number" id="impStreak" min="1" max="365" inputmode="numeric" placeholder="Days in a row" style="flex:1;min-width:120px;">'+
+    '<button class="btn ghost" id="impStreakBtn">Add these days</button></div>'+
+    '<div class="helptext" style="margin:8px 0 0;">Adds that many days, ending yesterday, with all three habits done. Be honest with it: it’s your arc.</div></div>';
+  return html;
+}
+function refreshImportBox(){ const el = document.getElementById('impBox'); if(el){ el.innerHTML = importBoxHtml(); wireImportBox(); } }
+function wireImportBox(){
+  const file = document.getElementById('impFile');
+  if(file) file.addEventListener('change', ()=>{
+    const f = file.files && file.files[0]; if(!f) return;
+    if(f.size > 5*1024*1024){ importState = {error:'That file is too big. Exports are usually well under 5 MB.'}; return refreshImportBox(); }
+    const reader = new FileReader();
+    reader.onload = ()=>{ try{ importState = parseImport(String(reader.result||'')); }catch(e){ importState = {error:'Couldn’t read that file. Try exporting it as CSV.'}; } refreshImportBox(); };
+    reader.onerror = ()=>{ importState = {error:'Couldn’t read that file.'}; refreshImportBox(); };
+    reader.readAsText(f);
+  });
+  document.querySelectorAll('[data-imp-map]').forEach(sel=>sel.addEventListener('change', ()=>{ importState.map[sel.dataset.impMap] = sel.value; refreshImportBox(); }));
+  const go = document.getElementById('impGoBtn');
+  if(go) go.addEventListener('click', ()=>{
+    const plan = importPlan(); if(!plan.fresh.length) return;
+    addImportedDays(plan.fresh);
+    importState = null;
+    renderAll();
+    showToast('Brought over '+plan.fresh.length+' '+(plan.fresh.length===1?'day':'days')+'. Your streak and rank are updated.');
+  });
+  const cancel = document.getElementById('impCancelBtn');
+  if(cancel) cancel.addEventListener('click', ()=>{ importState = null; refreshImportBox(); });
+  const sb = document.getElementById('impStreakBtn');
+  if(sb) sb.addEventListener('click', ()=>{
+    const n = Math.floor(Number(document.getElementById('impStreak').value));
+    if(!(n >= 1 && n <= 365)){ showToast('Enter a number of days from 1 to 365.'); return; }
+    const have = new Set(log.map(e=>e.date)), t = todayStr(), list = [];
+    for(let i=1;i<=n;i++){ const d = shiftDay(t,-i); if(!have.has(d)) list.push({date:d, h1:true, h2:true, h3:true}); }
+    if(!list.length){ showToast('Those days are already in your log.'); return; }
+    if(!confirm('Add '+list.length+' full-clear '+(list.length===1?'day':'days')+' ending yesterday? Days you already logged here stay as they are.')) return;
+    addImportedDays(list);
+    renderAll();
+    showToast('Added '+list.length+' '+(list.length===1?'day':'days')+'. Your streak and rank are updated.');
+  });
 }
 
 /* ---------------- Master render ---------------- */
@@ -1930,6 +2191,9 @@ function renderAll(){
 renderAll();
 // someone who hasn't picked an archetype yet lands on the setup guide first
 if(!getArchetype(profile.archetypeKey)) showTab('guide');
+// the opening screen, unless a notification was tapped to get here (that has its own screen)
+const OPENED_BY = location.hash;
+if(OPENED_BY!=='#quote' && OPENED_BY!=='#review') queueCelebration(done=>getArchetype(profile.archetypeKey) ? showWelcomeBack(done) : showFirstRun(done));
 pushInit();
 syncNow();
 // opened from a quote notification: play the reveal
@@ -1937,8 +2201,14 @@ if(location.hash==='#quote'){
   history.replaceState(null, '', location.pathname + location.search);
   showQuoteReveal();
 }
-if('serviceWorker' in navigator) navigator.serviceWorker.addEventListener('message', (e)=>{ if(e.data && e.data.arc==='quote') showQuoteReveal(); });
+if('serviceWorker' in navigator) navigator.serviceWorker.addEventListener('message', (e)=>{
+  if(e.data && e.data.arc==='quote') showQuoteReveal();
+  if(e.data && e.data.arc==='review') maybeShowWeekReview(true);
+});
 document.addEventListener('click', (e)=>{ if(e.target.closest && e.target.closest('#dailyQuoteBtn')) showQuoteReveal(); });
 // load today's proof, then draw again so habits with proof show as done
-openProofDb().then(db=>{ proofDb=db; return loadDayProof(); }).then(()=>{ renderToday(); pruneProof(); }).catch(()=>{}).then(()=>{ maybeShowMonthRecap(); maybeShowWeekReview(); checkRankChange(); syncPhotos(); });
+openProofDb().then(db=>{ proofDb=db; return loadDayProof(); }).then(()=>{ renderToday(); pruneProof(); }).catch(()=>{}).then(()=>{
+  if(OPENED_BY==='#review') history.replaceState(null, '', location.pathname + location.search);
+  maybeShowMonthRecap(); maybeShowWeekReview(OPENED_BY==='#review'); checkRankChange(); syncPhotos();
+});
 })();

@@ -263,7 +263,7 @@ export function dropFor(dateStr) {
   const [y, m, d] = String(dateStr).split('-').map(Number);
   const sinceMonday = Math.floor(Date.UTC(y, (m || 1) - 1, d || 1) / 86400000) - 4; // 5 Jan 1970 was a Monday
   const week = Math.floor(sinceMonday / 7), dow = sinceMonday - week * 7; // dow: 0 = Monday ... 6 = Sunday
-  return { index: week * 2 + (dow >= 3 ? 1 : 0), isDropDay: dow === 0 || dow === 3 };
+  return { index: week * 2 + (dow >= 3 ? 1 : 0), isDropDay: dow === 0 || dow === 3, isSunday: dow === 6 };
 }
 
 // The current quote for an archetype on a date. It changes each Monday and Thursday, so the tracker

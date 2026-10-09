@@ -37,12 +37,14 @@ export function reminderDue(meta, now = new Date()) {
   return minutes >= meta.m && meta.sent !== date && meta.cleared !== date;
 }
 
-// what, if anything, this device is owed right now. Mondays and Thursdays are quote days: everyone
-// gets the quote notification at their reminder time. Other days: a reminder, unless today is cleared.
+// what, if anything, this device is owed right now, at the member's reminder time. Mondays and
+// Thursdays: the quote. Sundays: the Weekly Arc Review. Other days: a reminder, unless today is cleared.
 export function dueKind(meta, now = new Date()) {
   const { date, minutes } = localNow(meta.tz, now);
   if (minutes < meta.m || meta.sent === date) return '';
-  if (dropFor(date).isDropDay) return 'quote';
+  const day = dropFor(date);
+  if (day.isDropDay) return 'quote';
+  if (day.isSunday) return 'report'; // the Weekly Arc Review
   return meta.cleared !== date ? 'reminder' : '';
 }
 
@@ -96,6 +98,7 @@ const MESSAGES = {
   reminder: { title: 'Log today’s arc', body: 'Three habits. Clear today before it’s gone.' },
   // the quote itself stays hidden until they open the tracker, where it is revealed
   quote: { title: 'Your new arc quote just dropped', body: 'Tap to reveal it.', url: '/arc-tracker/app#quote' },
+  report: { title: 'Your Weekly Arc Review is ready', body: 'See your week in numbers, then set up the next one.', url: '/arc-tracker/app#review' },
   test: { title: 'Arc Tracker notifications are on', body: 'This is how they will arrive. Tap to see your current quote.', url: '/arc-tracker/app#quote' },
 };
 
