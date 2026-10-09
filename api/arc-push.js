@@ -11,6 +11,7 @@
 // Settings on the Worker: ARC_PUSH (KV), VAPID_PUBLIC_KEY, VAPID_PRIVATE_JWK (secret), VAPID_SUBJECT.
 import { verifyLicense } from './arc-verify.js';
 import { quoteFor, dropFor } from './arc-quotes.js';
+import { reminderFor } from './arc-reminders.js';
 
 const b64url = bytes => btoa(String.fromCharCode(...new Uint8Array(bytes))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 const text = s => new TextEncoder().encode(s);
@@ -155,7 +156,8 @@ export async function handlePush(request, env, pathname) {
   }
 
   if (action === 'next') { // asked by the device when a push arrives: what should I show?
-    const message = MESSAGES[sub.next] || MESSAGES.reminder;
+    // the daily reminder says something different each day (see arc-reminders.js)
+    const message = MESSAGES[sub.next] && sub.next !== 'reminder' ? MESSAGES[sub.next] : reminderFor(sub.archetype, localNow(meta.tz).date);
     return json(200, { ok: true, url: '/arc-tracker/app', ...message });
   }
 
