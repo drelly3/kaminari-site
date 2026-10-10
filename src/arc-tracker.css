@@ -573,12 +573,15 @@ body.app main{display:block;}
 .arc-root .pick-quiz{display:inline-block;margin-top:20px;color:var(--accent);font-size:14.5px;font-weight:600;text-decoration:underline;text-underline-offset:3px;}
 .arc-root .pick-later{display:block;margin:14px auto 0;background:none;border:0;color:var(--text-faint);font:inherit;font-size:13px;text-decoration:underline;cursor:pointer;}
 @keyframes introRise{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
-/* narrower screens: one archetype per row, avatar beside its description, so every word stays readable */
+/* phones: two archetypes side by side, avatar on top with its name and quote underneath */
 @media (max-width:640px){
-  .arc-root .pick-grid{grid-template-columns:1fr;gap:8px;}
-  .arc-root .pick-card{flex-direction:row;align-items:center;text-align:left;gap:12px;padding:12px;}
-  .arc-root .pick-card img,.arc-root .pick-card svg{width:62px !important;}
-  .arc-root .pick-line{font-size:13.5px;}
+  .arc-root .pick-grid{grid-template-columns:repeat(2,1fr);gap:8px;}
+  .arc-root .pick-card{padding:12px 8px 11px;gap:7px;}
+  .arc-root .pick-card img,.arc-root .pick-card svg{width:64px !important;}
+  .arc-root .pick-card b{font-size:14px;}
+  .arc-root .pick-line{font-size:12px;line-height:1.35;}
+  /* nine cards leave one over: centre it under the rest */
+  .arc-root .pick-card:last-child:nth-child(odd){grid-column:1 / -1;width:calc(50% - 4px);justify-self:center;}
 }
 @media (prefers-reduced-motion: reduce){ .arc-root .intro-box,.arc-root .pick-wrap{animation:none;} }
 /* ---------- weekly report title, import card ---------- */
