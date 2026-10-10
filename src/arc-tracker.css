@@ -569,8 +569,7 @@ body.app main{display:block;}
 .arc-root .pick-card img,.arc-root .pick-card svg{flex-shrink:0;}
 .arc-root .pick-text{display:flex;flex-direction:column;gap:5px;min-width:0;}
 .arc-root .pick-card b{font-size:15px;line-height:1.2;}
-.arc-root .pick-line{font-size:13px;line-height:1.35;font-weight:600;color:hsl(var(--hue) 85% 72%);}
-.arc-root .pick-about{font-size:12px;line-height:1.4;color:var(--text-dim);}
+.arc-root .pick-line{font-size:12.5px;line-height:1.4;color:var(--text-dim);}
 .arc-root .pick-quiz{display:inline-block;margin-top:20px;color:var(--accent);font-size:14.5px;font-weight:600;text-decoration:underline;text-underline-offset:3px;}
 .arc-root .pick-later{display:block;margin:14px auto 0;background:none;border:0;color:var(--text-faint);font:inherit;font-size:13px;text-decoration:underline;cursor:pointer;}
 @keyframes introRise{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
@@ -579,6 +578,7 @@ body.app main{display:block;}
   .arc-root .pick-grid{grid-template-columns:1fr;gap:8px;}
   .arc-root .pick-card{flex-direction:row;align-items:center;text-align:left;gap:12px;padding:12px;}
   .arc-root .pick-card img,.arc-root .pick-card svg{width:62px !important;}
+  .arc-root .pick-line{font-size:13.5px;}
 }
 @media (prefers-reduced-motion: reduce){ .arc-root .intro-box,.arc-root .pick-wrap{animation:none;} }
 /* ---------- weekly report title, import card ---------- */

@@ -2088,14 +2088,9 @@ function showFirstRun(done){
   setTimeout(next, INTRO_MS);
 }
 function showArchetypePicker(done){
-  // each card carries the website's description of that archetype (from site.config.mjs, added by build.mjs)
-  const blurbs = window.ARC_BLURBS || {};
-  const cards = ARCHETYPES.filter(a=>a.ranks).map(a=>{
-    const b = blurbs[a.key] || {line:a.quote, about:''};
-    return '<button type="button" class="pick-card" data-intro-pick="'+a.key+'" style="--hue:'+a.hue+';">'+iconSVG(a,84)+
-      '<div class="pick-text"><b>'+escapeHtml(a.title)+'</b><span class="pick-line">'+escapeHtml(b.line)+'</span>'+
-      (b.about?'<span class="pick-about">'+escapeHtml(b.about)+'</span>':'')+'</div></button>';
-  }).join('');
+  const cards = ARCHETYPES.filter(a=>a.ranks).map(a=>
+    '<button type="button" class="pick-card" data-intro-pick="'+a.key+'" style="--hue:'+a.hue+';">'+iconSVG(a,84)+
+    '<div class="pick-text"><b>'+escapeHtml(a.title)+'</b><span class="pick-line">“'+escapeHtml(a.quote)+'”</span></div></button>').join('');
   const el = openIntro('<div class="pick-wrap"><div class="intro-kicker">Choose your archetype</div>'+
     '<div class="intro-title">Which one is you?</div>'+
     '<p class="pick-sub">Read each one, then tap the one that sounds most like you. You can change it later.</p>'+
