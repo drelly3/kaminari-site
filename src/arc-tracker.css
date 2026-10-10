@@ -548,7 +548,8 @@ body.app main{display:block;}
 .arc-root .ch-mini li{margin-bottom:4px;}
 
 /* ---------- opening screens: first-visit question, archetype picker, welcome back ---------- */
-.arc-root .arc-intro{position:fixed;inset:0;z-index:9990;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:24px 18px;text-align:center;overflow-y:auto;cursor:pointer;animation:qrIn .35s ease-out;transition:opacity .38s;}
+html.arc-intro-lock,html.arc-intro-lock body{overflow:hidden;}
+.arc-root .arc-intro{position:fixed;top:0;left:0;right:0;height:100vh;height:100dvh;z-index:9990;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:24px 18px calc(24px + env(safe-area-inset-bottom));text-align:center;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;cursor:pointer;animation:qrIn .35s ease-out;transition:opacity .38s;}
 .arc-root .arc-intro.out{opacity:0;}
 .arc-root .arc-intro.instant{animation:none;}
 .arc-root .intro-box{max-width:520px;animation:introRise .7s ease-out both;}
@@ -560,7 +561,7 @@ body.app main{display:block;}
 .arc-root .intro-avatar{margin-bottom:18px;}
 .arc-root .intro-avatar img,.arc-root .intro-avatar svg{width:132px !important;height:132px !important;border-radius:50%;filter:drop-shadow(0 0 26px hsla(var(--hue),90%,60%,.55));}
 .arc-root .arc-intro.picker{align-items:flex-start;cursor:default;}
-.arc-root .pick-wrap{max-width:720px;width:100%;margin:auto;padding:10px 0 26px;animation:introRise .6s ease-out both;}
+.arc-root .pick-wrap{max-width:720px;width:100%;margin:auto;padding:10px 0 48px;animation:introRise .6s ease-out both;}
 .arc-root .pick-sub{color:var(--text-dim);font-size:14px;margin:8px 0 18px;}
 .arc-root .pick-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
 .arc-root .pick-card{display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 8px 12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;color:var(--text);font:inherit;cursor:pointer;transition:border-color .15s,box-shadow .15s,transform .15s;}

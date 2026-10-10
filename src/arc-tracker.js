@@ -2039,13 +2039,17 @@ function openIntro(inner, cls, instant){
   el.className = 'arc-intro '+cls+(instant?' instant':'');
   el.innerHTML = inner;
   document.querySelector('.arc-root').appendChild(el);
+  lockPageForIntro();
   return el;
 }
+// while an opening screen is up, the tracker behind it must not scroll: on a phone a swipe would
+// otherwise move the page underneath instead of the list of archetypes
+function lockPageForIntro(){ document.documentElement.classList.toggle('arc-intro-lock', !!document.querySelector('.arc-intro')); }
 function closeIntro(el, then){
   if(el.dataset.closing) return;
   el.dataset.closing = '1';
   el.classList.add('out');
-  setTimeout(()=>{ el.remove(); if(then) then(); }, 380);
+  setTimeout(()=>{ el.remove(); lockPageForIntro(); if(then) then(); }, 380);
 }
 function chooseArchetype(key){
   profile.archetypeKey = key;
@@ -2080,7 +2084,7 @@ function showFirstRun(done){
     if(getArchetype(profile.archetypeKey)){ showTab('today'); over = showWelcomeBack(done, true); }
     else over = showArchetypePicker(done);
     // only once the new screen is fully in (or after a pause, if the browser skips the fade)
-    const drop = ()=>el.remove();
+    const drop = ()=>{ el.remove(); lockPageForIntro(); };
     if(over) over.addEventListener('animationend', (e)=>{ if(e.target===over) drop(); });
     setTimeout(drop, over ? 1500 : 0);
   };
@@ -2092,7 +2096,7 @@ function showArchetypePicker(done){
     '<button type="button" class="pick-card" data-intro-pick="'+a.key+'" style="--hue:'+a.hue+';">'+iconSVG(a,84)+
     '<div class="pick-text"><b>'+escapeHtml(a.title)+'</b><span class="pick-line">“'+escapeHtml(a.quote)+'”</span></div></button>').join('');
   const el = openIntro('<div class="pick-wrap"><div class="intro-kicker">Choose your archetype</div>'+
-    '<div class="intro-title">Which one is you?</div>'+
+    '<div class="intro-title">Which one are you?</div>'+
     '<p class="pick-sub">Read each one, then tap the one that sounds most like you. You can change it later.</p>'+
     '<div class="pick-grid">'+cards+'</div>'+
     '<a class="pick-quiz" href="/quiz" target="_blank" rel="noopener">Don’t know? Take the archetype quiz to figure it out →</a>'+
