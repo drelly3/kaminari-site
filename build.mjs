@@ -74,7 +74,7 @@ write('/about', {
 write('/newsletter', { title: 'Your Ultimate Anime Newsletter | Kaminari Newsletter', body: pages.newsletter(posts) });
 write('/anime-mindset', {
   title: 'The Anime Mindset | Kaminari',
-  description: 'Stop watching growth and start living it. Find your archetype, name your demon, and build a daily system from the anime you love.',
+  description: 'Stop watching growth and start living it. Find your archetype, name your weakness, and build a daily system from the anime you love.',
   body: pages.animeMindset(arcArchetypes),
 });
 write('/privacy-policy', { title: 'Privacy Policy | Kaminari', body: pages.privacy(fs.readFileSync('src/content/privacy-policy.html', 'utf8')) });

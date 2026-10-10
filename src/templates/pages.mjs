@@ -77,7 +77,7 @@ export const home = posts => {
       <p class="sub">Every archetype builds habits differently. Take the quiz and get a system matched to how you're actually wired — not a generic routine you'll drop by week two.</p>
       <ul class="archetype-list">
         <li>Twelve quick questions, under five minutes</li>
-        <li>Your archetype, plus the demon that comes with it</li>
+        <li>Your archetype, plus the weakness that comes with it</li>
         <li>No wrong answers, just honest ones</li>
       </ul>
       <a href="${links.quiz}" ${ext} class="btn btn-primary">Take The Archetype Quiz</a>
@@ -86,7 +86,7 @@ export const home = posts => {
       ${tiles.map(([, name, , , , demon, key, hue]) => `<div class="arch-tile">
         <img class="arc-face" style="--hue:${hue};width:64px;" src="/assets/avatars/${key}.png" alt="" width="200" height="200" loading="lazy">
         ${name}
-        <div class="sub">Demon: ${esc(demon)}</div>
+        <div class="sub">Weakness: ${esc(demon)}</div>
       </div>`).join('\n      ')}
     </div>
   </div>
@@ -300,8 +300,8 @@ export const animeMindset = all => `
       </div>
       <div class="branch-card">
         ${EMBLEMS.demon}
-        <h3>Every hero has a demon</h3>
-        <p>Burnout, doubt, ego, avoidance. Your archetype's greatest strength has a shadow side. Name it, then chop the head off.</p>
+        <h3>Every hero has a weakness</h3>
+        <p>Burnout, doubt, ego, avoidance. Your archetype's greatest strength has a shadow side. Name it, then train until it stops running you.</p>
       </div>
       <div class="branch-card">
         ${EMBLEMS.gear}
@@ -322,7 +322,7 @@ export const animeMindset = all => `
   <div class="wrap">
     <div class="section-head center">
       <h2>Which Of The 9 Are You?</h2>
-      <p>Twelve quick questions. No wrong answers, just honest ones. Under five minutes, and your demon is waiting at the end.</p>
+      <p>Twelve quick questions. No wrong answers, just honest ones. Under five minutes, and your archetype is waiting at the end.</p>
       <p style="margin-top:26px;"><a href="${links.quiz}" class="btn btn-primary">Take The Archetype Quiz</a></p>
     </div>
   </div>
@@ -332,10 +332,10 @@ export const animeMindset = all => `
   <div class="wrap">
     <div class="section-head center">
       <h2>The 9 Archetypes</h2>
-      <p>Nine ways of moving through the world, each grounded in a Jungian root, and each with a demon to chop.</p>
+      <p>Nine ways of moving through the world, each grounded in a Jungian root, and each with a weakness to overcome.</p>
     </div>
     <div class="arch-table">
-      <div class="arch-row head"><div>Archetype</div><div>Root</div><div>What drives them</div><div>Their demon</div></div>
+      <div class="arch-row head"><div>Archetype</div><div>Root</div><div>What drives them</div><div>Their weakness</div></div>
       ${archetypes.map(([, name, quote, root, drive, demon, key, hue]) => `<div class="arch-row">
         <div class="who"><img class="arc-face" style="--hue:${hue}" src="/assets/avatars/${key}.png" alt="" width="200" height="200" loading="lazy"><div><div class="name">${esc(name)}</div><div class="q">"${esc(quote)}"</div></div></div>
         <div class="root">${esc(root)}</div>

@@ -404,7 +404,7 @@ const Q=[
     {t:"Shipping the vision instead of only dreaming it.",w:{7:1}},
     {t:"Keeping faith when the proof is slow to show up.",w:{8:1}}
   ]},
-  {q:"Last one. Which demon do you catch yourself fighting most?",opts:[
+  {q:"Last one. Which weakness do you catch yourself fighting most?",opts:[
     {t:"Burnout. I don't know how to stop, even when I should.",w:{2:1}},
     {t:"Never enough. No win ever feels like it counts.",w:{3:1}},
     {t:"Ego. I start needing the spotlight more than the result.",w:{6:1}},
@@ -708,13 +708,13 @@ function buildResult(){
       ${charHTML}
       <hr class="divider">
       <div class="shadow-box">
-        <p class="shadow-head">🩸 Your demon</p>
+        <p class="shadow-head">🩸 Your weakness</p>
         <p class="shadow-demon">${r.demon}</p>
         <p class="shadow-int"><strong style="color:#fff">Chop the head off.</strong> ${r.integration}</p>
       </div>
       <div class="cta-box">
         <p class="cta-head">⚡ How you chop the head off</p>
-        <p class="cta-pitch">${r.momentum} <strong>Every archetype has a demon, and a way to chop it.</strong> We built a gamified habit-tracker template tuned to exactly how the ${r.name} operates, so you stop white-knuckling motivation and start stacking momentum against your demon.</p>
+        <p class="cta-pitch">${r.momentum} <strong>Every archetype has a weakness, and a way to beat it.</strong> We built a gamified habit-tracker template tuned to exactly how the ${r.name} operates, so you stop white-knuckling motivation and start stacking momentum against your demon.</p>
         ${GUMROAD_URL && GUMROAD_URL!=="#"
           ? `<a class="btn-primary" href="${GUMROAD_URL}" target="_blank" rel="noopener">Get the ${r.name} template →</a>`
           : `<button class="btn-primary" style="opacity:.6;cursor:default" disabled>${r.name} template, dropping soon ⚡</button>`}

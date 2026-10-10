@@ -42,11 +42,6 @@ export const authors = {
 
 export const team = [
   {
-    name: "Will O'Neal", role: 'Co-Founder', photo: '/assets/team/will-oneal.png',
-    socials: [['Instagram', 'https://www.instagram.com/chill.will14/']],
-    top5: ['My Hero Academia', 'One Piece', 'The Fate Series', 'Attack on Titan', 'Food Wars'],
-  },
-  {
     name: 'Andrel Neptune', role: 'Co-Founder', photo: '/assets/team/andrel-neptune.png',
     socials: [['Instagram', 'https://www.instagram.com/drellyyy/'], ['LinkedIn', 'https://www.linkedin.com/in/andrelneptune/']],
     top5: ['Attack on Titan', 'Prison School', 'My Hero Academia', 'Food Wars', 'Demon Slayer'],
@@ -68,7 +63,7 @@ export const quotes = [
   'Stop waiting for a rival to force your growth. Be your own trial arc.',
 ];
 
-// [emoji, name, quote, Jungian root, what drives them, their demon, avatar file, colour hue]
+// [emoji, name, quote, Jungian root, what drives them, their weakness, avatar file, colour hue]
 export const archetypes = [
   ['🎭', 'The Free Spirit', 'You refuse to let the weight steal the joy.', 'Jester', 'Moves through life light. Humor and presence as real resilience that outlasts the heaviness.', 'Avoidance', 'free-spirit', 300],
   ['🌱', 'The Underdog', "You started with nothing special. That's why you'll prove it.", 'Everyman', 'No head start, no shortcuts, just grit. Rises from behind and makes people root for them.', 'Victim mentality', 'underdog', 132],
