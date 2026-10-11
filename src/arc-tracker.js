@@ -2091,6 +2091,34 @@ function showFirstRun(done){
   el.addEventListener('click', next);
   setTimeout(next, INTRO_MS);
 }
+// A signed-in member on a phone that doesn't have their arc yet (a new phone, or an iPhone Home
+// Screen app, which keeps its own storage apart from Safari) waits for their backup before being
+// asked who they are, so someone who already chose gets "Welcome back" and nothing else.
+const OPENING_WAIT_MS = 4000;
+function showOpening(done, firstSync){
+  if(getArchetype(profile.archetypeKey)) return showWelcomeBack(done);
+  if(!licenceKey()) return showFirstRun(done);
+  const el = openIntro('<div class="intro-box"><div class="intro-kicker">Arc Tracker</div>'+
+    '<div class="intro-title">Loading your arc\u2026</div></div>', 'ask', true);
+  let decided = false;
+  const decide = ()=>{
+    if(decided) return; decided = true;
+    if(getArchetype(profile.archetypeKey)){
+      showTab('today');
+      const over = showWelcomeBack(done, true);
+      // take the loading screen away once the welcome has faded in over it
+      const drop = ()=>{ el.remove(); lockPageForIntro(); };
+      if(over) over.addEventListener('animationend', (e)=>{ if(e.target===over) drop(); });
+      setTimeout(drop, over ? 1500 : 0);
+    } else {
+      // no archetype in the backup either: this really is a first visit (same frame, so no flash)
+      el.remove();
+      showFirstRun(done);
+    }
+  };
+  Promise.resolve(firstSync).catch(()=>{}).then(decide);
+  setTimeout(decide, OPENING_WAIT_MS);
+}
 function showArchetypePicker(done){
   const cards = ARCHETYPES.filter(a=>a.ranks).map(a=>
     '<button type="button" class="pick-card" data-intro-pick="'+a.key+'" style="--hue:'+a.hue+';">'+iconSVG(a,84)+
@@ -2286,9 +2314,10 @@ renderAll();
 if(!getArchetype(profile.archetypeKey)) showTab('guide');
 // the opening screen, unless a notification was tapped to get here (that has its own screen)
 const OPENED_BY = location.hash;
-if(OPENED_BY!=='#quote' && OPENED_BY!=='#review') queueCelebration(done=>getArchetype(profile.archetypeKey) ? showWelcomeBack(done) : showFirstRun(done));
+// the backup starts first, so the opening screen can wait for it when this phone has no arc yet
+const firstSync = syncNow(startFresh ? {reset:true} : undefined);
+if(OPENED_BY!=='#quote' && OPENED_BY!=='#review') queueCelebration(done=>showOpening(done, firstSync));
 pushInit();
-syncNow(startFresh ? {reset:true} : undefined);
 // opened from a quote notification: play the reveal
 if(location.hash==='#quote'){
   history.replaceState(null, '', location.pathname + location.search);
