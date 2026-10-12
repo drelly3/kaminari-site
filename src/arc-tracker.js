@@ -154,7 +154,7 @@ function iconSVG(arche, size){
 }
 
 /* ---------------- Storage ---------------- */
-const LS = {profile:'arc_profile',habits:'arc_habits',log:'arc_log',weekly:'arc_weekly',reminder:'arc_reminder',secondWinds:'arc_second_winds',proofGone:'arc_proof_gone',challenges:'arc_challenges',notes:'arc_notes',noteFolders:'arc_note_folders'};
+const LS = {profile:'arc_profile',habits:'arc_habits',log:'arc_log',weekly:'arc_weekly',reminder:'arc_reminder',secondWinds:'arc_second_winds',proofGone:'arc_proof_gone',challenges:'arc_challenges',notes:'arc_notes',noteFolders:'arc_note_folders',reminders:'arc_reminders'};
 function load(k,fb){ try{ const r=localStorage.getItem(k); return r?JSON.parse(r):fb; }catch(e){ return fb; } }
 function persist(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} if(SYNCED.includes(k) && !applyingSync){ editSeq++; scheduleSync(); } }
 
@@ -173,6 +173,7 @@ let habits  = load(LS.habits,{h1:{cue:'',habit:''},h2:{cue:'',habit:''},h3:{cue:
 let log     = load(LS.log,[]);
 let weekly  = load(LS.weekly,[]);
 let reminder= load(LS.reminder,{enabled:false,time:'08:00',lastFired:''});
+let myReminders = load(LS.reminders,[]); // [{id, label, note, time, days:[0-6], on, t, deleted}]: the member's own reminders
 let notes = load(LS.notes,[]); // [{id, folder, html, t, deleted}]: the Notes section on Progress
 let noteFolders = load(LS.noteFolders,[]); // [{id, name, t, deleted}]
 let challenges = load(LS.challenges,[]); // [{id, week, key, days:[dates], dropped, t}]: character challenges taken on
@@ -183,7 +184,7 @@ let secondWinds= load(LS.secondWinds,[]); // [{missed, on, cost}]: each Second W
 // Every change is sent a couple of seconds after it's made; the server merges it with the backup and
 // sends the merged arc back, so a second phone picks up days logged on the first. See api/arc-sync.js.
 // Proof photos stay on the device.
-const SYNCED = [LS.profile, LS.habits, LS.log, LS.weekly, LS.secondWinds, LS.proofGone, LS.challenges, LS.notes, LS.noteFolders];
+const SYNCED = [LS.profile, LS.habits, LS.log, LS.weekly, LS.secondWinds, LS.proofGone, LS.challenges, LS.notes, LS.noteFolders, LS.reminders];
 const SYNC_DELAY = 2500;
 let sync = load('arc_sync', {at:0, owner:'', resetAt:0}); // last good backup, whose key the local arc belongs to
 let editSeq = 0; // bumped on every local change, so a backup reply never overwrites a newer tap
@@ -202,9 +203,9 @@ async function syncNow(opts){
   if(syncBusy){ syncAgain = true; return; }
   // a different key on this device means the local arc is someone else's: start from their backup instead
   if(sync.owner && sync.owner !== key){
-    profile=blankProfile(); habits=blankHabits(); log=[]; weekly=[]; secondWinds=[]; proofGone=[]; challenges=[]; notes=[]; noteFolders=[];
+    profile=blankProfile(); habits=blankHabits(); log=[]; weekly=[]; secondWinds=[]; proofGone=[]; challenges=[]; notes=[]; noteFolders=[]; myReminders=[];
     applyingSync = true;
-    persist(LS.profile,profile); persist(LS.habits,habits); persist(LS.log,log); persist(LS.weekly,weekly); persist(LS.secondWinds,secondWinds); persist(LS.proofGone,proofGone); persist(LS.challenges,challenges); persist(LS.notes,notes); persist(LS.noteFolders,noteFolders);
+    persist(LS.profile,profile); persist(LS.habits,habits); persist(LS.log,log); persist(LS.weekly,weekly); persist(LS.secondWinds,secondWinds); persist(LS.proofGone,proofGone); persist(LS.challenges,challenges); persist(LS.notes,notes); persist(LS.noteFolders,noteFolders); persist(LS.reminders,myReminders);
     applyingSync = false;
     if(proofDb) proofTx('readwrite', s=>s.clear()).catch(()=>{});
     sync = {at:0, owner:key, resetAt:0};
@@ -214,7 +215,7 @@ async function syncNow(opts){
   const seq = editSeq;
   try{
     const res = await fetch('/api/arc-sync', {method:'POST', headers:{'Content-Type':'application/json'}, keepalive:!!opts.keepalive,
-      body: JSON.stringify({key, reset:!!opts.reset, state:{profile, habits, log, weekly, secondWinds, proofGone, challenges, notes, noteFolders, resetAt:sync.resetAt||0}})});
+      body: JSON.stringify({key, reset:!!opts.reset, state:{profile, habits, log, weekly, secondWinds, proofGone, challenges, notes, noteFolders, reminders:myReminders, resetAt:sync.resetAt||0}})});
     const out = await res.json().catch(()=>({ok:false}));
     if(out.ok && editSeq !== seq){ syncAgain = true; setSyncStatus('busy'); } // changed mid-flight: send again, apply that reply
     else if(out.ok){
@@ -233,20 +234,22 @@ async function syncNow(opts){
 function applyBackup(st){
   const next = {
     profile: st.profile || blankProfile(), habits: st.habits || blankHabits(),
-    log: st.log || [], weekly: st.weekly || [], secondWinds: st.secondWinds || [], proofGone: st.proofGone || [], challenges: st.challenges || [], notes: st.notes || [], noteFolders: st.noteFolders || []
+    log: st.log || [], weekly: st.weekly || [], secondWinds: st.secondWinds || [], proofGone: st.proofGone || [], challenges: st.challenges || [], notes: st.notes || [], noteFolders: st.noteFolders || [], reminders: st.reminders || []
   };
-  const changed = JSON.stringify(next) !== JSON.stringify({profile, habits, log, weekly, secondWinds, proofGone, challenges, notes, noteFolders});
+  const changed = JSON.stringify(next) !== JSON.stringify({profile, habits, log, weekly, secondWinds, proofGone, challenges, notes, noteFolders, reminders:myReminders});
   if(!changed) return;
   const hadArchetype = !!getArchetype(profile.archetypeKey);
   profile=next.profile; habits=next.habits; log=next.log; weekly=next.weekly; secondWinds=next.secondWinds; proofGone=next.proofGone; challenges=next.challenges; notes=next.notes; noteFolders=next.noteFolders;
+  const remindersChanged = JSON.stringify(next.reminders)!==JSON.stringify(myReminders); myReminders=next.reminders;
   applyingSync = true;
-  persist(LS.profile,profile); persist(LS.habits,habits); persist(LS.log,log); persist(LS.weekly,weekly); persist(LS.secondWinds,secondWinds); persist(LS.proofGone,proofGone); persist(LS.challenges,challenges); persist(LS.notes,notes); persist(LS.noteFolders,noteFolders);
+  persist(LS.profile,profile); persist(LS.habits,habits); persist(LS.log,log); persist(LS.weekly,weekly); persist(LS.secondWinds,secondWinds); persist(LS.proofGone,proofGone); persist(LS.challenges,challenges); persist(LS.notes,notes); persist(LS.noteFolders,noteFolders); persist(LS.reminders,myReminders);
   applyingSync = false;
   const a = document.activeElement;
   if(a && /^(INPUT|TEXTAREA)$/.test(a.tagName) && a.type!=='checkbox' && a.type!=='file') renderWhenIdle = true;
   else renderAll();
   // a restored arc opens on Today, not on the setup guide shown to brand-new members
   if(!hadArchetype && getArchetype(profile.archetypeKey) && document.getElementById('tab-guide').classList.contains('active')) showTab('today');
+  if(remindersChanged && pushState==='on') pushSync().catch(()=>{});
 }
 document.addEventListener('focusout', ()=>{ if(renderWhenIdle){ setTimeout(()=>{ const a=document.activeElement; if(!(a && /^(INPUT|TEXTAREA)$/.test(a.tagName))){ renderWhenIdle=false; renderAll(); } }, 50); } });
 // leaving the app: send anything still waiting
@@ -1951,6 +1954,9 @@ function renderSetup(){
   html += '<div class="card"><label for="r_time">Reminder time</label><input type="time" id="r_time" value="'+(reminder.time||'08:00')+'">';
   html += '<div id="pushBox">'+pushBoxHtml()+'</div></div>';
 
+  html += '<h2 class="section-title" style="font-size:16px;margin-top:30px;">Your reminders</h2><p class="section-sub">Anything else you want a nudge for during the day: water, stretching, a walk, lights out. Each one arrives as its own notification, on the days you pick, on every phone with notifications on.</p>';
+  html += '<div id="remBox">'+remindersHtml()+'</div>';
+
   // Calendar reminder: a repeating daily event in the user's own calendar, which then notifies
   // them on every device that calendar is on. Uses the reminder time picked above.
   html += '<div class="card"><label>Put it on your calendar</label>';
@@ -2053,6 +2059,7 @@ function renderSetup(){
   });
   wirePushBox();
   wireSyncBox();
+  wireReminders();
 
   if(DEMO){
   document.getElementById('previewRankUpBtn').addEventListener('click', ()=>{
@@ -2074,11 +2081,84 @@ function renderSetup(){
     if(proofDb){ proofTx('readwrite', s=>s.clear()).catch(()=>{}); }
     Object.keys(dayProof).forEach(k=>URL.revokeObjectURL(dayProof[k].url)); dayProof={}; proofError='';
     profile={name:'',archetypeKey:''}; habits={h1:{cue:'',habit:''},h2:{cue:'',habit:''},h3:{cue:'',habit:''},sc:{cue:'',habit:''}}; log=[]; weekly=[];
-    secondWinds=[]; proofGone=[]; challenges=[]; notes=[]; noteFolders=[];
-    persist(LS.proofGone,proofGone); persist(LS.challenges,challenges); persist(LS.notes,notes); persist(LS.noteFolders,noteFolders);
+    secondWinds=[]; proofGone=[]; challenges=[]; notes=[]; noteFolders=[]; myReminders=[];
+    persist(LS.proofGone,proofGone); persist(LS.challenges,challenges); persist(LS.notes,notes); persist(LS.noteFolders,noteFolders); persist(LS.reminders,myReminders);
     persist(LS.profile,profile); persist(LS.habits,habits); persist(LS.log,log); persist(LS.weekly,weekly); persist(LS.secondWinds,secondWinds);
     renderAll();
     syncNow({reset:true});
+  });
+}
+
+/* ---------------- The member's own reminders ---------------- */
+// Up to 12 extra notifications a day, each with a label, an optional note, a time and the days it
+// repeats. Backed up with the arc; every device with notifications on sends its copy to the server
+// (pushSync), which sends them (api/arc-push.js).
+const MAX_MY_REMINDERS = 12;
+const DAY_LETTERS = ['S','M','T','W','T','F','S'], DAY_NAMES = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+let remEditing = null; // id being edited, 'new', or null
+const liveReminders = () => myReminders.filter(r=>!r.deleted).sort((a,b)=>a.time.localeCompare(b.time));
+function daysLabel(days){
+  const d = [...(days||[])].sort();
+  if(!d.length || d.length===7) return 'Every day';
+  if(d.join()==='1,2,3,4,5') return 'Weekdays';
+  if(d.join()==='0,6') return 'Weekends';
+  return d.map(x=>DAY_NAMES[x]).join(', ');
+}
+function timeLabel(t){ const [h,m]=t.split(':').map(Number); const d=new Date(); d.setHours(h,m,0,0); return d.toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'}); }
+function remindersHtml(){
+  const list = liveReminders();
+  let html = '';
+  if(pushState!=='on') html += '<div class="banner info" style="margin-bottom:12px;"><div>Turn on notifications above and these will arrive on this phone.</div></div>';
+  if(list.length){
+    html += '<div class="card rem-list">'+list.map(r=> remEditing===r.id ? remFormHtml(r) :
+      '<div class="rem-row'+(r.on===false?' off':'')+'"><button type="button" class="rem-main" data-rem-edit="'+r.id+'"><span class="rem-time">'+timeLabel(r.time)+'</span>'+
+      '<span class="rem-txt"><b>'+escapeHtml(r.label)+'</b><span>'+daysLabel(r.days)+(r.note?' · '+escapeHtml(r.note):'')+'</span></span></button>'+
+      '<label class="rem-switch" title="On or off"><input type="checkbox" data-rem-on="'+r.id+'"'+(r.on===false?'':' checked')+' aria-label="'+escapeHtml(r.label)+' on"><i></i></label></div>').join('')+'</div>';
+  }
+  if(remEditing==='new') html += '<div class="card">'+remFormHtml(null)+'</div>';
+  else if(list.length < MAX_MY_REMINDERS) html += '<button type="button" class="btn ghost" id="remAdd">+ Add a reminder</button>';
+  else html += '<p class="card-note">That’s the most reminders a day: '+MAX_MY_REMINDERS+'.</p>';
+  return html;
+}
+function remFormHtml(r){
+  const days = r ? r.days : [0,1,2,3,4,5,6];
+  return '<div class="rem-form"><label for="remLabel">Reminder</label><input type="text" id="remLabel" maxlength="60" placeholder="Drink water" value="'+escapeHtml(r?r.label:'')+'">'+
+    '<label for="remNote">Note (optional)</label><input type="text" id="remNote" maxlength="120" placeholder="One full glass" value="'+escapeHtml(r?(r.note||''):'')+'">'+
+    '<label for="remTime">Time</label><input type="time" id="remTime" value="'+(r?r.time:'12:00')+'">'+
+    '<label>Days</label><div class="rem-days">'+DAY_LETTERS.map((l,i)=>'<button type="button" class="rem-day'+(days.includes(i)?' on':'')+'" data-rem-day="'+i+'" aria-pressed="'+days.includes(i)+'" aria-label="'+DAY_NAMES[i]+'">'+l+'</button>').join('')+'</div>'+
+    '<div class="rem-actions"><button type="button" class="btn" id="remSave">Save</button><button type="button" class="linkbtn" id="remCancel">Cancel</button>'+
+    (r?'<button type="button" class="linkbtn danger" id="remDelete">Delete</button>':'')+'</div><div class="proof-error" id="remErr"></div></div>';
+}
+function saveReminders(){ persist(LS.reminders, myReminders); if(pushState==='on') pushSync().catch(()=>{}); }
+function refreshReminders(){ const el=document.getElementById('remBox'); if(el){ el.innerHTML=remindersHtml(); wireReminders(); } }
+function wireReminders(){
+  const box = document.getElementById('remBox'); if(!box) return;
+  const add = box.querySelector('#remAdd'); if(add) add.addEventListener('click',()=>{ remEditing='new'; refreshReminders(); const l=document.getElementById('remLabel'); if(l) l.focus(); });
+  box.querySelectorAll('[data-rem-edit]').forEach(b=>b.addEventListener('click',()=>{ remEditing=b.dataset.remEdit; refreshReminders(); }));
+  box.querySelectorAll('[data-rem-on]').forEach(c=>c.addEventListener('change',()=>{
+    const r = myReminders.find(x=>x.id===c.dataset.remOn); if(!r) return;
+    r.on = c.checked; r.t = Date.now(); saveReminders(); refreshReminders();
+  }));
+  box.querySelectorAll('[data-rem-day]').forEach(b=>b.addEventListener('click',()=>{ b.classList.toggle('on'); b.setAttribute('aria-pressed', b.classList.contains('on')); }));
+  const save = box.querySelector('#remSave');
+  if(save) save.addEventListener('click',()=>{
+    const label = document.getElementById('remLabel').value.trim();
+    const time = document.getElementById('remTime').value;
+    const days = [...box.querySelectorAll('[data-rem-day].on')].map(b=>+b.dataset.remDay);
+    const err = document.getElementById('remErr');
+    if(!label){ err.textContent='Give the reminder a name, like “Drink water”.'; return; }
+    if(!time){ err.textContent='Pick a time.'; return; }
+    if(!days.length){ err.textContent='Pick at least one day.'; return; }
+    const note = document.getElementById('remNote').value.trim();
+    if(remEditing==='new') myReminders.push({id:Date.now().toString(36)+Math.random().toString(36).slice(2,6), label, note, time, days, on:true, t:Date.now()});
+    else { const r = myReminders.find(x=>x.id===remEditing); Object.assign(r, {label, note, time, days, on:true, t:Date.now()}); }
+    remEditing = null; saveReminders(); refreshReminders();
+  });
+  const cancel = box.querySelector('#remCancel'); if(cancel) cancel.addEventListener('click',()=>{ remEditing=null; refreshReminders(); });
+  const del = box.querySelector('#remDelete');
+  if(del) del.addEventListener('click',()=>{
+    const r = myReminders.find(x=>x.id===remEditing); if(!r) return;
+    r.deleted = true; r.t = Date.now(); remEditing = null; saveReminders(); refreshReminders();
   });
 }
 
@@ -2104,7 +2184,8 @@ async function pushSync(){
   const sub=await currentSub(); if(!sub) return {ok:false};
   let key=''; try{ key=localStorage.getItem('arc_license')||''; }catch(e){}
   return pushApi('subscribe',{key, endpoint:sub.endpoint, subscription:sub.toJSON(), time:reminder.time||'08:00', archetype:profile.archetypeKey||'',
-    tz:Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC', clearedToday:clearedToday()});
+    tz:Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC', clearedToday:clearedToday(),
+    reminders: myReminders.filter(r=>!r.deleted && r.on!==false).map(r=>({id:r.id, label:r.label, note:r.note, time:r.time, days:r.days}))});
 }
 async function pushInit(){
   if(!PUSH_OK){ pushState=(IS_IOS && !IS_STANDALONE)?'ios-install':'unsupported'; return refreshPushBox(); }
@@ -2173,6 +2254,7 @@ function wirePushBox(){
 function refreshPushBox(){
   const el=document.getElementById('pushBox');
   if(el){ el.innerHTML=pushBoxHtml(); wirePushBox(); }
+  refreshReminders();
   renderGuide(); // its setup checklist ticks off the reminder step
 }
 
@@ -2244,6 +2326,9 @@ function renderGuide(){
 
   <h2 class="section-title">Look back</h2>
   <p class="guide-p"><b>Your year</b> on <b>Progress</b> keeps every month you’ve logged: tap a month for its calendar, its numbers, and how it compares with the month before. Nothing is ever cleared out, so you can flip back through earlier years too. Each new month opens with a recap of the last one: your proof photos, full clears, best streak and best win line. At ${PROOF_MILESTONE} full clears you get a “${PROOF_MILESTONE} days of proof” reveal. Replay any of them on <b>Progress</b>. Shadow badges unlock at 10, 25 and 50 shadow-checks.</p>
+
+  <h2 class="section-title">Reminders</h2>
+  <p class="guide-p">Turn on notifications in <b>Setup</b> and you get a daily arc reminder at your chosen time, skipped on days you\u2019ve already cleared. Under <b>Your reminders</b> you can add up to 12 more for anything else in your day, like water, stretching or lights out, each with its own time, note and days. Switch any of them off without deleting it.</p>
 
   <h2 class="section-title">Notes</h2>
   <p class="guide-p">At the bottom of <b>Progress</b> there\u2019s a notes space for plans, lessons and ideas, set up like the Notes app on a phone. Make folders, then format with a title, headings, body text, bulleted and numbered lists, checklists you can tick, and bold, italic, underline or strikethrough. Notes save as you type and are backed up with your key.</p>

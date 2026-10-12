@@ -19,7 +19,8 @@ self.addEventListener('push', event => {
       body: message.body,
       icon: '/assets/arc-icon-192.png',
       badge: '/assets/arc-icon-192.png',
-      tag: 'arc-tracker',
+      // the member's own reminders each get their own tag, so one doesn't replace another
+      tag: message.tag || 'arc-tracker',
       data: { url: message.url || FALLBACK.url },
     });
   })());
