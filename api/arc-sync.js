@@ -54,6 +54,8 @@ export function mergeArc(stored = {}, incoming = {}) {
     // Notes on Progress; a deleted note or folder stays as a marker so the delete reaches every phone
     notes: mergeList('notes', n => n.id),
     noteFolders: mergeList('noteFolders', f => f.id),
+    // the member's own reminders (Setup); deleted ones stay as markers
+    reminders: mergeList('reminders', r => r.id),
   };
 }
 

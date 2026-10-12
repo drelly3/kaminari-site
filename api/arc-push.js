@@ -5,6 +5,9 @@
 //    (an address at Google/Apple/Mozilla that delivers to that one device), which we store in KV.
 //  - Every 5 minutes Cloudflare runs sendDue(). Anyone whose reminder time has passed in their own
 //    time zone, and who hasn't cleared today, gets one reminder.
+//  - Members can also set their own reminders ("Drink water" at 14:00 on weekdays). Each device keeps
+//    a compact copy in its KV metadata (r: [[minutes, day bitmask]], rs: which ones went out today),
+//    so the 5-minute timer can check them without reading every device's full entry.
 //  - Pushes carry no content. The device's service worker wakes up, asks /api/arc-push/next what to
 //    show, and displays it. That keeps the sending code small and the wording editable in one place.
 //
@@ -49,6 +52,33 @@ export function dueKind(meta, now = new Date()) {
   return meta.cleared !== date ? 'reminder' : '';
 }
 
+/* ---------- the member's own reminders ---------- */
+export const MAX_REMINDERS = 12;
+// cleaned list from the app: [{id, label, note, time 'HH:MM', days [0-6, 0 = Sunday]}]
+export function cleanReminders(list) {
+  return (Array.isArray(list) ? list : []).slice(0, MAX_REMINDERS).map(r => {
+    const [h, m] = String(r && r.time || '').split(':').map(Number);
+    const days = Array.isArray(r && r.days) ? r.days.map(Number).filter(d => d >= 0 && d <= 6) : [];
+    return {
+      id: String(r.id || '').slice(0, 24),
+      label: String(r.label || '').trim().slice(0, 60),
+      note: String(r.note || '').trim().slice(0, 120),
+      m: Math.min(1439, Math.max(0, (h || 0) * 60 + (m || 0))),
+      mask: days.reduce((a, d) => a | (1 << d), 0) || 127,
+    };
+  }).filter(r => r.id && r.label);
+}
+const weekday = date => new Date(date + 'T12:00:00Z').getUTCDay();
+// which of the member's own reminders are due right now (indices into meta.r), and today's date
+export function dueReminders(meta, now = new Date()) {
+  if (!Array.isArray(meta.r) || !meta.r.length) return { today: '', due: [] };
+  const { date, minutes } = localNow(meta.tz, now);
+  const sent = meta.rs && meta.rs.d === date ? meta.rs.s : [];
+  const dow = weekday(date);
+  const due = meta.r.map(([m, mask], i) => (minutes >= m && (mask & (1 << dow)) && !sent.includes(i)) ? i : -1).filter(i => i >= 0);
+  return { today: date, due };
+}
+
 /* ---------- sending ---------- */
 async function vapidHeader(endpoint, env) {
   const key = await crypto.subtle.importKey('jwk', JSON.parse(env.VAPID_PRIVATE_JWK), { name: 'ECDSA', namedCurve: 'P-256' }, false, ['sign']);
@@ -74,20 +104,41 @@ export async function sendDue(env, now = new Date()) {
     const page = await env.ARC_PUSH.list({ prefix: 'sub:', cursor });
     for (const { name, metadata: meta } of page.keys) {
       checked++;
-      let kind = meta ? dueKind(meta, now) : '';
-      if (!kind) continue;
+      if (!meta) continue;
+      let kind = dueKind(meta, now);
+      const own = dueReminders(meta, now);
+      if (!kind && !own.due.length) continue;
       const sub = await env.ARC_PUSH.get(name, 'json');
       if (!sub) continue;
       const today = localNow(meta.tz, now).date;
       // no archetype picked yet means no quote to send; fall back to the plain reminder
       if (kind === 'quote' && !quoteFor(sub.archetype, today)) kind = meta.cleared !== today ? 'reminder' : '';
-      if (!kind) continue;
-      const result = await sendPush(sub.endpoint, env);
-      if (result === 'gone') { await env.ARC_PUSH.delete(name); continue; }
-      if (result !== 'sent') continue; // try again on the next run
-      sub.next = kind;
-      await env.ARC_PUSH.put(name, JSON.stringify(sub), { metadata: { ...meta, sent: today } });
-      sent++;
+      // the member's own reminders wait in a queue the device reads one at a time (see 'next');
+      // they're written before sending so the device finds them when the push wakes it
+      const mine = own.due.map(i => (sub.reminders || [])[i]).filter(Boolean);
+      sub.queue = (Array.isArray(sub.queue) ? sub.queue : []).concat(mine.map(r => ({ title: r.label, body: r.note || 'Your reminder from Arc Tracker.', tag: 'arc-r-' + r.id, url: '/arc-tracker/app' })));
+      if (kind) sub.next = kind;
+      if (!kind && !mine.length) continue;
+      await env.ARC_PUSH.put(name, JSON.stringify(sub), { metadata: meta });
+      const newMeta = { ...meta };
+      let gone = false, failedOwn = 0;
+      if (kind) {
+        const result = await sendPush(sub.endpoint, env);
+        if (result === 'gone') gone = true;
+        else if (result === 'sent') { newMeta.sent = today; sent++; }
+      }
+      const done = [];
+      for (const i of own.due) {
+        if (gone) break;
+        const result = await sendPush(sub.endpoint, env);
+        if (result === 'gone') { gone = true; break; }
+        if (result === 'sent') { done.push(i); sent++; } else failedOwn++;
+      }
+      if (gone) { await env.ARC_PUSH.delete(name); continue; }
+      if (done.length) newMeta.rs = { d: today, s: (meta.rs && meta.rs.d === today ? meta.rs.s : []).concat(done) };
+      // a reminder whose push failed comes off the queue and goes out again on the next run
+      if (failedOwn) sub.queue = sub.queue.slice(0, sub.queue.length - failedOwn);
+      await env.ARC_PUSH.put(name, JSON.stringify(sub), { metadata: newMeta });
     }
     cursor = page.list_complete ? undefined : page.cursor;
   } while (cursor);
@@ -131,7 +182,14 @@ export async function handlePush(request, env, pathname) {
       sent: today.minutes >= minutes ? today.date : '',
     };
     const archetype = String(body.archetype || '').slice(0, 40);
-    await env.ARC_PUSH.put(id, JSON.stringify({ endpoint, next: '', archetype }), { metadata: meta });
+    // the member's own reminders; ones already past today don't fire the moment they're saved
+    const reminders = cleanReminders(body.reminders);
+    if (reminders.length) {
+      meta.r = reminders.map(r => [r.m, r.mask]);
+      meta.rs = { d: today.date, s: reminders.map((r, i) => r.m <= today.minutes ? i : -1).filter(i => i >= 0) };
+    }
+    const old = await env.ARC_PUSH.get(id, 'json');
+    await env.ARC_PUSH.put(id, JSON.stringify({ endpoint, next: (old && old.next) || '', queue: (old && old.queue) || [], archetype, reminders }), { metadata: meta });
     return json(200, { ok: true });
   }
 
@@ -156,6 +214,12 @@ export async function handlePush(request, env, pathname) {
   }
 
   if (action === 'next') { // asked by the device when a push arrives: what should I show?
+    // the member's own reminders first, one per push
+    if (Array.isArray(sub.queue) && sub.queue.length) {
+      const message = sub.queue.shift();
+      await env.ARC_PUSH.put(id, JSON.stringify(sub), { metadata: meta });
+      return json(200, { ok: true, ...message });
+    }
     // the daily reminder says something different each day (see arc-reminders.js)
     const message = MESSAGES[sub.next] && sub.next !== 'reminder' ? MESSAGES[sub.next] : reminderFor(sub.archetype, localNow(meta.tz).date);
     return json(200, { ok: true, url: '/arc-tracker/app', ...message });
