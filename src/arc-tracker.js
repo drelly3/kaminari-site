@@ -154,7 +154,7 @@ function iconSVG(arche, size){
 }
 
 /* ---------------- Storage ---------------- */
-const LS = {profile:'arc_profile',habits:'arc_habits',log:'arc_log',weekly:'arc_weekly',reminder:'arc_reminder',secondWinds:'arc_second_winds',proofGone:'arc_proof_gone',challenges:'arc_challenges'};
+const LS = {profile:'arc_profile',habits:'arc_habits',log:'arc_log',weekly:'arc_weekly',reminder:'arc_reminder',secondWinds:'arc_second_winds',proofGone:'arc_proof_gone',challenges:'arc_challenges',notes:'arc_notes',noteFolders:'arc_note_folders'};
 function load(k,fb){ try{ const r=localStorage.getItem(k); return r?JSON.parse(r):fb; }catch(e){ return fb; } }
 function persist(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} if(SYNCED.includes(k) && !applyingSync){ editSeq++; scheduleSync(); } }
 
@@ -173,6 +173,8 @@ let habits  = load(LS.habits,{h1:{cue:'',habit:''},h2:{cue:'',habit:''},h3:{cue:
 let log     = load(LS.log,[]);
 let weekly  = load(LS.weekly,[]);
 let reminder= load(LS.reminder,{enabled:false,time:'08:00',lastFired:''});
+let notes = load(LS.notes,[]); // [{id, folder, html, t, deleted}]: the Notes section on Progress
+let noteFolders = load(LS.noteFolders,[]); // [{id, name, t, deleted}]
 let challenges = load(LS.challenges,[]); // [{id, week, key, days:[dates], dropped, t}]: character challenges taken on
 let proofGone = load(LS.proofGone,[]); // [{id, t}]: proof photos removed, so other phones drop them too
 let secondWinds= load(LS.secondWinds,[]); // [{missed, on, cost}]: each Second Wind: an XP-paid streak repair
@@ -181,7 +183,7 @@ let secondWinds= load(LS.secondWinds,[]); // [{missed, on, cost}]: each Second W
 // Every change is sent a couple of seconds after it's made; the server merges it with the backup and
 // sends the merged arc back, so a second phone picks up days logged on the first. See api/arc-sync.js.
 // Proof photos stay on the device.
-const SYNCED = [LS.profile, LS.habits, LS.log, LS.weekly, LS.secondWinds, LS.proofGone, LS.challenges];
+const SYNCED = [LS.profile, LS.habits, LS.log, LS.weekly, LS.secondWinds, LS.proofGone, LS.challenges, LS.notes, LS.noteFolders];
 const SYNC_DELAY = 2500;
 let sync = load('arc_sync', {at:0, owner:'', resetAt:0}); // last good backup, whose key the local arc belongs to
 let editSeq = 0; // bumped on every local change, so a backup reply never overwrites a newer tap
@@ -200,9 +202,9 @@ async function syncNow(opts){
   if(syncBusy){ syncAgain = true; return; }
   // a different key on this device means the local arc is someone else's: start from their backup instead
   if(sync.owner && sync.owner !== key){
-    profile=blankProfile(); habits=blankHabits(); log=[]; weekly=[]; secondWinds=[]; proofGone=[]; challenges=[];
+    profile=blankProfile(); habits=blankHabits(); log=[]; weekly=[]; secondWinds=[]; proofGone=[]; challenges=[]; notes=[]; noteFolders=[];
     applyingSync = true;
-    persist(LS.profile,profile); persist(LS.habits,habits); persist(LS.log,log); persist(LS.weekly,weekly); persist(LS.secondWinds,secondWinds); persist(LS.proofGone,proofGone); persist(LS.challenges,challenges);
+    persist(LS.profile,profile); persist(LS.habits,habits); persist(LS.log,log); persist(LS.weekly,weekly); persist(LS.secondWinds,secondWinds); persist(LS.proofGone,proofGone); persist(LS.challenges,challenges); persist(LS.notes,notes); persist(LS.noteFolders,noteFolders);
     applyingSync = false;
     if(proofDb) proofTx('readwrite', s=>s.clear()).catch(()=>{});
     sync = {at:0, owner:key, resetAt:0};
@@ -212,7 +214,7 @@ async function syncNow(opts){
   const seq = editSeq;
   try{
     const res = await fetch('/api/arc-sync', {method:'POST', headers:{'Content-Type':'application/json'}, keepalive:!!opts.keepalive,
-      body: JSON.stringify({key, reset:!!opts.reset, state:{profile, habits, log, weekly, secondWinds, proofGone, challenges, resetAt:sync.resetAt||0}})});
+      body: JSON.stringify({key, reset:!!opts.reset, state:{profile, habits, log, weekly, secondWinds, proofGone, challenges, notes, noteFolders, resetAt:sync.resetAt||0}})});
     const out = await res.json().catch(()=>({ok:false}));
     if(out.ok && editSeq !== seq){ syncAgain = true; setSyncStatus('busy'); } // changed mid-flight: send again, apply that reply
     else if(out.ok){
@@ -231,14 +233,14 @@ async function syncNow(opts){
 function applyBackup(st){
   const next = {
     profile: st.profile || blankProfile(), habits: st.habits || blankHabits(),
-    log: st.log || [], weekly: st.weekly || [], secondWinds: st.secondWinds || [], proofGone: st.proofGone || [], challenges: st.challenges || []
+    log: st.log || [], weekly: st.weekly || [], secondWinds: st.secondWinds || [], proofGone: st.proofGone || [], challenges: st.challenges || [], notes: st.notes || [], noteFolders: st.noteFolders || []
   };
-  const changed = JSON.stringify(next) !== JSON.stringify({profile, habits, log, weekly, secondWinds, proofGone, challenges});
+  const changed = JSON.stringify(next) !== JSON.stringify({profile, habits, log, weekly, secondWinds, proofGone, challenges, notes, noteFolders});
   if(!changed) return;
   const hadArchetype = !!getArchetype(profile.archetypeKey);
-  profile=next.profile; habits=next.habits; log=next.log; weekly=next.weekly; secondWinds=next.secondWinds; proofGone=next.proofGone; challenges=next.challenges;
+  profile=next.profile; habits=next.habits; log=next.log; weekly=next.weekly; secondWinds=next.secondWinds; proofGone=next.proofGone; challenges=next.challenges; notes=next.notes; noteFolders=next.noteFolders;
   applyingSync = true;
-  persist(LS.profile,profile); persist(LS.habits,habits); persist(LS.log,log); persist(LS.weekly,weekly); persist(LS.secondWinds,secondWinds); persist(LS.proofGone,proofGone); persist(LS.challenges,challenges);
+  persist(LS.profile,profile); persist(LS.habits,habits); persist(LS.log,log); persist(LS.weekly,weekly); persist(LS.secondWinds,secondWinds); persist(LS.proofGone,proofGone); persist(LS.challenges,challenges); persist(LS.notes,notes); persist(LS.noteFolders,noteFolders);
   applyingSync = false;
   const a = document.activeElement;
   if(a && /^(INPUT|TEXTAREA)$/.test(a.tagName) && a.type!=='checkbox' && a.type!=='file') renderWhenIdle = true;
@@ -1494,6 +1496,222 @@ function buildRecap(stats, arche){
   return bits.join(', ')+'. Next arc starts the moment you check today\u2019s box.';
 }
 
+/* ---------------- Notes: folders and formatted notes, like the iPhone Notes app ---------------- */
+// Lives at the bottom of Progress. A note is a small piece of formatted HTML (title, heading,
+// subheading, body, bulleted / numbered / checklist items, bold, italic, underline, strikethrough),
+// saved as you type and backed up with the rest of the arc. Deleting leaves a marker (deleted:true)
+// so the delete reaches every phone instead of the note coming back from another one.
+const NOTE_MAX = 60000; // characters of HTML per note
+let noteFolder = 'all', noteSearch = '';
+const liveNotes = () => notes.filter(n=>!n.deleted);
+const liveFolders = () => noteFolders.filter(f=>!f.deleted).sort((a,b)=>a.name.localeCompare(b.name));
+function noteId(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+function saveNotes(){ persist(LS.notes, notes); }
+function saveFolders(){ persist(LS.noteFolders, noteFolders); }
+
+// only the formatting the editor makes is kept; anything else (pasted styles, scripts, links) is dropped
+const NOTE_TAGS = {H1:1, H2:1, H3:1, P:1, DIV:1, BR:1, UL:1, OL:1, LI:1, B:1, STRONG:1, I:1, EM:1, U:1, S:1, STRIKE:1};
+function cleanNoteHtml(html){
+  const doc = new DOMParser().parseFromString('<div>'+(html||'')+'</div>', 'text/html');
+  const walk = node => {
+    [...node.childNodes].forEach(ch=>{
+      if(ch.nodeType===3) return;
+      if(ch.nodeType!==1 || !NOTE_TAGS[ch.tagName]){
+        if(ch.nodeType===1 && !/^(SCRIPT|STYLE|IFRAME|OBJECT|EMBED)$/.test(ch.tagName)){ walk(ch); ch.replaceWith(...ch.childNodes); }
+        else ch.remove();
+        return;
+      }
+      const keep = (ch.tagName==='UL' && ch.classList.contains('checklist')) ? 'checklist' : (ch.tagName==='LI' && ch.classList.contains('done')) ? 'done' : '';
+      [...ch.attributes].forEach(a=>ch.removeAttribute(a.name));
+      if(keep) ch.className = keep;
+      walk(ch);
+    });
+  };
+  const root = doc.body.firstChild;
+  walk(root);
+  return root.innerHTML.slice(0, NOTE_MAX);
+}
+// the first line is the note's title in the list, the next bit of text its preview
+function noteParts(n){
+  const d = new DOMParser().parseFromString('<div>'+cleanNoteHtml(n.html)+'</div>', 'text/html').body.firstChild;
+  const lines = [];
+  d.querySelectorAll('h1,h2,h3,p,div,li').forEach(el=>{ if(!el.querySelector('h1,h2,h3,p,div,li')){ const t = el.textContent.trim(); if(t) lines.push(t); } });
+  if(!lines.length){ const t = d.textContent.trim(); if(t) lines.push(t); }
+  return {title: lines[0] || 'New note', preview: lines.slice(1).join(' ').slice(0,90)};
+}
+function noteDate(t){
+  const d = new Date(t), now = new Date();
+  if(d.toDateString()===now.toDateString()) return d.toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'});
+  return d.toLocaleDateString(undefined,{month:'short',day:'numeric', year: d.getFullYear()===now.getFullYear() ? undefined : 'numeric'});
+}
+
+function notesHtml(){
+  const folders = liveFolders();
+  if(noteFolder!=='all' && noteFolder!=='none' && !folders.some(f=>f.id===noteFolder)) noteFolder = 'all';
+  const q = noteSearch.trim().toLowerCase();
+  const list = liveNotes()
+    .filter(n=>noteFolder==='all' || (noteFolder==='none' ? !n.folder || !folders.some(f=>f.id===n.folder) : n.folder===noteFolder))
+    .map(n=>Object.assign({n}, noteParts(n)))
+    .filter(x=>!q || (x.title+' '+x.n.html.replace(/<[^>]+>/g,' ')).toLowerCase().includes(q))
+    .sort((a,b)=>b.n.t-a.n.t);
+  const chip = (id,label,count) => '<button type="button" class="nf-chip'+(noteFolder===id?' on':'')+'" data-nf="'+id+'">'+escapeHtml(label)+(count!=null?' <span>'+count+'</span>':'')+'</button>';
+  const count = id => liveNotes().filter(n=>id==='none' ? !n.folder || !folders.some(f=>f.id===n.folder) : n.folder===id).length;
+  const cur = folders.find(f=>f.id===noteFolder);
+  let html = '<section class="notes" id="arcNotes"><div class="notes-head"><h2 class="section-title">Notes</h2>'+
+    '<button type="button" class="btn notes-new" data-note-new>New note</button></div>'+
+    '<div class="nf-row">'+chip('all','All notes',liveNotes().length)+chip('none','Notes',count('none'))+
+    folders.map(f=>chip(f.id,f.name,count(f.id))).join('')+
+    '<button type="button" class="nf-chip add" data-nf-add>+ Folder</button></div>';
+  if(cur) html += '<div class="nf-tools"><button type="button" class="linkbtn" data-nf-rename>Rename folder</button><button type="button" class="linkbtn danger" data-nf-delete>Delete folder</button></div>';
+  html += '<div class="nf-form" id="nfForm" hidden><input type="text" id="nfName" maxlength="40" placeholder="Folder name"><button type="button" class="btn" id="nfSave">Save</button><button type="button" class="linkbtn" id="nfCancel">Cancel</button></div>';
+  if(liveNotes().length > 3) html += '<input type="search" class="notes-search" id="notesSearch" placeholder="Search notes" value="'+escapeHtml(noteSearch)+'">';
+  if(!list.length){
+    html += '<div class="card notes-empty"><p>'+(q ? 'No notes match that search.' : 'Plans, lessons, ideas, anything that doesn’t fit in a win line. Tap <b>New note</b> to start one.')+'</p></div>';
+  } else {
+    html += '<div class="card notes-list">'+list.map(x=>
+      '<button type="button" class="note-row" data-note-open="'+x.n.id+'"><b>'+escapeHtml(x.title)+'</b>'+
+      '<span><time>'+noteDate(x.n.t)+'</time> '+escapeHtml(x.preview || 'No additional text')+'</span></button>').join('')+'</div>';
+  }
+  return html+'</section>';
+}
+function wireNotes(el){
+  const box = el.querySelector('#arcNotes'); if(!box) return;
+  box.querySelectorAll('[data-nf]').forEach(b=>b.addEventListener('click',()=>{ noteFolder=b.dataset.nf; rerenderNotes(); }));
+  box.querySelectorAll('[data-note-open]').forEach(b=>b.addEventListener('click',()=>openNote(b.dataset.noteOpen)));
+  box.querySelector('[data-note-new]').addEventListener('click',()=>{
+    const n = {id:noteId(), folder: (noteFolder==='all'||noteFolder==='none') ? '' : noteFolder, html:'', t:Date.now()};
+    notes.push(n); openNote(n.id, true);
+  });
+  const form = box.querySelector('#nfForm'), name = box.querySelector('#nfName');
+  let renaming = null;
+  const showForm = (val, id)=>{ renaming = id; form.hidden = false; name.value = val||''; name.focus(); };
+  box.querySelector('[data-nf-add]').addEventListener('click',()=>showForm('', null));
+  const ren = box.querySelector('[data-nf-rename]'); if(ren) ren.addEventListener('click',()=>{ const f=noteFolders.find(x=>x.id===noteFolder); showForm(f.name, f.id); });
+  box.querySelector('#nfCancel').addEventListener('click',()=>{ form.hidden = true; });
+  const save = ()=>{
+    const v = name.value.trim(); if(!v) return;
+    if(renaming){ const f = noteFolders.find(x=>x.id===renaming); f.name = v; f.t = Date.now(); }
+    else { const f = {id:noteId(), name:v, t:Date.now()}; noteFolders.push(f); noteFolder = f.id; }
+    saveFolders(); rerenderNotes();
+  };
+  box.querySelector('#nfSave').addEventListener('click', save);
+  name.addEventListener('keydown', e=>{ if(e.key==='Enter') save(); });
+  const del = box.querySelector('[data-nf-delete]');
+  if(del) del.addEventListener('click',()=>{
+    const f = noteFolders.find(x=>x.id===noteFolder);
+    if(!confirm('Delete the folder “'+f.name+'”? Its notes move to Notes.')) return;
+    f.deleted = true; f.t = Date.now();
+    liveNotes().filter(n=>n.folder===f.id).forEach(n=>{ n.folder = ''; n.t = Date.now(); });
+    noteFolder = 'all'; saveFolders(); saveNotes(); rerenderNotes();
+  });
+  const search = box.querySelector('#notesSearch');
+  if(search) search.addEventListener('input',()=>{ noteSearch = search.value; rerenderNotes(true); });
+}
+function rerenderNotes(keepSearchFocus){
+  const box = document.getElementById('arcNotes'); if(!box) return;
+  box.outerHTML = notesHtml();
+  wireNotes(document.getElementById('tab-progress'));
+  if(keepSearchFocus){ const s = document.getElementById('notesSearch'); if(s){ s.focus(); s.setSelectionRange(s.value.length, s.value.length); } }
+}
+
+// the full-screen editor
+const NOTE_TOOLS = [
+  {k:'h1', label:'Title', title:'Title'}, {k:'h2', label:'Heading', title:'Heading'}, {k:'h3', label:'Subheading', title:'Subheading'}, {k:'p', label:'Body', title:'Body'},
+  {k:'ul', label:'• List', title:'Bulleted list'}, {k:'ol', label:'1. List', title:'Numbered list'}, {k:'check', label:'☐ Checklist', title:'Checklist'},
+  {k:'bold', label:'<b>B</b>', title:'Bold'}, {k:'italic', label:'<i>I</i>', title:'Italic'}, {k:'underline', label:'<u>U</u>', title:'Underline'}, {k:'strikeThrough', label:'<s>S</s>', title:'Strikethrough'}];
+function openNote(id, isNew){
+  const n = notes.find(x=>x.id===id); if(!n) return;
+  const existed = !!n.html;
+  const root = document.querySelector('.arc-root');
+  const folders = liveFolders();
+  const el = document.createElement('div');
+  el.className = 'note-editor'; el.setAttribute('role','dialog'); el.setAttribute('aria-label','Note');
+  el.innerHTML = '<div class="ne-bar"><button type="button" class="ne-back" data-ne-close>‹ Notes</button>'+
+    '<select class="ne-folder" aria-label="Folder"><option value="">Notes</option>'+folders.map(f=>'<option value="'+f.id+'"'+(n.folder===f.id?' selected':'')+'>'+escapeHtml(f.name)+'</option>').join('')+'</select>'+
+    '<button type="button" class="ne-delete" data-ne-delete>Delete</button><button type="button" class="ne-done" data-ne-close>Done</button></div>'+
+    '<div class="ne-tools" role="toolbar" aria-label="Formatting">'+NOTE_TOOLS.map(t=>'<button type="button" data-fmt="'+t.k+'" title="'+t.title+'" aria-label="'+t.title+'">'+t.label+'</button>').join('')+'</div>'+
+    '<div class="ne-body" contenteditable="true" spellcheck="true" aria-label="Note text"></div>';
+  root.appendChild(el);
+  document.body.style.overflow = 'hidden';
+  const body = el.querySelector('.ne-body');
+  body.innerHTML = cleanNoteHtml(n.html) || '<h1><br></h1>';
+  try{ document.execCommand('defaultParagraphSeparator', false, 'p'); }catch(e){}
+  let timer = null;
+  const store = ()=>{
+    clearTimeout(timer); timer = null;
+    const html = cleanNoteHtml(body.innerHTML);
+    if(html===n.html) return;
+    n.html = html; n.t = Date.now(); saveNotes();
+  };
+  body.addEventListener('input', ()=>{
+    // a new item made by pressing return after a ticked one starts unticked
+    body.querySelectorAll('ul.checklist li.done').forEach(li=>{ if(!li.textContent.trim()) li.classList.remove('done'); });
+    clearTimeout(timer); timer = setTimeout(store, 500);
+  });
+  // some browsers put a new list inside the paragraph or heading it came from; lift it out
+  function unwrapLists(){
+    body.querySelectorAll('p,h1,h2,h3').forEach(b=>{ if(b.querySelector(':scope > ul, :scope > ol')) b.replaceWith(...b.childNodes); });
+  }
+  // the browser's own list command merges a new list into one just above it, so a checklist is built
+  // by hand: the current line becomes the first item of its own checklist
+  function startChecklist(at){
+    const near = at && at.closest('p,div,h1,h2,h3');
+    let block = near && near!==body && body.contains(near) ? near : at;
+    if(block===near){} else { while(block && block!==body && block.parentElement!==body) block = block.parentElement; }
+    const ul = document.createElement('ul'); ul.className = 'checklist';
+    const li = document.createElement('li');
+    if(block && block!==body && block.textContent.trim()){ li.append(...block.childNodes); } else li.innerHTML = '<br>';
+    ul.appendChild(li);
+    if(block && block!==body) block.replaceWith(ul); else body.appendChild(ul);
+    const r = document.createRange(); r.selectNodeContents(li); r.collapse(false);
+    const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r);
+  }
+  // checklist: tapping the box at the start of an item ticks it
+  body.addEventListener('click', e=>{
+    const li = e.target.closest && e.target.closest('ul.checklist > li');
+    if(li && e.clientX - li.getBoundingClientRect().left < 28){ li.classList.toggle('done'); store(); }
+  });
+  el.querySelectorAll('[data-fmt]').forEach(b=>{
+    b.addEventListener('mousedown', e=>e.preventDefault()); // keep the text selection while tapping a tool
+    b.addEventListener('click', ()=>{
+      body.focus();
+      const k = b.dataset.fmt;
+      if(/^h[123]$|^p$/.test(k)) document.execCommand('formatBlock', false, k);
+      else if(k==='ul' || k==='ol' || k==='check'){
+        const wantCheck = k==='check';
+        const sel = window.getSelection(), at = sel.anchorNode && (sel.anchorNode.nodeType===1 ? sel.anchorNode : sel.anchorNode.parentElement);
+        const list = at && at.closest('ul,ol');
+        const same = list && body.contains(list) && (k==='ol' ? list.tagName==='OL' : list.tagName==='UL' && list.classList.contains('checklist')===wantCheck);
+        if(list && body.contains(list) && !same && list.tagName===(k==='ol'?'OL':'UL')) list.classList.toggle('checklist', wantCheck);
+        else if(wantCheck && !same) startChecklist(at);
+        else { document.execCommand(k==='ol' ? 'insertOrderedList' : 'insertUnorderedList'); unwrapLists(); }
+      }
+      else document.execCommand(k);
+      store();
+    });
+  });
+  el.querySelector('.ne-folder').addEventListener('change', e=>{ n.folder = e.target.value; n.t = Date.now(); saveNotes(); });
+  const close = ()=>{
+    store();
+    // a note left empty isn't kept
+    if(body.textContent.trim()===''){
+      if(existed){ n.deleted = true; n.html = ''; n.t = Date.now(); } else notes = notes.filter(x=>x!==n);
+      saveNotes();
+    }
+    el.remove(); document.body.style.overflow = '';
+    rerenderNotes();
+  };
+  el.querySelectorAll('[data-ne-close]').forEach(b=>b.addEventListener('click', close));
+  el.querySelector('[data-ne-delete]').addEventListener('click', ()=>{
+    if(!confirm('Delete this note?')) return;
+    clearTimeout(timer);
+    n.deleted = true; n.html = ''; n.t = Date.now(); saveNotes();
+    el.remove(); document.body.style.overflow = '';
+    rerenderNotes();
+  });
+  if(isNew){ body.focus(); const r = document.createRange(); r.selectNodeContents(body.firstChild); r.collapse(true); const s = window.getSelection(); s.removeAllRanges(); s.addRange(r); }
+}
+
 /* ---------------- Progress tab ---------------- */
 function renderProgress(){
   const el=document.getElementById('tab-progress');
@@ -1565,11 +1783,13 @@ function renderProgress(){
 
   html += '<div id="arcGallery"></div>';
   html += weeklyReviewBlock();
+  html += notesHtml();
 
   el.innerHTML = html;
   wireWeeklyReview();
   wireWeekReviewCard(el);
   wireYearCard(el);
+  wireNotes(el);
   renderGallery();
 
   function stat(num,lbl){ return '<div class="stat"><div class="num">'+num+'</div><div class="lbl">'+lbl+'</div></div>'; }
@@ -1854,8 +2074,8 @@ function renderSetup(){
     if(proofDb){ proofTx('readwrite', s=>s.clear()).catch(()=>{}); }
     Object.keys(dayProof).forEach(k=>URL.revokeObjectURL(dayProof[k].url)); dayProof={}; proofError='';
     profile={name:'',archetypeKey:''}; habits={h1:{cue:'',habit:''},h2:{cue:'',habit:''},h3:{cue:'',habit:''},sc:{cue:'',habit:''}}; log=[]; weekly=[];
-    secondWinds=[]; proofGone=[]; challenges=[];
-    persist(LS.proofGone,proofGone); persist(LS.challenges,challenges);
+    secondWinds=[]; proofGone=[]; challenges=[]; notes=[]; noteFolders=[];
+    persist(LS.proofGone,proofGone); persist(LS.challenges,challenges); persist(LS.notes,notes); persist(LS.noteFolders,noteFolders);
     persist(LS.profile,profile); persist(LS.habits,habits); persist(LS.log,log); persist(LS.weekly,weekly); persist(LS.secondWinds,secondWinds);
     renderAll();
     syncNow({reset:true});
@@ -2024,6 +2244,9 @@ function renderGuide(){
 
   <h2 class="section-title">Look back</h2>
   <p class="guide-p"><b>Your year</b> on <b>Progress</b> keeps every month you’ve logged: tap a month for its calendar, its numbers, and how it compares with the month before. Nothing is ever cleared out, so you can flip back through earlier years too. Each new month opens with a recap of the last one: your proof photos, full clears, best streak and best win line. At ${PROOF_MILESTONE} full clears you get a “${PROOF_MILESTONE} days of proof” reveal. Replay any of them on <b>Progress</b>. Shadow badges unlock at 10, 25 and 50 shadow-checks.</p>
+
+  <h2 class="section-title">Notes</h2>
+  <p class="guide-p">At the bottom of <b>Progress</b> there\u2019s a notes space for plans, lessons and ideas, set up like the Notes app on a phone. Make folders, then format with a title, headings, body text, bulleted and numbered lists, checklists you can tick, and bold, italic, underline or strikethrough. Notes save as you type and are backed up with your key.</p>
 
   <div class="banner note" style="margin-top:18px;"><div><b>Final rule of the system</b><br><i>You do not wait to feel different. You act different until you become different.</i></div></div>`;
   el.innerHTML='<div class="guide">'+html+'</div>';
