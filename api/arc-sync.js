@@ -51,6 +51,9 @@ export function mergeArc(stored = {}, incoming = {}) {
     proofGone: mergeList('proofGone', g => g.id),
     // character challenges taken on, one per week
     challenges: mergeList('challenges', c => c.id),
+    // Notes on Progress; a deleted note or folder stays as a marker so the delete reaches every phone
+    notes: mergeList('notes', n => n.id),
+    noteFolders: mergeList('noteFolders', f => f.id),
   };
 }
 
