@@ -712,3 +712,7 @@ html.arc-intro-lock,html.arc-intro-lock body{overflow:hidden;}
 .arc-root .pv-remove{display:block;margin:14px auto 0;}
 .arc-root .gal-extra{position:absolute;top:5px;right:5px;width:22px;height:22px;border-radius:50%;background:rgba(0,0,0,.55);color:#fff;display:flex;align-items:center;justify-content:center;}
 .arc-root .gal-extra svg{width:13px;height:13px;}
+
+/* tapping the non-negotiable without proof points at the proof link */
+@keyframes proofNudge{0%,100%{transform:translateX(0);}20%,60%{transform:translateX(-4px);}40%,80%{transform:translateX(4px);}}
+.arc-root .proof-add.nudge{animation:proofNudge .4s ease;}

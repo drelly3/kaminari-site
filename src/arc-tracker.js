@@ -939,7 +939,7 @@ function renderToday(){
     '<button type="button" data-day="yesterday" class="'+(viewDay==='yesterday'?'on':'')+'">Yesterday'+(yMissing?' <span class="dot" title="Not logged"></span>':'')+'</button></div>';
   html += '<p class="section-sub">'+(viewDay==='yesterday'
     ? 'Forgot to log before midnight? Fix yesterday here. Anything older stays as it is.'
-    : 'Tap a habit when it’s done. Add a photo or video of your non-negotiable for +'+PROOF_XP+' XP. It goes in your arc gallery on Progress.')+'</p>';
+    : 'Tap a habit when it’s done. Your non-negotiable needs proof: add a photo or video and it checks off (+'+PROOF_XP+' XP). It goes in your arc gallery on Progress.')+'</p>';
 
   const vals = existing || {h1:false,h2:false,h3:false,sc:false,note:''};
   html += '<div class="card">';
@@ -978,7 +978,7 @@ function renderToday(){
         '<label class="proof-link">Replace<input type="file" accept="image/*,video/*" data-proof="'+key+'" hidden></label>'+
         '<button type="button" class="proof-link" data-proof-remove="'+key+'">Remove</button>';
     } else {
-      row = '<label class="proof-add">+ Add proof <span>(+'+PROOF_XP+' XP)</span><input type="file" accept="image/*,video/*" data-proof="'+key+'" hidden></label>';
+      row = '<label class="proof-add">+ Add proof to check it off <span>(+'+PROOF_XP+' XP)</span><input type="file" accept="image/*,video/*" data-proof="'+key+'" hidden></label>';
     }
     return checkline('f_'+key, h, checked, fallback, nonneg, '<div class="proof-row">'+row+'</div>');
   }
@@ -996,6 +996,15 @@ function renderToday(){
     renderToday();
   }));
   ['f_h1','f_h2','f_h3','f_sc'].forEach(id=>{ const c=document.getElementById(id); if(c) c.addEventListener('change', commitDay); });
+  // the non-negotiable only checks off with proof: without it, a tap asks for the photo instead
+  const nn = document.getElementById('f_h1');
+  if(nn) nn.addEventListener('click', e=>{
+    if(!nn.checked || hasProof(viewDate())) return;
+    e.preventDefault();
+    proofError = '';
+    const pick = el.querySelector('[data-proof="h1"]'); if(pick) pick.click();
+    const row = el.querySelector('.checkline.nonneg .proof-add'); if(row){ row.classList.remove('nudge'); void row.offsetWidth; row.classList.add('nudge'); }
+  });
   el.querySelectorAll('[data-proof]').forEach(inp=>inp.addEventListener('change',()=>{ if(inp.files && inp.files[0]) addProof(inp.dataset.proof, inp.files[0]); }));
   el.querySelectorAll('[data-proof-remove]').forEach(b=>b.addEventListener('click',()=>removeProof(b.dataset.proofRemove)));
   el.querySelectorAll('[data-extra-add]').forEach(inp=>inp.addEventListener('change',()=>{ if(inp.files && inp.files.length) addExtras([...inp.files]); }));
@@ -1018,15 +1027,16 @@ function commitDay(){
   const noteEl = document.getElementById('f_note');
   const entry = {
     date: d,
-    h1: box('f_h1','h1'),
+    h1: box('f_h1','h1') && (hasProof(d) || grandfathered(existing)),
     h2: box('f_h2','h2'),
     h3: box('f_h3','h3'),
     sc: box('f_sc','sc'),
     note: noteEl ? noteEl.value.slice(0,280) : (existing?existing.note:''),
-    proof: {h1:!!dayProof.h1},
+    proof: {h1:hasProof(d)},
     t: Date.now()
   };
   if(existing && existing.repaired) entry.repaired = true; // editing a repaired day keeps its Second Wind
+  if(entry.h1 && !entry.proof.h1 && grandfathered(existing)) entry.legacyH1 = true;
   const idx = log.findIndex(e=>e.date===d);
   if(idx>=0) log[idx]=entry; else log.push(entry);
   persist(LS.log, log);
@@ -1055,7 +1065,7 @@ function commitDay(){
   if(saved && entry.note.trim()) saved.textContent='Saved';
 }
 
-/* ---------------- Proof: an optional photo or video of the non-negotiable, kept on this device ---------------- */
+/* ---------------- Proof: the photo or video the non-negotiable needs to check off ---------------- */
 // Each proof is saved with a small thumbnail for the arc gallery. Photos are kept for good; a video
 // is swapped for a still frame after 30 days so a year of proof doesn't fill the phone.
 const PROOF_SLOTS = ['h1'];
@@ -1080,6 +1090,16 @@ function proofTx(mode, fn){
     tx.onabort = ()=>rej(tx.error);
   });
 }
+// proof of the non-negotiable for a day: on this phone, or logged with proof on another phone whose
+// photo hasn't downloaded yet. Without it the non-negotiable can't be checked off.
+function hasProof(d){
+  if(d===viewDate() && dayProof.h1) return true;
+  const e = log.find(x=>x.date===d);
+  return !!(e && e.proof && e.proof.h1);
+}
+// days checked off before proof was required keep their check
+const PROOF_RULE_AT = 1791873627000; // when this rule shipped
+const grandfathered = e => !!(e && e.h1 && (e.legacyH1 || (e.t||0) < PROOF_RULE_AT));
 async function loadDayProof(){
   Object.keys(dayProof).forEach(k=>URL.revokeObjectURL(dayProof[k].url));
   dayProof = {}; dayExtras = [];
@@ -1166,6 +1186,8 @@ async function addProof(slot, file){
 async function removeProof(slot){
   proofError = '';
   const id = viewDate()+':'+slot;
+  // removing proof takes the check with it, even on a day from before proof was required
+  const entry = log.find(e=>e.date===viewDate()); if(entry){ if(entry.proof) entry.proof[slot] = false; entry.t = Date.now(); delete entry.legacyH1; }
   if(proofDb){ try{ await proofTx('readwrite', s=>s.delete(id)); }catch(e){} }
   proofGone = proofGone.filter(g=>g.id!==id).concat({id, t:Date.now()});
   persist(LS.proofGone, proofGone);
@@ -2334,7 +2356,7 @@ function renderGuide(){
   <h2 class="section-title">The daily loop (under a minute)</h2>
   <div class="card"><ol>
     <li>Open <b>Today</b> and tap each habit you did. It saves as you tap.</li>
-    <li>Want the extra push? Add a photo or video of your <b>non-negotiable</b>. It’s optional, worth <b>+${PROOF_XP} XP</b>, and builds your arc gallery on <b>Progress</b>, so you can look back at every day you showed up.</li>
+    <li>Your <b>non-negotiable</b> needs proof. Tap it and add a photo or video; that checks it off and earns <b>+${PROOF_XP} XP</b>. No proof, no check, so it can’t count toward your streak on your word alone. Every proof builds your arc gallery on <b>Progress</b>, so you can look back at every day you showed up.</li>
     <li>Anything else from the day worth keeping? Tap the small camera under your habits to add up to ${MAX_EXTRAS} extra photos. No XP, nothing to tick. They go in your gallery on <b>Progress</b> (remove one there) and back up with your key.</li>
     <li>Tap your <b>shadow-check</b> if you did it.</li>
     <li>Write <b>one line</b>: a win or something you’re grateful for (+2 XP).</li>
