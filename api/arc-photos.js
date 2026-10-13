@@ -14,7 +14,8 @@ import { hashKey, licenceOk } from './arc-sync.js';
 
 const json = (status, body) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
 const MAX_PHOTO = 6 * 1024 * 1024;
-const ID = /^(\d{4}-\d{2}-\d{2})_(h1|h2|h3)$/;
+// <slot> is a habit's proof (h1) or an extra photo of the day (x + a short id)
+const ID = /^(\d{4}-\d{2}-\d{2})_(h1|h2|h3|x[a-z0-9]{1,16})$/;
 const PARTS = ['full', 'thumb'];
 
 // every photo a member has, grouped by proof
