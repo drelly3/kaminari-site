@@ -947,6 +947,7 @@ function renderToday(){
   html += checkline('f_h2',habits.h2,vals.h2,'Habit 2 (name it in Setup)');
   html += checkline('f_h3',habits.h3,vals.h3,'Habit 3 (name it in Setup)');
   if(proofError) html += '<div class="proof-error" role="alert">'+escapeHtml(proofError)+'</div>';
+  html += extrasHtml();
   html += '</div>';
 
   if(arche && arche.shadowOptions){
@@ -997,6 +998,7 @@ function renderToday(){
   ['f_h1','f_h2','f_h3','f_sc'].forEach(id=>{ const c=document.getElementById(id); if(c) c.addEventListener('change', commitDay); });
   el.querySelectorAll('[data-proof]').forEach(inp=>inp.addEventListener('change',()=>{ if(inp.files && inp.files[0]) addProof(inp.dataset.proof, inp.files[0]); }));
   el.querySelectorAll('[data-proof-remove]').forEach(b=>b.addEventListener('click',()=>removeProof(b.dataset.proofRemove)));
+  el.querySelectorAll('[data-extra-add]').forEach(inp=>inp.addEventListener('change',()=>{ if(inp.files && inp.files.length) addExtras([...inp.files]); }));
   wireChallenges(el);
   const cbBtn=document.getElementById('secondWindBtn'); if(cbBtn) cbBtn.addEventListener('click', useSecondWind);
   const note=document.getElementById('f_note');
@@ -1043,7 +1045,7 @@ function commitDay(){
     const afterRank = rankState(arche2);
     if(afterRank) persist(RANK_SEEN, {key:arche2.key, idx:afterRank.idx});
     if(afterRank && beforeRank && afterRank.idx > beforeRank.idx){
-      queueCelebration(done=>loadGallery().catch(()=>[]).then(pics=>showRankUpModal(arche2, afterRank.cur, beforeRank.cur, ()=>{ freeGallery(pics); done(); }, pics)));
+      queueCelebration(done=>loadGallery().catch(()=>[]).then(pics=>showRankUpModal(arche2, afterRank.cur, beforeRank.cur, ()=>{ freeGallery(pics); done(); }, pics.filter(x=>!x.extra))));
     }
   }
   if(before < PROOF_MILESTONE && after >= PROOF_MILESTONE) queueCelebration(done=>showProofMilestone(done));
@@ -1059,7 +1061,7 @@ function commitDay(){
 const PROOF_SLOTS = ['h1'];
 const PROOF_MAX_VIDEO = 50*1024*1024;
 const VIDEO_KEEP_DAYS = 30;
-let proofDb = null, dayProof = {}, proofError = ''; // dayProof: proof for the day shown on the Today tab
+let proofDb = null, dayProof = {}, dayExtras = [], proofError = ''; // dayProof / dayExtras: for the day shown on the Today tab
 function openProofDb(){
   return new Promise((res,rej)=>{
     if(!('indexedDB' in window)) return rej(new Error('no indexedDB'));
@@ -1080,12 +1082,18 @@ function proofTx(mode, fn){
 }
 async function loadDayProof(){
   Object.keys(dayProof).forEach(k=>URL.revokeObjectURL(dayProof[k].url));
-  dayProof = {};
+  dayProof = {}; dayExtras = [];
   if(!proofDb) return;
   const d = viewDate();
   for(const slot of PROOF_SLOTS){
     const rec = await proofTx('readonly', s=>s.get(d+':'+slot));
     if(rec) dayProof[slot] = {kind:rec.kind, url:URL.createObjectURL(rec.blob)};
+  }
+  const range = IDBKeyRange.bound(d+':x', d+':x\uffff');
+  const keys = (await proofTx('readonly', s=>s.getAllKeys(range))) || [];
+  for(const k of keys){
+    const rec = await proofTx('readonly', s=>s.get(k));
+    if(rec && rec.blob) dayExtras.push({id:String(k)});
   }
 }
 // draws an image or video frame as a JPEG no bigger than max px on its long side
@@ -1131,19 +1139,24 @@ function videoStill(file){
     v.src = u;
   });
 }
-async function addProof(slot, file){
-  proofError = '';
+// checks a picked file and saves it under id; returns an error message, or '' when saved
+async function storeMedia(file, id){
   const isImg = file.type.startsWith('image/'), isVid = file.type.startsWith('video/');
-  if(!isImg && !isVid){ proofError = 'Proof has to be a photo or a video.'; return renderToday(); }
-  if(isVid && file.size > PROOF_MAX_VIDEO){ proofError = 'That video is over 50 MB. Use a shorter clip.'; return renderToday(); }
-  if(!proofDb){ proofError = 'This browser can’t store proof. Private browsing blocks it.'; return renderToday(); }
+  if(!isImg && !isVid) return 'That has to be a photo or a video.';
+  if(isVid && file.size > PROOF_MAX_VIDEO) return 'That video is over 50 MB. Use a shorter clip.';
+  if(!proofDb) return 'This browser can’t store photos. Private browsing blocks it.';
   try{
     let rec;
     if(isImg){ const p = await shrinkImage(file); rec = {blob:p.full, thumb:p.thumb, kind:'image'}; }
     else { const p = await videoStill(file); rec = {blob:file, still:p.still, thumb:p.thumb, kind:'video'}; }
     rec.addedAt = Date.now();
-    await proofTx('readwrite', s=>s.put(rec, viewDate()+':'+slot));
-  }catch(e){ proofError = 'Couldn’t save that file. Your device may be out of space.'; return renderToday(); }
+    await proofTx('readwrite', s=>s.put(rec, id));
+  }catch(e){ return 'Couldn’t save that file. Your device may be out of space.'; }
+  return '';
+}
+async function addProof(slot, file){
+  proofError = await storeMedia(file, viewDate()+':'+slot);
+  if(proofError) return renderToday();
   await loadDayProof();
   // proof of a habit means it happened, so it checks the habit off too
   const box=document.getElementById('f_'+slot); if(box) box.checked=true;
@@ -1160,6 +1173,40 @@ async function removeProof(slot){
   commitDay();
   syncPhotos();
 }
+// Extra photos: optional, for anything else from the day. No XP and they don't tick a habit; they
+// sit under the habits, go in the arc gallery and back up like proof. Stored as <date>:x<id>.
+const MAX_EXTRAS = 6;
+const CAMERA_ICON = '<svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-2.5h6L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.6"/></svg>';
+function extrasHtml(){
+  const n = dayExtras.length;
+  const note = n ? '<span class="extra-count">'+n+' added · in your gallery</span>' : '';
+  if(n >= MAX_EXTRAS) return '<div class="extras-row"><span class="extra-count">'+n+' extra photos today · the most for one day</span></div>';
+  return '<div class="extras-row"><label class="extra-add" title="Add photos (optional)"><span class="extra-icon">'+CAMERA_ICON+'<b aria-hidden="true">+</b></span>'+
+    '<span>'+(n?'Add more photos':'Add photos of your day')+'</span><input type="file" accept="image/*,video/*" multiple data-extra-add hidden></label>'+note+'</div>';
+}
+async function addExtras(files){
+  proofError = '';
+  const room = MAX_EXTRAS - dayExtras.length;
+  for(const file of files.slice(0, room)){
+    const err = await storeMedia(file, viewDate()+':x'+Date.now().toString(36)+Math.random().toString(36).slice(2,5));
+    if(err){ proofError = err; break; }
+  }
+  if(!proofError && files.length > room) proofError = 'Up to '+MAX_EXTRAS+' extra photos a day. The rest weren’t added.';
+  await loadDayProof();
+  renderToday(); renderGallery();
+  syncPhotos();
+}
+async function removeExtra(id){
+  proofError = '';
+  if(!/^\d{4}-\d{2}-\d{2}:x/.test(id)) return;
+  if(proofDb){ try{ await proofTx('readwrite', s=>s.delete(id)); }catch(e){} }
+  proofGone = proofGone.filter(g=>g.id!==id).concat({id, t:Date.now()});
+  persist(LS.proofGone, proofGone);
+  await loadDayProof();
+  renderToday(); renderGallery();
+  syncPhotos();
+}
+
 // videos older than 30 days become their still frame; photos, and the log itself, stay
 async function pruneProof(){
   if(!proofDb) return;
@@ -1293,7 +1340,7 @@ function showMonthRecap(ym, onDone){
   const arche = getArchetype(profile.archetypeKey);
   const m = monthSummary(ym);
   loadGallery().catch(()=>[]).then(all=>{
-    const pics = all.filter(x=>ymOf(x.date)===ym).reverse(); // oldest first, so the month reads in order
+    const pics = all.filter(x=>ymOf(x.date)===ym).reverse(); // oldest first, so the month reads in order; extra photos too
     const next = monthName(shiftDay(ym+'-28',7).slice(0,7));
     const inner = '<div class="month-recap">'+
       '<div class="cel-kicker">YOUR '+escapeHtml(monthName(ym).toUpperCase())+' ARC</div>'+
@@ -1309,7 +1356,7 @@ function showMonthRecap(ym, onDone){
 function showProofMilestone(onDone){
   const arche = getArchetype(profile.archetypeKey);
   loadGallery().catch(()=>[]).then(all=>{
-    const pics = all.slice(0,PROOF_MILESTONE).reverse();
+    const pics = all.filter(x=>!x.extra).slice(0,PROOF_MILESTONE).reverse();
     const inner = '<div class="month-recap">'+
       '<div class="cel-kicker">'+PROOF_MILESTONE+' DAYS OF PROOF</div>'+
       '<div class="cel-title">'+PROOF_MILESTONE+' full clears.</div>'+
@@ -1418,9 +1465,9 @@ async function loadGallery(){
   if(!proofDb) return [];
   const keys = await proofTx('readonly', s=>s.getAllKeys());
   const recs = await proofTx('readonly', s=>s.getAll());
-  const items = (keys||[]).map((k,i)=>({date:String(k).slice(0,10), slot:String(k).slice(11), rec:recs[i]}))
+  const items = (keys||[]).map((k,i)=>({date:String(k).slice(0,10), slot:String(k).slice(11), extra:String(k).charAt(11)==='x', rec:recs[i]}))
     .filter(x=>x.rec && x.rec.blob && (x.rec.thumb || x.rec.still || x.rec.kind==='image'))
-    .sort((a,b)=>b.date.localeCompare(a.date));
+    .sort((a,b)=>b.date.localeCompare(a.date) || (a.extra-b.extra) || ((a.rec.addedAt||0)-(b.rec.addedAt||0)));
   items.forEach(x=>{ x.thumbUrl = URL.createObjectURL(x.rec.thumb || x.rec.still || x.rec.blob); });
   return items;
 }
@@ -1436,10 +1483,11 @@ async function renderGallery(){
     return;
   }
   const shown = galleryShowAll ? items : items.slice(0,12);
-  html += '<p class="section-sub">'+items.length+' '+(items.length===1?'day':'days')+' of proof. Tap one to look back.</p>';
-  html += '<div class="gallery">'+shown.map((x,i)=>'<button type="button" class="gal-item" data-gal="'+i+'" aria-label="Proof from '+fmtDate(x.date)+'">'+
+  const proofDays = items.filter(x=>!x.extra).length, extras = items.length - proofDays;
+  html += '<p class="section-sub">'+[proofDays?proofDays+' '+(proofDays===1?'day':'days')+' of proof':'', extras?extras+' extra '+(extras===1?'photo':'photos'):''].filter(Boolean).join(' · ')+'. Tap one to look back.</p>';
+  html += '<div class="gallery">'+shown.map((x,i)=>'<button type="button" class="gal-item" data-gal="'+i+'" aria-label="'+(x.extra?'Photo':'Proof')+' from '+fmtDate(x.date)+'">'+
     '<img src="'+x.thumbUrl+'" alt="" loading="lazy">'+(x.rec.kind==='video'?'<span class="gal-play" aria-hidden="true">▶</span>':'')+
-    '<span class="gal-date">'+fmtDate(x.date)+'</span></button>').join('')+'</div>';
+    '<span class="gal-date">'+fmtDate(x.date)+'</span>'+(x.extra?'<span class="gal-extra" aria-hidden="true">'+CAMERA_ICON+'</span>':'')+'</button>').join('')+'</div>';
   if(items.length>shown.length) html += '<button type="button" class="btn ghost" id="galMore" style="margin-top:10px;">Show all '+items.length+'</button>';
   html += '<p class="card-note">Backed up with your key. Videos turn into a still after '+VIDEO_KEEP_DAYS+' days to save space, and back up as that still.</p>';
   el.innerHTML = html;
@@ -1458,7 +1506,7 @@ function openViewer(items, start){
     if(url) URL.revokeObjectURL(url);
     const x = items[i]; url = URL.createObjectURL(x.rec.blob);
     const entry = log.find(e=>e.date===x.date);
-    const habit = habits[x.slot] && habits[x.slot].habit;
+    const habit = x.extra ? 'Extra photo' : habits[x.slot] && habits[x.slot].habit;
     const media = x.rec.kind==='video' ? '<video src="'+url+'" controls playsinline autoplay muted></video>' : '<img src="'+url+'" alt="">';
     el.innerHTML = '<button type="button" class="pv-close" aria-label="Close">×</button>'+
       '<div class="pv-media">'+media+'</div>'+
@@ -1467,9 +1515,12 @@ function openViewer(items, start){
       (entry && (entry.note||'').trim()?'<p class="pv-note">“'+escapeHtml(entry.note)+'”</p>':'')+
       '<div class="pv-nav"><button type="button" class="btn ghost" data-pv="-1"'+(i>0?'':' disabled')+'>← Newer</button>'+
       '<span>'+(i+1)+' / '+items.length+'</span>'+
-      '<button type="button" class="btn ghost" data-pv="1"'+(i<items.length-1?'':' disabled')+'>Older →</button></div></div>';
+      '<button type="button" class="btn ghost" data-pv="1"'+(i<items.length-1?'':' disabled')+'>Older →</button></div>'+
+      (x.extra?'<button type="button" class="linkbtn danger pv-remove">Remove this photo</button>':'')+'</div>';
     el.querySelector('.pv-close').addEventListener('click', close);
     el.querySelectorAll('[data-pv]').forEach(b=>b.addEventListener('click',()=>step(+b.dataset.pv)));
+    const rm = el.querySelector('.pv-remove');
+    if(rm) rm.addEventListener('click',()=>{ if(!confirm('Remove this photo? It’s removed from your other phones too.')) return; close(); removeExtra(x.date+':'+x.slot); });
   };
   const step = d=>{ const n=i+d; if(n>=0 && n<items.length){ i=n; draw(); } };
   const close = ()=>{ if(url) URL.revokeObjectURL(url); el.remove(); document.removeEventListener('keydown', onKey); document.body.style.overflow=''; };
@@ -2284,6 +2335,7 @@ function renderGuide(){
   <div class="card"><ol>
     <li>Open <b>Today</b> and tap each habit you did. It saves as you tap.</li>
     <li>Want the extra push? Add a photo or video of your <b>non-negotiable</b>. It’s optional, worth <b>+${PROOF_XP} XP</b>, and builds your arc gallery on <b>Progress</b>, so you can look back at every day you showed up.</li>
+    <li>Anything else from the day worth keeping? Tap the small camera under your habits to add up to ${MAX_EXTRAS} extra photos. No XP, nothing to tick. They go in your gallery on <b>Progress</b> (remove one there) and back up with your key.</li>
     <li>Tap your <b>shadow-check</b> if you did it.</li>
     <li>Write <b>one line</b>: a win or something you’re grateful for (+2 XP).</li>
     <li>Got a <b>challenge</b> running? Tap <b>Done today</b> on its card.</li>
