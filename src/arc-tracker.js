@@ -999,7 +999,6 @@ function renderToday(){
   el.querySelectorAll('[data-proof]').forEach(inp=>inp.addEventListener('change',()=>{ if(inp.files && inp.files[0]) addProof(inp.dataset.proof, inp.files[0]); }));
   el.querySelectorAll('[data-proof-remove]').forEach(b=>b.addEventListener('click',()=>removeProof(b.dataset.proofRemove)));
   el.querySelectorAll('[data-extra-add]').forEach(inp=>inp.addEventListener('change',()=>{ if(inp.files && inp.files.length) addExtras([...inp.files]); }));
-  el.querySelectorAll('[data-extra-remove]').forEach(b=>b.addEventListener('click',()=>removeExtra(b.dataset.extraRemove)));
   wireChallenges(el);
   const cbBtn=document.getElementById('secondWindBtn'); if(cbBtn) cbBtn.addEventListener('click', useSecondWind);
   const note=document.getElementById('f_note');
@@ -1083,7 +1082,6 @@ function proofTx(mode, fn){
 }
 async function loadDayProof(){
   Object.keys(dayProof).forEach(k=>URL.revokeObjectURL(dayProof[k].url));
-  dayExtras.forEach(x=>URL.revokeObjectURL(x.url));
   dayProof = {}; dayExtras = [];
   if(!proofDb) return;
   const d = viewDate();
@@ -1095,9 +1093,8 @@ async function loadDayProof(){
   const keys = (await proofTx('readonly', s=>s.getAllKeys(range))) || [];
   for(const k of keys){
     const rec = await proofTx('readonly', s=>s.get(k));
-    if(rec && rec.blob) dayExtras.push({id:String(k), kind:rec.kind, addedAt:rec.addedAt||0, url:URL.createObjectURL(rec.thumb || rec.still || rec.blob)});
+    if(rec && rec.blob) dayExtras.push({id:String(k)});
   }
-  dayExtras.sort((a,b)=>a.addedAt-b.addedAt);
 }
 // draws an image or video frame as a JPEG no bigger than max px on its long side
 function canvasJpeg(src, w, h, max, quality){
@@ -1181,12 +1178,11 @@ async function removeProof(slot){
 const MAX_EXTRAS = 6;
 const CAMERA_ICON = '<svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-2.5h6L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.6"/></svg>';
 function extrasHtml(){
-  const thumbs = dayExtras.map(x=>'<span class="extra-item"><a href="'+x.url+'" target="_blank" rel="noopener" title="Open photo"><img class="extra-thumb" src="'+x.url+'" alt="Extra photo"></a>'+
-    '<button type="button" class="extra-x" data-extra-remove="'+x.id+'" aria-label="Remove this photo">×</button></span>').join('');
-  const add = dayExtras.length < MAX_EXTRAS
-    ? '<label class="extra-add" title="Add photos (optional)">'+CAMERA_ICON+(dayExtras.length?'':'<span>Add photos</span>')+'<input type="file" accept="image/*,video/*" multiple data-extra-add hidden></label>'
-    : '';
-  return '<div class="extras-row">'+thumbs+add+'</div>';
+  const n = dayExtras.length;
+  const note = n ? '<span class="extra-count">'+n+' added · in your gallery</span>' : '';
+  if(n >= MAX_EXTRAS) return '<div class="extras-row"><span class="extra-count">'+n+' extra photos today · the most for one day</span></div>';
+  return '<div class="extras-row"><label class="extra-add" title="Add photos (optional)"><span class="extra-icon">'+CAMERA_ICON+'<b aria-hidden="true">+</b></span>'+
+    '<span>'+(n?'Add more photos':'Add photos of your day')+'</span><input type="file" accept="image/*,video/*" multiple data-extra-add hidden></label>'+note+'</div>';
 }
 async function addExtras(files){
   proofError = '';
@@ -1519,9 +1515,12 @@ function openViewer(items, start){
       (entry && (entry.note||'').trim()?'<p class="pv-note">“'+escapeHtml(entry.note)+'”</p>':'')+
       '<div class="pv-nav"><button type="button" class="btn ghost" data-pv="-1"'+(i>0?'':' disabled')+'>← Newer</button>'+
       '<span>'+(i+1)+' / '+items.length+'</span>'+
-      '<button type="button" class="btn ghost" data-pv="1"'+(i<items.length-1?'':' disabled')+'>Older →</button></div></div>';
+      '<button type="button" class="btn ghost" data-pv="1"'+(i<items.length-1?'':' disabled')+'>Older →</button></div>'+
+      (x.extra?'<button type="button" class="linkbtn danger pv-remove">Remove this photo</button>':'')+'</div>';
     el.querySelector('.pv-close').addEventListener('click', close);
     el.querySelectorAll('[data-pv]').forEach(b=>b.addEventListener('click',()=>step(+b.dataset.pv)));
+    const rm = el.querySelector('.pv-remove');
+    if(rm) rm.addEventListener('click',()=>{ if(!confirm('Remove this photo? It’s removed from your other phones too.')) return; close(); removeExtra(x.date+':'+x.slot); });
   };
   const step = d=>{ const n=i+d; if(n>=0 && n<items.length){ i=n; draw(); } };
   const close = ()=>{ if(url) URL.revokeObjectURL(url); el.remove(); document.removeEventListener('keydown', onKey); document.body.style.overflow=''; };
@@ -2336,7 +2335,7 @@ function renderGuide(){
   <div class="card"><ol>
     <li>Open <b>Today</b> and tap each habit you did. It saves as you tap.</li>
     <li>Want the extra push? Add a photo or video of your <b>non-negotiable</b>. It’s optional, worth <b>+${PROOF_XP} XP</b>, and builds your arc gallery on <b>Progress</b>, so you can look back at every day you showed up.</li>
-    <li>Anything else from the day worth keeping? Tap the small camera under your habits to add up to ${MAX_EXTRAS} extra photos. No XP, nothing to tick. They go in your gallery and back up with your key.</li>
+    <li>Anything else from the day worth keeping? Tap the small camera under your habits to add up to ${MAX_EXTRAS} extra photos. No XP, nothing to tick. They go in your gallery on <b>Progress</b> (remove one there) and back up with your key.</li>
     <li>Tap your <b>shadow-check</b> if you did it.</li>
     <li>Write <b>one line</b>: a win or something you’re grateful for (+2 XP).</li>
     <li>Got a <b>challenge</b> running? Tap <b>Done today</b> on its card.</li>
