@@ -290,6 +290,11 @@ p.sub{ margin-bottom:26px; }
 .rich .w-richtext-figure-type-video > div{ position:relative; aspect-ratio:16/9; border-radius:var(--r); overflow:hidden; border:1px solid var(--line); }
 .rich iframe{ position:absolute; inset:0; width:100%; height:100%; border:0; }
 .rich .table-wrap, .rich [data-rt-embed-type]{ overflow-x:auto; margin:1.4em 0; }
+/* a partner link shown as a card, with that site's title and description */
+.rich .link-card{ margin:1.4em 0; padding:20px 22px; background:var(--card); border:1px solid var(--line-strong); border-left:3px solid var(--accent); border-radius:var(--r); }
+.rich .link-card > a{ font-weight:700; font-size:1.1em; }
+.rich .link-card p{ margin:6px 0 0; color:var(--muted); font-size:.95em; }
+.rich .link-card p.link-card-title{ color:var(--ink); font-weight:600; }
 .rich table{ width:100%; border-collapse:collapse; font-size:14.5px; border:1px solid var(--line-strong); }
 .rich th, .rich td{ padding:10px 14px; border:1px solid var(--line); text-align:left; vertical-align:top; }
 .rich th{ background:var(--card); color:var(--ink); font-weight:700; white-space:nowrap; }
