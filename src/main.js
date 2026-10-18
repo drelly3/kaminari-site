@@ -43,26 +43,27 @@ if (quoteEl) {
   setInterval(() => show((idx + 1) % quotes.length), 6000);
 }
 
-// Blog index: category chips + search
+// Old category links (/blog?type=watch-order) go to the category's own page
+const oldType = location.pathname === '/blog' && new URLSearchParams(location.search).get('type');
+const typePage = { 'watch-order': 'watch-orders', 'filler-list': 'filler-lists', quotes: 'quotes', 'anime-like': 'anime-like', characters: 'characters', lessons: 'lessons' }[oldType];
+if (typePage) location.replace('/blog/' + typePage);
+
+// Blog index and category pages: search
 const grid = document.querySelector('[data-post-grid]');
 if (grid) {
   const cards = [...grid.children];
   const search = document.querySelector('.search');
-  const chips = [...document.querySelectorAll('.chip')];
   const empty = document.querySelector('.empty');
-  let kind = new URLSearchParams(location.search).get('type') || 'all';
   const apply = () => {
     const q = search.value.trim().toLowerCase();
     let shown = 0;
     for (const c of cards) {
-      const ok = (kind === 'all' || c.dataset.kind === kind) && (!q || c.dataset.title.includes(q));
+      const ok = !q || c.dataset.title.includes(q);
       c.hidden = !ok;
       if (ok) shown++;
     }
     empty.hidden = shown > 0;
-    chips.forEach(ch => ch.classList.toggle('active', ch.dataset.kind === kind));
   };
-  chips.forEach(ch => ch.addEventListener('click', () => { kind = ch.dataset.kind; apply(); }));
   search.addEventListener('input', apply);
   apply();
 }
