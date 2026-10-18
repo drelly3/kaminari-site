@@ -83,6 +83,25 @@ write('/blog', {
   description: 'Anime lessons, watch orders, filler lists, character quotes, and recommendations from the Kaminari universe.',
   body: pages.blogIndex(posts),
 });
+// a page for each kind of post: watch orders, filler lists, quotes and the rest
+for (const k of kinds) {
+  const list = posts.filter(p => p.kind === k.id);
+  const url = abs(`/blog/${k.page}`);
+  write(`/blog/${k.page}`, {
+    title: k.metaTitle,
+    description: k.description,
+    lastmod: list.map(p => p.updatedDate || p.publishDate).sort().pop(),
+    jsonLd: { '@context': 'https://schema.org', '@graph': [
+      { '@type': 'CollectionPage', '@id': url, url, name: k.h1, description: k.description, isPartOf: { '@id': site.url + '/#website' },
+        mainEntity: { '@type': 'ItemList', numberOfItems: list.length, itemListElement: list.map((p, i) => ({ '@type': 'ListItem', position: i + 1, url: abs(`/blog/${p.slug}`), name: p.title })) } },
+      { '@type': 'BreadcrumbList', itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'Blog', item: abs('/blog') },
+        { '@type': 'ListItem', position: 2, name: k.label, item: url },
+      ] },
+    ] },
+    body: pages.blogCategory(k, posts),
+  });
+}
 // the tracker itself (members only once sign-in and payment are connected)
 write('/arc-tracker/app', {
   title: 'Arc Tracker | Kaminari',

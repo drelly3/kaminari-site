@@ -4,6 +4,17 @@ import { esc, abs, subscribe, shock } from './layout.mjs';
 const fmtDate = (iso, opts = { month: 'short', day: 'numeric', year: 'numeric' }) =>
   new Date(iso).toLocaleDateString('en-US', { ...opts, timeZone: 'UTC' });
 const kindLabel = id => kinds.find(k => k.id === id).label;
+const kindPath = id => '/blog/' + kinds.find(k => k.id === id).page;
+
+// the category links above the blog lists: each one is a real page, so the address always matches
+const blogTools = (posts, active) => `
+    <div class="blog-tools">
+      <nav class="chips" aria-label="Blog categories">
+        <a class="chip${active ? '' : ' active'}" href="/blog"${active ? '' : ' aria-current="page"'}>All (${posts.length})</a>
+        ${kinds.map(k => `<a class="chip${k.id === active ? ' active' : ''}" href="${kindPath(k.id)}"${k.id === active ? ' aria-current="page"' : ''}>${k.label}</a>`).join('\n        ')}
+      </nav>
+      <input class="search" type="search" placeholder="${active ? 'Search ' + esc(kindLabel(active).replace('…', '')).toLowerCase() + '…' : 'Search posts…'}" aria-label="Search posts">
+    </div>`;
 const ext = 'target="_blank" rel="noopener"';
 
 export const postCard = p => `
@@ -372,19 +383,37 @@ export const blogIndex = posts => `
 
 <section>
   <div class="wrap">
-    <div class="blog-tools">
-      <div class="chips">
-        <button class="chip active" data-kind="all">All (${posts.length})</button>
-        ${kinds.map(k => `<button class="chip" data-kind="${k.id}">${k.label}</button>`).join('\n        ')}
-      </div>
-      <input class="search" type="search" placeholder="Search posts…" aria-label="Search posts">
-    </div>
+    ${blogTools(posts)}
     <div class="post-grid" data-post-grid>${posts.map(postCard).join('')}</div>
     <p class="empty" hidden>No posts match that search.</p>
   </div>
 </section>
 
 ${shock()}`;
+
+/* ---------- BLOG CATEGORY ---------- */
+// one page per kind of post (/blog/watch-orders and so on), with an intro written for search
+export const blogCategory = (kind, posts) => {
+  const list = posts.filter(p => p.kind === kind.id);
+  return `
+<header class="page-hero">
+  <div class="wrap">
+    <div class="crumb"><a href="/blog">Blog</a><span>/</span><span>${esc(kind.label)}</span></div>
+    <h1>${esc(kind.h1)}</h1>
+    <p class="lede">${esc(kind.intro)}</p>
+  </div>
+</header>
+
+<section>
+  <div class="wrap">
+    ${blogTools(posts, kind.id)}
+    <div class="post-grid" data-post-grid>${list.map(postCard).join('')}</div>
+    <p class="empty" hidden>No posts match that search.</p>
+  </div>
+</section>
+
+${shock()}`;
+};
 
 /* ---------- BLOG POST ---------- */
 export const blogPost = (p, related) => {
@@ -396,7 +425,7 @@ export const blogPost = (p, related) => {
 <article>
   <header class="post-head">
     <div class="wrap">
-      <div class="crumb"><a href="/blog">Blog</a><span>/</span><a href="/blog?type=${p.kind}">${kindLabel(p.kind)}</a></div>
+      <div class="crumb"><a href="/blog">Blog</a><span>/</span><a href="${kindPath(p.kind)}">${kindLabel(p.kind)}</a></div>
       <h1>${esc(p.title)}</h1>
       <p class="summary">${esc(p.summary)}</p>
       <div class="byline">
