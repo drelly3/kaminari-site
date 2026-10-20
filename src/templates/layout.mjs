@@ -6,6 +6,11 @@ export const abs = p => (p.startsWith('http') ? p : site.url + p);
 const subscribe = (label, cls = 'btn btn-primary') =>
   `<a href="${links.substack}subscribe" data-subscribe class="${cls}">${label}</a>`;
 export { subscribe };
+// Discord links: the invite when the Discord is open, otherwise the waitlist form (links.discordOpen)
+const discordLink = (label, cls = '') => links.discordOpen
+  ? `<a href="${links.discord}" target="_blank" rel="noopener"${cls ? ` class="${cls}"` : ''}>${label}</a>`
+  : `<a href="#discord-waitlist" data-waitlist${cls ? ` class="${cls}"` : ''}>${label}</a>`;
+export { discordLink };
 
 export const shock = ({
   text = 'Motivation, insights, and actionable exercises that will help you hit your final form.',
@@ -102,7 +107,7 @@ ${chrome ? `
           <li><a href="/blog">Blog</a></li>
           <li><a href="/newsletter">Newsletter</a></li>
           <li><a href="/anime-mindset">Anime Mindset</a></li>
-          <li><a href="${links.discord}" target="_blank" rel="noopener">Discord</a></li>
+          <li>${discordLink('Discord')}</li>
         </ul>
       </div>
       <div class="footer-col">
@@ -121,7 +126,7 @@ ${chrome ? `
         <div class="socials">
           <a href="${links.linkedin}" target="_blank" rel="noopener">LinkedIn</a>
           <a href="${links.substack}" target="_blank" rel="noopener">Substack</a>
-          <a href="${links.discord}" target="_blank" rel="noopener">Discord</a>
+          ${discordLink('Discord')}
         </div>
       </div>
     </div>
@@ -139,6 +144,18 @@ ${chrome ? `
   <p class="alt-link">Form not loading? <a href="${links.substack}subscribe" target="_blank" rel="noopener">Subscribe on Substack →</a></p>
 </dialog>
 
+${links.discordOpen ? '' : `<dialog class="subscribe waitlist" aria-labelledby="waitlist-title">
+  <button class="close" aria-label="Close">×</button>
+  <h2 id="waitlist-title">Join the Discord waitlist</h2>
+  <p>The Kaminari Discord isn't open yet. Leave your email and you'll be one of the first in when it opens.</p>
+  <form class="waitlist-form" novalidate>
+    <input type="text" name="name" placeholder="First name (optional)" autocomplete="given-name" maxlength="80">
+    <input type="email" name="email" placeholder="Your email" autocomplete="email" required maxlength="254">
+    <input type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" class="hp">
+    <button type="submit" class="btn btn-primary">Join the waitlist</button>
+    <p class="waitlist-msg" role="status"></p>
+  </form>
+</dialog>`}
 <script src="/main.js" defer></script>
 ` : ''}
 </body>

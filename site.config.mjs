@@ -25,6 +25,9 @@ export const links = {
   templates: 'https://kaminari4.gumroad.com/l/anime-mindset-system',
   arcTracker: 'https://kaminari4.gumroad.com/l/huotdg',
   discord: 'https://discord.gg/6H5KAp3edZ',
+  // false = the Discord isn't open yet: every Discord button opens a "join the waitlist" form instead
+  // of the invite. Set to true to send people straight to the Discord again.
+  discordOpen: false,
   linkedin: 'https://www.linkedin.com/company/kaminari-newsletter/',
 };
 

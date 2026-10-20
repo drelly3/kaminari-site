@@ -40,6 +40,14 @@ http.createServer(async (req, res) => {
     res.writeHead(out.status, { 'Content-Type': types.json, 'Cache-Control': 'no-store' });
     return res.end(await out.text());
   }
+  if (req.url.split('?')[0] === '/api/waitlist') {
+    let raw = '';
+    for await (const chunk of req) raw += chunk;
+    const { handleWaitlist } = await import('./api/waitlist.js');
+    const out = await handleWaitlist(new Request('http://localhost/api/waitlist', { method: req.method, body: req.method === 'POST' ? raw : undefined }), previewEnv);
+    res.writeHead(out.status, { 'Content-Type': types.json, 'Cache-Control': 'no-store' });
+    return res.end(await out.text());
+  }
   if (req.url.split('?')[0].startsWith('/api/arc-photos')) {
     const chunks = [];
     for await (const chunk of req) chunks.push(chunk);

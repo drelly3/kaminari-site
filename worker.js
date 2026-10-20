@@ -7,6 +7,7 @@ import { verifyLicense } from './api/arc-verify.js';
 import { handlePush, sendDue } from './api/arc-push.js';
 import { handleSync } from './api/arc-sync.js';
 import { handlePhotos } from './api/arc-photos.js';
+import { handleWaitlist } from './api/waitlist.js';
 
 const json = (status, body) => new Response(JSON.stringify(body), {
   status,
@@ -25,6 +26,7 @@ export default {
     }
     if (pathname.startsWith('/api/arc-push/')) return handlePush(request, env, pathname);
     if (pathname === '/api/arc-sync') return handleSync(request, env);
+    if (pathname === '/api/waitlist') return handleWaitlist(request, env);
     if (pathname === '/api/arc-photos' || pathname.startsWith('/api/arc-photos/')) return handlePhotos(request, env, pathname);
     return env.ASSETS.fetch(request);
   },

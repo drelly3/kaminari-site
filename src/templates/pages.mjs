@@ -1,4 +1,5 @@
 import { site, links, team, quotes, archetypes, kinds, authors } from '../../site.config.mjs';
+import { discordLink } from './layout.mjs';
 import { esc, abs, subscribe, shock } from './layout.mjs';
 
 const fmtDate = (iso, opts = { month: 'short', day: 'numeric', year: 'numeric' }) =>
@@ -117,7 +118,7 @@ export const home = posts => {
       <span class="eyebrow">The Community</span>
       <h2 class="h">You'll Quit Alone. You Won't Quit Here.</h2>
       <p class="sub">Most habits die quietly, with nobody around to notice. The Kaminari Discord is where members post check-ins, compare templates, and keep each other honest through the boring middle of an arc.</p>
-      <a href="${links.discord}" ${ext} class="btn btn-primary">Join The Discord</a>
+      ${links.discordOpen ? `<a href="${links.discord}" ${ext} class="btn btn-primary">Join The Discord</a>` : discordLink('Join The Waitlist', 'btn btn-primary')}
     </div>
   </div>
 </section>

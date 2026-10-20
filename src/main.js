@@ -22,6 +22,31 @@ if (dialog?.showModal) {
   });
 }
 
+// Discord waitlist: while the Discord is closed, Discord buttons open this form instead of the invite
+const waitlist = document.querySelector('dialog.waitlist');
+if (waitlist?.showModal) {
+  const form = waitlist.querySelector('form'), msg = waitlist.querySelector('.waitlist-msg'), btn = form.querySelector('button');
+  document.addEventListener('click', e => {
+    if (e.target.closest('[data-waitlist]')) { e.preventDefault(); msg.textContent = ''; waitlist.showModal(); form.email.focus(); }
+    else if (e.target === waitlist || e.target.closest('dialog.waitlist .close')) waitlist.close();
+  });
+  form.addEventListener('submit', async e => {
+    e.preventDefault();
+    const email = form.email.value.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) { msg.textContent = 'Enter a valid email address.'; return; }
+    btn.disabled = true; msg.textContent = 'Adding you…';
+    try {
+      const res = await fetch('/api/waitlist', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, name: form.name.value, website: form.website.value, page: location.pathname }) });
+      const out = await res.json();
+      if (!out.ok) throw new Error();
+      form.reset();
+      msg.textContent = out.already ? 'You’re already on the list. We’ll email you when the Discord opens.' : 'You’re on the list. We’ll email you when the Discord opens.';
+    } catch { msg.textContent = 'Something went wrong. Please try again in a moment.'; }
+    btn.disabled = false;
+  });
+}
+
 // Rotating quotes (homepage)
 const quoteEl = document.getElementById('quote-text');
 if (quoteEl) {
