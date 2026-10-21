@@ -3,8 +3,8 @@
 // archetype on some days, lines for everyone on the others. Each row is [title, message].
 // Add, remove or reword rows freely; nothing else needs changing.
 const EVERYONE = [
-  ['Your arc isn’t going to write itself', 'Three habits stand between you and today’s clear.'],
-  ['Episode’s almost over', 'Don’t let today end on a cliffhanger. Clear your three.'],
+  ['Your arc isn’t going to write itself', 'A few habits stand between you and today’s clear.'],
+  ['Episode’s almost over', 'Don’t let today end on a cliffhanger. Clear today.'],
   ['Main characters show up', 'Even on filler days. Especially on filler days.'],
   ['The training arc is calling', 'Nobody sees these reps. That’s what makes them count.'],
   ['Don’t break the chain', 'Your streak is still alive. Keep it that way.'],
@@ -13,58 +13,58 @@ const EVERYONE = [
   ['Still time on the clock', 'Today isn’t over until you say it is. Go clear it.'],
   ['Power-ups aren’t sudden', 'They’re a hundred quiet days like this one. Log today.'],
   ['Never miss twice', 'Whatever yesterday was, today is still yours.'],
-  ['You said you would', 'That’s reason enough. Three habits, then rest.'],
-  ['Small counts', 'One habit done beats three planned. Open the tracker.'],
+  ['You said you would', 'That’s reason enough. Clear today, then rest.'],
+  ['Small counts', 'One habit done beats five planned. Open the tracker.'],
 ];
 const BY_ARCHETYPE = {
   strategist: [
     ['The plan only works if you run it', 'You already know the move. Make it.'],
-    ['Thinking time is over', 'Three habits, in order. Execute.'],
+    ['Thinking time is over', 'Today’s habits, in order. Execute.'],
     ['Checkmate takes daily moves', 'Play today’s. The board is waiting.'],
   ],
   'demon-grind': [
-    ['Still standing? Then swing', 'Today’s three are waiting on you.'],
+    ['Still standing? Then swing', 'Today’s habits are waiting on you.'],
     ['You don’t stop when you’re tired', 'You stop when it’s done. Clear today.'],
     ['One more step forward', 'That’s all today is asking for. Take it.'],
   ],
   prodigy: [
-    ['Yesterday’s you set the bar', 'Go beat it. Three habits.'],
+    ['Yesterday’s you set the bar', 'Go beat it. Clear today.'],
     ['Talent is waiting on the reps', 'Put today’s in.'],
     ['One percent better', 'That’s the whole job today. Log it.'],
   ],
   reborn: [
-    ['Today is a new page', 'Write it. Your three are waiting.'],
+    ['Today is a new page', 'Write it. Your habits are waiting.'],
     ['The old you would have skipped this', 'You’re not them anymore.'],
     ['Proof beats promises', 'Add today’s proof to the pile.'],
   ],
   beacon: [
     ['Fill your own tank first', 'Then go carry everyone else. Clear today.'],
-    ['Someone’s watching how you show up', 'Show them. Three habits.'],
-    ['Keep the light on', 'It starts with today’s three.'],
+    ['Someone’s watching how you show up', 'Show them. Clear today.'],
+    ['Keep the light on', 'It starts with today’s habits.'],
   ],
   'social-commander': [
     ['Leaders go first', 'Clear your own day before you rally anyone else.'],
-    ['Give yourself the order', 'Three habits. Advance.'],
+    ['Give yourself the order', 'Clear today. Advance.'],
     ['Your move, commander', 'The day doesn’t win itself.'],
   ],
   believer: [
-    ['The dream is still on', 'Today’s three keep it alive.'],
+    ['The dream is still on', 'Today’s habits keep it alive.'],
     ['Hope with a plan is a promise', 'Keep today’s.'],
     ['Set sail', 'You know where you’re going. Clear today.'],
   ],
   underdog: [
     ['Nobody’s betting on you today', 'Good. Go prove them wrong.'],
-    ['No special power needed', 'Just today’s three.'],
+    ['No special power needed', 'Just today’s habits.'],
     ['Outwork the odds', 'It starts with one habit. Open the tracker.'],
   ],
   'free-spirit': [
-    ['Do it your way', 'Just do it today. Three habits.'],
-    ['Play first, skip never', 'Today’s three won’t take long.'],
+    ['Do it your way', 'Just do it today. Clear your habits.'],
+    ['Play first, skip never', 'Today’s habits won’t take long.'],
     ['Keep it light', 'A quick clear, then the day is yours.'],
   ],
   'balanced-master': [
     ['Small corrections, every day', 'Today’s is waiting.'],
-    ['Make the tea slowly', 'Then clear your three.'],
+    ['Make the tea slowly', 'Then clear today.'],
   ],
 };
 
