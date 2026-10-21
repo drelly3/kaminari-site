@@ -716,3 +716,20 @@ html.arc-intro-lock,html.arc-intro-lock body{overflow:hidden;}
 /* tapping the non-negotiable without proof points at the proof link */
 @keyframes proofNudge{0%,100%{transform:translateX(0);}20%,60%{transform:translateX(-4px);}40%,80%{transform:translateX(4px);}}
 .arc-root .proof-add.nudge{animation:proofNudge .4s ease;}
+
+/* habit schedules: groups and tags on Today, schedule picker in Setup */
+.arc-root .hab-tag{font-size:12px;color:var(--text-dim);margin-top:4px;}
+.arc-root .checkline .txt .hab-tag b,.arc-root .checkline .txt .hab-tag span{display:inline;font-size:inherit;margin:0;}
+.arc-root .checkline .txt .hab-tag b{color:var(--text);}
+.arc-root .checkline .txt .hab-due{color:var(--gold);font-weight:600;}
+.arc-root .hab-group{font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-dim);margin:14px 0 2px;}
+.arc-root .hab-group span{font-weight:500;letter-spacing:0;text-transform:none;color:var(--text-faint);}
+.arc-root .hab-off{font-size:12px;color:var(--text-faint);margin:12px 0 0;}
+.arc-root .sched{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:10px;}
+.arc-root .sched > label{width:100%;margin:0;}
+.arc-root .sched select{width:auto;}
+.arc-root .sched-days{display:inline-flex;gap:5px;flex-wrap:wrap;}
+.arc-root .sched-n[hidden],.arc-root .sched-days[hidden]{display:none;}
+.arc-root .more-head{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.arc-root .more-head label{margin:0;}
+.arc-root .more-head .linkbtn{font-size:13px;}

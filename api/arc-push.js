@@ -147,7 +147,7 @@ export async function sendDue(env, now = new Date()) {
 
 /* ---------- what a notification says ---------- */
 const MESSAGES = {
-  reminder: { title: 'Log today’s arc', body: 'Three habits. Clear today before it’s gone.' },
+  reminder: { title: 'Log today’s arc', body: 'Your non-negotiable and what’s due. Clear today before it’s gone.' },
   // the quote itself stays hidden until they open the tracker, where it is revealed
   quote: { title: 'Your new arc quote just dropped', body: 'Tap to reveal it.', url: '/arc-tracker/app#quote' },
   report: { title: 'Your Weekly Arc Review is ready', body: 'See your week in numbers, then set up the next one.', url: '/arc-tracker/app#review' },

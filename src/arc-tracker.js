@@ -300,11 +300,79 @@ function fmtDate(s){ return dfs(s).toLocaleDateString(undefined,{month:'short',d
 
 function getArchetype(key){ return ARCHETYPES.find(a=>a.key===key); }
 
-// A day keeps a streak going if its non-negotiable was done or it was repaired with a Second Wind.
-// Only done days add to the count: a repaired day bridges the gap without padding the number.
-function streakEndingAt(d, byDate){
+/* ---------------- Habit schedules: what's due on a day ---------------- */
+// Besides the daily non-negotiable there are up to 6 habits: habits 2 and 3 plus up to 4 more
+// (habits.more). Each runs on a schedule: every day, a number of times a week, set days, or bonus.
+// A schedule change applies from the day it's made (h.sched is a list of {from, every, n, days}),
+// so changing one never rewrites past days. Habits 2 and 3 were daily before schedules existed.
+// A day is CLEARED when the non-negotiable and every habit due that day are done. A times-a-week
+// habit is only due on a day when the rest of the week no longer leaves room to skip it; bonus
+// habits never are. Weeks run Monday to Sunday.
+const MAX_MORE = 4;
+const DAY_SHORT = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+// streaks used to need only the non-negotiable; days before this rule keep counting that way
+const STREAK_RULE_FROM = '2026-10-21';
+function daysText(days){ return [...(days||[])].sort((a,b)=>(a+6)%7-(b+6)%7).map(x=>DAY_SHORT[x]).join(', '); }
+function habitFallback(id){ return id==='h2' ? 'Habit 2' : id==='h3' ? 'Habit 3' : 'Habit'; }
+function logBy(){ return Object.fromEntries(log.map(e=>[e.date,e])); }
+// every habit besides the non-negotiable, removed ones too (they still count on the days they ran)
+function otherHabits(){
+  return [{id:'h2', ...habits.h2}, {id:'h3', ...habits.h3}, ...(habits.more||[])].filter(h=>h && h.id);
+}
+function scheduleOn(h, d){
+  let cur = (h.id==='h2' || h.id==='h3') ? {every:'daily'} : null;
+  (h.sched||[]).forEach(x=>{ if(x.from <= d) cur = x; });
+  return cur;
+}
+function didHabit(e, id){ return !!(e && (id==='h2' || id==='h3' ? e[id] : e.done && e.done[id])); }
+function otherDoneCount(e){ return e ? (e.h2?1:0) + (e.h3?1:0) + Object.values(e.done||{}).filter(Boolean).length : 0; }
+// how many times a habit was done this week, before day d (or up to and including it)
+function weekCount(id, d, by, through){
+  let n = 0;
+  for(let x = weekStart(d); through ? x <= d : x < d; x = shiftDay(x,1)) if(didHabit(by[x], id)) n++;
+  return n;
+}
+// a times-a-week number; a habit started mid-week asks for its share of that first week
+function weekTarget(h, d){
+  const s = scheduleOn(h, d), n = (s && s.n) || 3, wk = weekStart(d);
+  if(!s || !s.from || s.from <= wk) return n;
+  return Math.max(1, Math.round(n * (7 - dayGap(wk, s.from)) / 7));
+}
+function isDue(h, d, by){
+  const s = scheduleOn(h, d);
+  if(!s || s.every==='off' || s.every==='bonus') return false;
+  if(s.every==='daily') return true;
+  if(s.every==='days') return (s.days||[]).includes(dfs(d).getDay());
+  if(s.every==='week'){
+    const need = weekTarget(h, d) - weekCount(h.id, d, by), left = dayGap(d, shiftDay(weekStart(d),6)) + 1;
+    return need > 0 && need >= left;
+  }
+  return false;
+}
+function dueHabits(d, by){ by = by || logBy(); return otherHabits().filter(h=>isDue(h, d, by)); }
+function dayCleared(e, by){
+  if(!e || !e.h1) return false;
+  by = by || logBy();
+  return dueHabits(e.date, by).every(h=>didHabit(e, h.id));
+}
+// a day that keeps the streak going: cleared (before the rule: non-negotiable done)
+function streakDay(e, by){ return !!e && (e.date < STREAK_RULE_FROM ? !!e.h1 : dayCleared(e, by)); }
+// weeks in a row a times-a-week habit hit its number, counting this week once it's hit
+function weeksHit(h){
+  const by = logBy(), t = todayStr();
+  let wk = weekStart(t), n = 0;
+  const hit = w => { const d = shiftDay(w,6) < t ? shiftDay(w,6) : t, s = scheduleOn(h, d); return s && s.every==='week' && weekCount(h.id, shiftDay(w,6), by, true) >= weekTarget(h, d); };
+  if(hit(wk)) n++;
+  for(wk = shiftDay(wk,-7); n < 520 && hit(wk); wk = shiftDay(wk,-7)) n++;
+  return n;
+}
+
+// A day keeps a streak going if it was cleared or repaired with a Second Wind. Only cleared days
+// add to the count: a repaired day bridges the gap without padding the number. stopBefore keeps the
+// count inside a range (a month's best streak).
+function streakEndingAt(d, byDate, stopBefore){
   let n=0;
-  while(byDate[d] && (byDate[d].h1 || byDate[d].repaired)){ if(byDate[d].h1) n++; d=shiftDay(d,-1); }
+  while(byDate[d] && (!stopBefore || d >= stopBefore) && (streakDay(byDate[d], byDate) || byDate[d].repaired)){ if(streakDay(byDate[d], byDate)) n++; d=shiftDay(d,-1); }
   return n;
 }
 function computeStats(){
@@ -312,19 +380,19 @@ function computeStats(){
   const byDate=Object.fromEntries(sorted.map(e=>[e.date,e]));
   let fullClear=0, xp=0, shadowTotal=0;
   sorted.forEach(e=>{
-    if(e.h1&&e.h2&&e.h3) fullClear++;
+    if(dayCleared(e, byDate)) fullClear++;
     if(e.sc) shadowTotal++;
     const pf=e.proof||{};
-    xp += (e.h1?10:0)+(e.h2?5:0)+(e.h3?5:0)+(e.sc?5:0)+((e.note||'').trim()?2:0)+PROOF_SLOTS.filter(k=>e[k]&&pf[k]).length*PROOF_XP;
+    xp += (e.h1?10:0)+otherDoneCount(e)*5+(e.sc?5:0)+((e.note||'').trim()?2:0)+PROOF_SLOTS.filter(k=>e[k]&&pf[k]).length*PROOF_XP;
   });
   // XP is earned for good (it sets your level) and spent on secondWinds (it fills your wallet)
   xp += challenges.filter(challengeDone).length * CHALLENGE_XP;
   const spent = secondWinds.reduce((n,c)=>n+(c.cost||0),0);
-  // today only counts once its non-negotiable is done; until then the streak runs to yesterday
+  // today only counts once it's cleared; until then the streak runs to yesterday
   const t=todayStr();
-  const currentStreak = (byDate[t] && byDate[t].h1) ? streakEndingAt(t,byDate) : streakEndingAt(shiftDay(t,-1),byDate);
+  const currentStreak = streakDay(byDate[t], byDate) ? streakEndingAt(t,byDate) : streakEndingAt(shiftDay(t,-1),byDate);
   let longest=0;
-  sorted.forEach(e=>{ if(e.h1 && !(byDate[shiftDay(e.date,1)] && (byDate[shiftDay(e.date,1)].h1 || byDate[shiftDay(e.date,1)].repaired))) longest=Math.max(longest, streakEndingAt(e.date,byDate)); });
+  sorted.forEach(e=>{ const nx=byDate[shiftDay(e.date,1)]; if(streakDay(e, byDate) && !(nx && (streakDay(nx, byDate) || nx.repaired))) longest=Math.max(longest, streakEndingAt(e.date,byDate)); });
   longest=Math.max(longest,currentStreak);
   let shadowStreak=0;
   for(let i=sorted.length-1;i>=0;i--){
@@ -337,19 +405,19 @@ function computeStats(){
 }
 
 /* ---------------- Second Wind: spend XP to repair yesterday ---------------- */
-// Miss a day, then clear all three today, and you can spend XP to repair yesterday so your streak
+// Miss a day, then clear today, and you can spend XP to repair yesterday so your streak
 // survives. Once a week at most, only for yesterday, and the repaired day never counts as a full
 // clear, so rank stays earned. Two misses in a row can't be repaired: never miss twice.
 const SECOND_WIND_COST = 50, SECOND_WIND_EVERY = 7;
 function secondWindState(stats){
   const t=todayStr(), y=shiftDay(t,-1), by=stats.byDate;
-  if(by[y] && (by[y].h1 || by[y].repaired)) return null;
+  if(by[y] && (streakDay(by[y], by) || by[y].repaired)) return null;
   const saved = streakEndingAt(shiftDay(t,-2), by);
   if(!saved) return null;
   const last = secondWinds.length ? secondWinds[secondWinds.length-1].on : '';
   const nextOn = last && dayGap(last,t) < SECOND_WIND_EVERY ? shiftDay(last,SECOND_WIND_EVERY) : '';
   const te = by[t];
-  return {missed:y, saved, nextOn, cleared:!!(te && te.h1 && te.h2 && te.h3), wallet:stats.wallet, afford:stats.wallet>=SECOND_WIND_COST};
+  return {missed:y, saved, nextOn, cleared:dayCleared(te, by), wallet:stats.wallet, afford:stats.wallet>=SECOND_WIND_COST};
 }
 function useSecondWind(){
   const stats=computeStats(), cb=secondWindState(stats);
@@ -371,7 +439,7 @@ function secondWindCard(stats){
   const lead='<p class="second-wind-lead">You missed yesterday. Your <b>\u{1F525} '+cb.saved+'-day streak</b> can still be saved.</p>';
   if(cb.nextOn) return head+lead+'<p class="card-note">You’ve used your Second Wind this week. The next one unlocks '+fmtDate(cb.nextOn)+'. Clear today and start the next run. Never miss twice.</p></div>';
   if(!cb.afford) return head+lead+'<p class="card-note">A Second Wind costs '+SECOND_WIND_COST+' XP and you have '+cb.wallet+' to spend. Clear today and start the next run. Never miss twice.</p></div>';
-  if(!cb.cleared) return head+lead+'<p class="card-note">Clear all three habits today first. Then you can spend '+SECOND_WIND_COST+' XP to repair yesterday. You have '+cb.wallet+' XP.</p></div>';
+  if(!cb.cleared) return head+lead+'<p class="card-note">Clear today first: your non-negotiable and everything due. Then you can spend '+SECOND_WIND_COST+' XP to repair yesterday. You have '+cb.wallet+' XP.</p></div>';
   return head+lead+'<p class="card-note">You came straight back and cleared today. Spend '+SECOND_WIND_COST+' of your '+cb.wallet+' XP to repair yesterday. It keeps the streak alive but doesn’t count as a full clear.</p>'+
     '<button type="button" class="btn second-wind-btn" id="secondWindBtn">Use Second Wind · '+SECOND_WIND_COST+' XP</button></div>';
 }
@@ -384,7 +452,7 @@ const SHADOW_BADGES=[{name:'Shadow Aware',n:10},{name:'Shadow Tamed',n:25},{name
 // Worked out from the log every time, so it's the same on every device.
 const RANK_HOLD = [0, 4, 5, 6, 8];
 const HOLD_WINDOW = 14, HOLD_GRACE = 7;
-function isFull(e){ return !!(e && e.h1 && e.h2 && e.h3); }
+function isFull(e, by){ return dayCleared(e, by); }
 function rankState(arche){
   if(!arche || !arche.ranks) return null;
   const by = Object.fromEntries(log.map(e=>[e.date,e]));
@@ -394,7 +462,7 @@ function rankState(arche){
   if(first){
     const win = [];
     for(let d = first; d <= t; d = shiftDay(d,1)){
-      const f = isFull(by[d]) ? 1 : 0;
+      const f = isFull(by[d], by) ? 1 : 0;
       total += f; win.push(f); recent += f;
       if(win.length > HOLD_WINDOW) recent -= win.shift();
       earned = 0;
@@ -590,7 +658,7 @@ function dayTraitPoints(e, streakLen){
   if(isFull(e)) p.consistency += 1;
   if(e.h1 && streakLen >= 7) p.consistency += 0.5; // a long streak keeps building it
   if(e.sc) p.courage += 1;
-  p.focus += ((e.h2?1:0) + (e.h3?1:0)) * 0.5 + ((e.note||'').trim() ? 0.5 : 0);
+  p.focus += Math.min(2, otherDoneCount(e)) * 0.5 + ((e.note||'').trim() ? 0.5 : 0);
   return p;
 }
 // level n needs 5 + 10 + ... + 5(n-1) points, so early levels come fast and later ones take real work
@@ -634,29 +702,47 @@ const WEEK_SEEN = 'arc_week_seen';
 const OBSTACLES = {
   Discipline: {name:'Procrastination', fix:()=>'Do your non-negotiable first, before anything else. If it keeps slipping, shrink it to two minutes.'},
   Consistency: {name:'Inconsistency', fix:w=>'Go for '+Math.min(7,w.full+1)+' full-clear '+(Math.min(7,w.full+1)===1?'day':'days')+'. That’s one more than this week.'},
-  Focus: {name:'Distraction', fix:()=>'Stack habits 2 and 3 straight after your non-negotiable so they ride along with it.'},
+  Focus: {name:'Distraction', fix:()=>'Stack your other habits straight after your non-negotiable so they ride along with it.'},
   Courage: {name:'Avoidance', fix:w=>'Do your shadow-check on '+Math.min(7,w.sc+1)+' '+(Math.min(7,w.sc+1)===1?'day':'days')+'. Tie it to something you already do.'}
 };
 function weekReview(start){
   const t = todayStr(), end = shiftDay(start, 6), last = end < t ? end : t;
   const by = Object.fromEntries(log.map(e=>[e.date,e]));
-  const perDay = 3 + (habits.sc && habits.sc.habit ? 1 : 0);
-  let days = 0, done = 0, h1 = 0, full = 0, sc = 0, h23 = 0, logged = 0;
+  const withSc = !!(habits.sc && habits.sc.habit);
+  // what counted this week: the non-negotiable and shadow-check daily, daily and set-day habits on
+  // their days, and a times-a-week habit's number (done up to that number). Bonus habits don't count.
+  let days = 0, done = 0, h1 = 0, full = 0, sc = 0, logged = 0, otherDone = 0, otherPossible = 0, possible = 0;
   for(let d = start; d <= last; d = shiftDay(d,1)){
     days++;
-    const e = by[d]; if(!e) continue;
+    possible += 1 + (withSc?1:0);
+    const e = by[d];
+    otherHabits().forEach(h=>{
+      const sch = scheduleOn(h, d);
+      if(!sch || sch.every==='week' || sch.every==='bonus' || sch.every==='off' || !isDue(h, d, by)) return;
+      otherPossible++; if(didHabit(e, h.id)) otherDone++;
+    });
+    if(!e) continue;
     logged++;
-    h1 += e.h1?1:0; full += isFull(e)?1:0; sc += e.sc?1:0; h23 += (e.h2?1:0)+(e.h3?1:0);
-    done += (e.h1?1:0)+(e.h2?1:0)+(e.h3?1:0)+(perDay>3 && e.sc?1:0);
+    h1 += e.h1?1:0; full += isFull(e, by)?1:0; sc += e.sc?1:0;
+    done += (e.h1?1:0)+(withSc && e.sc?1:0);
   }
   if(!days) return null;
+  otherHabits().forEach(h=>{
+    const sch = scheduleOn(h, last);
+    if(!sch || sch.every!=='week') return;
+    const n = Math.min(weekTarget(h, last), days);
+    otherPossible += n; otherDone += Math.min(n, weekCount(h.id, last, by, true));
+  });
+  possible += otherPossible; done += otherDone;
+  const perDay = possible / days;
   const ch = challenges.find(x=>x.week===start && !x.dropped);
   const chDef = ch && findChallenge(ch.key);
-  const rates = {Discipline:h1/days, Consistency:full/days, Focus:h23/(2*days)};
-  if(perDay>3 || ch) rates.Courage = ((perDay>3 ? sc/days : 0) + (chDef ? Math.min(1, ch.days.length/chDef.target) : 0)) / ((perDay>3?1:0) + (chDef?1:0));
+  const rates = {Discipline:h1/days, Consistency:full/days};
+  if(otherPossible) rates.Focus = otherDone/otherPossible;
+  if(withSc || ch) rates.Courage = ((withSc ? sc/days : 0) + (chDef ? Math.min(1, ch.days.length/chDef.target) : 0)) / ((withSc?1:0) + (chDef?1:0));
   const ranked = Object.entries(rates).sort((a,b)=>b[1]-a[1]);
   const flat = ranked[0][1] - ranked[ranked.length-1][1] < 0.05;
-  const w = {start, end, days, logged, done, full, sc, possible:days*perDay, pct:Math.round(done/(days*perDay)*100),
+  const w = {start, end, days, logged, done, full, sc, possible, pct:Math.round(done/Math.max(1,possible)*100),
     strongest: flat ? '' : ranked[0][0], weakest: flat ? '' : ranked[ranked.length-1][0],
     challenge: chDef ? {name:chDef.name, done:ch.days.length, target:chDef.target} : null};
   // the week of the arc this is: week 1 is the week of the first logged day
@@ -861,13 +947,13 @@ function avatarStage(archetype, extra){
     '<div class="cel-avatar">'+(src?'<img src="'+src+'" alt="">':iconSVG(archetype,178))+'</div>'+(extra||'')+'</div>';
 }
 
-// Daily: all three habits checked
+// Daily: the non-negotiable and everything due checked
 function showDayCleared(archetype, streak, habitNames, onDone, hint){
   const check='<svg class="cel-check" viewBox="0 0 74 74"><circle cx="37" cy="37" r="33"/><path d="M22 38 L32.5 48.5 L52 27"/></svg>';
   const items=(habitNames||[]).map((n,i)=>'<li style="animation-delay:'+(1.05+i*0.18)+'s;"><b>\u2713</b>'+escapeHtml(n)+'</li>').join('');
   const inner = avatarStage(archetype, check)+
     '<div class="cel-kicker">DAY CLEARED</div>'+
-    '<div class="cel-title">All three. Done.</div>'+
+    '<div class="cel-title">Everything due. Done.</div>'+
     (items?'<ul class="cel-list">'+items+'</ul><br>':'')+
     '<div class="cel-streak">\uD83D\uDD25 '+streak+'-day streak</div>'+
     '<p class="cel-sub">'+(archetype?escapeHtml(archetype.title):'You')+' showed up '+(viewDay==='yesterday'?'yesterday':'today')+'.'+(hint?'<br><b class="cel-hint">'+escapeHtml(hint)+'</b>':'')+'</p>'+
@@ -921,11 +1007,11 @@ function renderToday(){
 
   let html='';
   if(!arche){
-    html += '<div class="banner info"><div>Pick your archetype and name your three habits before you start logging. It takes about a minute. <button type="button" class="linkbtn" data-goto="guide">Start here</button></div></div>';
+    html += '<div class="banner info"><div>Pick your archetype and name your habits before you start logging. It takes about a minute. <button type="button" class="linkbtn" data-goto="guide">Start here</button></div></div>';
   }
   const secondWind = viewDay==='today' ? secondWindCard(stats) : '';
   if(secondWind) html += secondWind;
-  else if(viewDay==='today' && yEntry && !yEntry.h1 && !yEntry.repaired && stats.currentStreak===0 && stats.totalDays>0){
+  else if(viewDay==='today' && yEntry && !streakDay(yEntry, stats.byDate) && !yEntry.repaired && stats.currentStreak===0 && stats.totalDays>0){
     html += '<div class="banner warn"><span>⚠️</span><div><b>Never miss twice.</b> Yesterday’s non-negotiable didn’t happen. One miss is an accident — the only rule now is don’t miss today too. Did it and forgot to log? Switch to <b>Yesterday</b> below.</div></div>';
   }
 
@@ -944,8 +1030,7 @@ function renderToday(){
   const vals = existing || {h1:false,h2:false,h3:false,sc:false,note:''};
   html += '<div class="card">';
   html += habitLine('h1',habits.h1,vals.h1,true);
-  html += checkline('f_h2',habits.h2,vals.h2,'Habit 2 (name it in Setup)');
-  html += checkline('f_h3',habits.h3,vals.h3,'Habit 3 (name it in Setup)');
+  html += otherHabitsHtml(d, existing);
   if(proofError) html += '<div class="proof-error" role="alert">'+escapeHtml(proofError)+'</div>';
   html += extrasHtml();
   html += '</div>';
@@ -953,7 +1038,7 @@ function renderToday(){
   if(arche && arche.shadowOptions){
     const sc = habits.sc||{cue:'',habit:''};
     html += '<div class="card accent"><div class="card-kicker">Shadow-check</div>';
-    html += '<p class="card-note">Separate from your 3 habits. '+escapeHtml(arche.title)+'’s shadow: '+escapeHtml(arche.shadow)+'</p>';
+    html += '<p class="card-note">Separate from your habits. '+escapeHtml(arche.title)+'’s shadow: '+escapeHtml(arche.shadow)+'</p>';
     html += checkline('f_sc',sc,vals.sc,'Shadow-check (name it in Setup)');
     html += '</div>';
   }
@@ -967,6 +1052,36 @@ function renderToday(){
 
   el.innerHTML = html;
 
+  // everything besides the non-negotiable, grouped by what the day asks for
+  function otherHabitsHtml(day, e){
+    const by = logBy(), due = [], week = [], bonus = [], off = [];
+    otherHabits().forEach(h=>{
+      const sch = scheduleOn(h, day);
+      if(!sch || sch.every==='off') return;
+      if(sch.every==='bonus') bonus.push(h);
+      else if(isDue(h, day, by)) due.push(h);
+      else if(sch.every==='week') week.push(h);
+      else off.push(h);
+    });
+    const line = (h, tag)=>checkline('f_'+h.id, h, didHabit(e, h.id), habitFallback(h.id)+' (name it in Setup)', false, tag ? '<div class="hab-tag">'+tag+'</div>' : '');
+    const weekTag = h=>{
+      const n = weekTarget(h, day), got = weekCount(h.id, day, by, true), wks = weeksHit(h);
+      return '<b>'+Math.min(got,n)+'/'+n+'</b> this week'+(n < (scheduleOn(h, day).n||3) ? ' (first week)' : '')+(got>=n ? ' · target hit' : '')+(wks ? ' · 🔥 '+wks+(wks===1?' week':' weeks') : '');
+    };
+    let out = due.map(h=>{
+      const sch = scheduleOn(h, day);
+      if(sch.every==='week'){
+        if(didHabit(e, h.id)) return line(h, weekTag(h));
+        const left = weekTarget(h, day) - weekCount(h.id, day, by);
+        return line(h, weekTag(h)+' · <span class="hab-due">due today: '+(left===1?'last one this week':left+' left, no days to spare')+'</span>');
+      }
+      return line(h, sch.every==='days' ? daysText(sch.days) : '');
+    }).join('');
+    if(week.length) out += '<div class="hab-group">This week <span>· do these on any day, missing a day doesn’t count against you</span></div>'+week.map(h=>line(h, weekTag(h))).join('');
+    if(bonus.length) out += '<div class="hab-group">Bonus <span>· +5 XP when done, never required</span></div>'+bonus.map(h=>line(h, '')).join('');
+    if(off.length) out += '<p class="hab-off">Not today: '+off.map(h=>escapeHtml(h.habit||habitFallback(h.id))+' ('+daysText(scheduleOn(h, day).days)+')').join(' · ')+'</p>';
+    return out;
+  }
   // the non-negotiable is the one habit that takes proof
   function habitLine(key, h, checked, nonneg){
     const fallback = 'Non-negotiable (name it in Setup)';
@@ -995,7 +1110,7 @@ function renderToday(){
     await loadDayProof();
     renderToday();
   }));
-  ['f_h1','f_h2','f_h3','f_sc'].forEach(id=>{ const c=document.getElementById(id); if(c) c.addEventListener('change', commitDay); });
+  ['f_h1','f_sc', ...otherHabits().map(h=>'f_'+h.id)].forEach(id=>{ const c=document.getElementById(id); if(c) c.addEventListener('change', commitDay); });
   // the non-negotiable only checks off with proof: without it, a tap asks for the photo instead
   const nn = document.getElementById('f_h1');
   if(nn) nn.addEventListener('click', e=>{
@@ -1022,7 +1137,7 @@ function commitDay(){
   const existing = log.find(e=>e.date===d);
   const before = computeStats().fullClear;
   const rankBefore = rankState(getArchetype(profile.archetypeKey));
-  const wasFull = !!(existing && existing.h1 && existing.h2 && existing.h3);
+  const wasFull = dayCleared(existing);
   const box = (id, k)=>{ const c=document.getElementById(id); return c ? c.checked : !!(existing && existing[k]); };
   const noteEl = document.getElementById('f_note');
   const entry = {
@@ -1031,6 +1146,7 @@ function commitDay(){
     h2: box('f_h2','h2'),
     h3: box('f_h3','h3'),
     sc: box('f_sc','sc'),
+    done: Object.fromEntries((habits.more||[]).map(h=>{ const c=document.getElementById('f_'+h.id); return [h.id, c ? c.checked : didHabit(existing, h.id)]; }).filter(x=>x[1])),
     note: noteEl ? noteEl.value.slice(0,280) : (existing?existing.note:''),
     proof: {h1:hasProof(d)},
     t: Date.now()
@@ -1042,9 +1158,10 @@ function commitDay(){
   persist(LS.log, log);
   const after = computeStats().fullClear;
   const arche2 = getArchetype(profile.archetypeKey);
-  const nowFull = entry.h1 && entry.h2 && entry.h3;
+  const nowFull = dayCleared(entry);
   if(nowFull && !wasFull){
-    const names=[habits.h1.habit||'Non-negotiable', habits.h2.habit||'Habit 2', habits.h3.habit||'Habit 3'];
+    // what the day asked for: the non-negotiable and what was due, plus anything else done
+    const names=[habits.h1.habit||'Non-negotiable', ...otherHabits().filter(h=>didHabit(entry, h.id) || isDue(h, d, logBy())).map(h=>h.habit||habitFallback(h.id))];
     const streakNow=computeStats().currentStreak;
     const cb = d===todayStr() ? secondWindState(computeStats()) : null;
     const hint = cb && !cb.nextOn && cb.afford ? 'Your '+cb.saved+'-day streak can still be saved. Use your Second Wind on the Today tab.' : '';
@@ -1339,11 +1456,11 @@ function monthSummary(ym){
   const days = log.filter(e=>ymOf(e.date)===ym && !(e.repaired && !e.h1)).sort((a,b)=>a.date.localeCompare(b.date));
   const by = Object.fromEntries(log.map(e=>[e.date,e]));
   let best = 0;
-  days.forEach(e=>{ if(e.h1) best = Math.max(best, streakEndingAt(e.date, Object.fromEntries(Object.entries(by).filter(([d])=>ymOf(d)===ym)))); });
+  days.forEach(e=>{ if(streakDay(e, by)) best = Math.max(best, streakEndingAt(e.date, by, ym+'-01')); });
   const notes = days.map(e=>(e.note||'').trim()).filter(Boolean);
   return {
     logged: days.length,
-    fullClears: days.filter(e=>e.h1&&e.h2&&e.h3).length,
+    fullClears: days.filter(e=>isFull(e, by)).length,
     best,
     secondWinds: secondWinds.filter(s=>ymOf(s.missed)===ym).length,
     // the longest win line tends to be the one with the most in it
@@ -1383,7 +1500,7 @@ function showProofMilestone(onDone){
       '<div class="cel-kicker">'+PROOF_MILESTONE+' DAYS OF PROOF</div>'+
       '<div class="cel-title">'+PROOF_MILESTONE+' full clears.</div>'+
       (pics.length ? proofMosaic(pics, PROOF_MILESTONE) : '')+
-      '<p class="cel-sub">A month of showing up, all three, every time it counted. '+(arche?escapeHtml(arche.title)+' isn’t a plan any more. It’s a record.':'')+'</p>'+
+      '<p class="cel-sub">A month of showing up, everything due, every time it counted. '+(arche?escapeHtml(arche.title)+' isn’t a plan any more. It’s a record.':'')+'</p>'+
       '<button class="btn" id="celOk">Keep building</button></div>';
     mountCelebration(arche, inner, 10*60*1000, ()=>{ freeGallery(all); onDone&&onDone(); }, false);
     setTimeout(()=>spawnConfetti(arche?arche.hue:45), 600);
@@ -1454,7 +1571,7 @@ function monthDetailHtml(ym){
   let cells = ''; for(let i=0;i<lead;i++) cells += '<i class="pad"></i>';
   for(let d=1; d<=daysIn(ym); d++){
     const date = ym+'-'+pad2(d), e = by[date];
-    const cls = date > t ? 'future' : isFull(e) ? 'full' : (e && (e.h1||e.h2||e.h3)) ? 'part' : 'miss';
+    const cls = date > t ? 'future' : isFull(e, by) ? 'full' : (e && (e.h1||otherDoneCount(e))) ? 'part' : 'miss';
     cells += '<i class="'+cls+'">'+d+'</i>';
   }
   const prev = monthProgress(prevMonth(ym)), diff = m.fullClears - prev.fullClears;
@@ -1854,7 +1971,7 @@ function renderProgress(){
     html += '</div>';
   }
 
-  html += '<div class="card"><div style="font-size:13px;color:var(--text-dim);margin-bottom:6px;">Last 30 days \u2014 brighter means more of the three habits landed</div>';
+  html += '<div class="card"><div style="font-size:13px;color:var(--text-dim);margin-bottom:6px;">Last 30 days \u2014 brighter means more of what was due got done</div>';
   html += '<div class="heatgrid">'+heatCells(30)+'</div></div>';
 
   html += '<div id="arcGallery"></div>';
@@ -1872,14 +1989,21 @@ function renderProgress(){
 
   function heatCells(n){
     const map = {};
-    log.forEach(e=>{ map[e.date] = e.repaired && !e.h1 ? 'r' : (e.h1?1:0)+(e.h2?1:0)+(e.h3?1:0); });
+    // brightness: a cleared day is full, otherwise how much of what was due got done
+    const by = logBy();
+    log.forEach(e=>{
+      if(e.repaired && !e.h1){ map[e.date] = 'r'; return; }
+      if(isFull(e, by)){ map[e.date] = 3; return; }
+      const due = dueHabits(e.date, by), got = (e.h1?1:0) + due.filter(h=>didHabit(e, h.id)).length;
+      map[e.date] = got ? Math.min(2, Math.ceil(got / (due.length+1) * 3)) : 0;
+    });
     let out='';
     const t = dfs(todayStr());
     for(let i=n-1;i>=0;i--){
       const d = new Date(t); d.setDate(d.getDate()-i);
       const key = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
       const lvl = map[key]||0;
-      out += '<div class="cell" data-lvl="'+lvl+'" title="'+key+' \u00b7 '+(lvl==='r'?'repaired with a Second Wind':lvl+'/3')+'"></div>';
+      out += '<div class="cell" data-lvl="'+lvl+'" title="'+key+' \u00b7 '+(lvl==='r'?'repaired with a Second Wind':lvl===3?'cleared':lvl?'partly done':'nothing logged')+'"></div>';
     }
     return out;
   }
@@ -2000,12 +2124,15 @@ function renderSetup(){
       '</div></div></div>';
   }
   html += '<div class="card">'+habitField('h1','Non-negotiable', habits.h1)+'</div>';
-  html += '<div class="card">'+habitField('h2','Habit 2', habits.h2)+'</div>';
-  html += '<div class="card">'+habitField('h3','Habit 3', habits.h3)+'</div>';
+  html += '<div class="card">'+habitField('h2','Habit 2', habits.h2)+schedField('h2', {id:'h2', ...habits.h2})+'</div>';
+  html += '<div class="card">'+habitField('h3','Habit 3', habits.h3)+schedField('h3', {id:'h3', ...habits.h3})+'</div>';
+  html += '<div id="moreHabits">'+(habits.more||[]).filter(h=>!h.removed).map(h=>moreHabitCard(h)).join('')+'</div>';
+  html += '<button type="button" class="btn ghost" id="addHabitBtn"'+((habits.more||[]).filter(h=>!h.removed).length>=MAX_MORE?' hidden':'')+'>+ Add a habit</button>';
+  html += '<p class="card-note" style="margin-top:8px;">Up to '+(MAX_MORE+2)+' habits besides your non-negotiable. A day is cleared when your non-negotiable and everything due that day are done. Times-a-week habits only count against you when you run out of days to hit the number.</p>';
 
   if(arche && arche.shadowOptions){
     html += '<h2 class="section-title" style="font-size:16px;margin-top:26px;">Your shadow-check</h2>';
-    html += '<p class="section-sub">Strongly recommended \u2014 kept separate from the 3-habit cap on purpose, because it\u2019s working against a different thing: '+arche.title+'\u2019s specific failure mode, not your general discipline.</p>';
+    html += '<p class="section-sub">Strongly recommended \u2014 kept separate from your habits on purpose, because it\u2019s working against a different thing: '+arche.title+'\u2019s specific failure mode, not your general discipline.</p>';
     html += '<div class="card accent"><div style="font-size:12.5px;color:var(--text-dim);margin-bottom:10px;"><b style="color:var(--text);">The shadow it counters:</b> '+arche.shadow+'</div>';
     html += '<div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px;">'+
       arche.shadowOptions.map(t=>'<span class="chip" style="cursor:pointer;" data-shadow-suggest="'+escapeHtml(t)+'">'+escapeHtml(t)+'</span>').join('')+
@@ -2054,6 +2181,20 @@ function renderSetup(){
 
   el.innerHTML = html;
 
+  // how often a habit runs: every day, a number of times a week, set days, or bonus
+  function schedField(key, h){
+    const cur = scheduleOn(h, todayStr()) || {every:'daily'};
+    const ev = cur.every==='off' ? 'daily' : cur.every;
+    const opt = (v,l)=>'<option value="'+v+'"'+(ev===v?' selected':'')+'>'+l+'</option>';
+    return '<div class="sched" data-sched="'+key+'"><label for="'+key+'_every" style="font-weight:400;font-size:11.5px;">How often</label>'+
+      '<select id="'+key+'_every">'+opt('daily','Every day')+opt('week','Times a week')+opt('days','On set days')+opt('bonus','Bonus (never required)')+'</select>'+
+      '<span class="sched-n"'+(ev==='week'?'':' hidden')+'><select id="'+key+'_n" aria-label="Times a week">'+[1,2,3,4,5,6].map(n=>'<option value="'+n+'"'+((cur.n||3)===n?' selected':'')+'>'+n+'× a week</option>').join('')+'</select></span>'+
+      '<span class="sched-days"'+(ev==='days'?'':' hidden')+'>'+[1,2,3,4,5,6,0].map(dw=>'<button type="button" class="rem-day'+((cur.days||[]).includes(dw)?' on':'')+'" data-sched-day="'+dw+'" aria-pressed="'+(cur.days||[]).includes(dw)+'">'+DAY_SHORT[dw][0]+'</button>').join('')+'</span></div>';
+  }
+  function moreHabitCard(h){
+    return '<div class="card more-habit" data-more="'+h.id+'"><div class="more-head"><label>'+escapeHtml(h.habit ? 'Habit' : 'New habit')+'</label><button type="button" class="linkbtn danger" data-more-remove="'+h.id+'">Remove</button></div>'+
+      habitField(h.id, '', h).replace('<label></label>','')+schedField(h.id, h)+'</div>';
+  }
   function habitField(key, label, h){
     return '<label>'+label+'</label>'+
       '<div class="grid2">'+
@@ -2062,13 +2203,36 @@ function renderSetup(){
       '</div>';
   }
 
+  function wireSched(root){
+    root.querySelectorAll('[data-sched]').forEach(box=>{
+      const ev = box.querySelector('select[id$="_every"]');
+      const show = ()=>{ box.querySelector('.sched-n').hidden = ev.value!=='week'; box.querySelector('.sched-days').hidden = ev.value!=='days'; };
+      ev.addEventListener('change', show);
+      box.querySelectorAll('[data-sched-day]').forEach(b=>b.addEventListener('click',()=>{ b.classList.toggle('on'); b.setAttribute('aria-pressed', b.classList.contains('on')); }));
+    });
+    root.querySelectorAll('[data-more-remove]').forEach(b=>b.addEventListener('click',()=>{
+      const card = b.closest('[data-more]');
+      if(card.dataset.more.startsWith('new') || confirm('Remove this habit? Days you already logged keep it.')){ card.remove(); refreshAddBtn(); }
+    }));
+  }
+  function refreshAddBtn(){ const b=document.getElementById('addHabitBtn'); if(b) b.hidden = el.querySelectorAll('[data-more]').length >= MAX_MORE; }
+  wireSched(el);
+  document.getElementById('addHabitBtn').addEventListener('click',()=>{
+    const id = 'new'+Date.now().toString(36);
+    const box = document.getElementById('moreHabits');
+    box.insertAdjacentHTML('beforeend', moreHabitCard({id, sched:[{from:todayStr(), every:'daily'}]}));
+    wireSched(box.lastElementChild);
+    refreshAddBtn();
+    const inp = document.getElementById(id+'_habit'); if(inp) inp.focus();
+  });
+
   el.querySelectorAll('[data-light-suggest]').forEach(chip=>{
     chip.addEventListener('click',()=>{
       const text = chip.dataset.lightSuggest;
-      const slots=['h1_habit','h2_habit','h3_habit'];
+      const slots=['h1_habit','h2_habit','h3_habit', ...[...el.querySelectorAll('[data-more] input[id$="_habit"]')].map(i=>i.id)];
       const target = slots.map(id=>document.getElementById(id)).find(inp=>inp && !inp.value.trim());
       if(target){ target.value = text; target.focus(); }
-      else { chip.style.opacity='0.5'; chip.title='All 3 habit slots are full \u2014 clear one first.'; }
+      else { chip.style.opacity='0.5'; chip.title='Every habit slot is full \u2014 clear one or add a habit first.'; }
     });
   });
   el.querySelectorAll('[data-shadow-suggest]').forEach(chip=>{
@@ -2081,8 +2245,35 @@ function renderSetup(){
   document.getElementById('saveHabitsBtn').addEventListener('click',()=>{
     profile.name = document.getElementById('p_name').value.trim();
     habits.h1 = {cue:document.getElementById('h1_cue').value.trim(), habit:document.getElementById('h1_habit').value.trim()};
-    habits.h2 = {cue:document.getElementById('h2_cue').value.trim(), habit:document.getElementById('h2_habit').value.trim()};
-    habits.h3 = {cue:document.getElementById('h3_cue').value.trim(), habit:document.getElementById('h3_habit').value.trim()};
+    const today = todayStr();
+    // a new schedule starts today, so past days keep the one they ran on
+    const readSched = (key, h)=>{
+      const every = document.getElementById(key+'_every').value;
+      const next = {from:today, every};
+      if(every==='week') next.n = +document.getElementById(key+'_n').value;
+      if(every==='days'){ next.days = [...el.querySelectorAll('[data-sched="'+key+'"] [data-sched-day].on')].map(b=>+b.dataset.schedDay).sort(); if(!next.days.length) next.every = 'daily'; }
+      const cur = scheduleOn(h, today);
+      if(cur && cur.every===next.every && (cur.n||0)===(next.n||0) && String(cur.days||'')===String(next.days||'')) return h.sched||[];
+      return [...(h.sched||[]).filter(x=>x.from!==today), next];
+    };
+    const field = (key, f)=>document.getElementById(key+'_'+f).value.trim();
+    habits.h2 = {...habits.h2, cue:field('h2','cue'), habit:field('h2','habit'), sched:readSched('h2', {id:'h2', ...habits.h2})};
+    habits.h3 = {...habits.h3, cue:field('h3','cue'), habit:field('h3','habit'), sched:readSched('h3', {id:'h3', ...habits.h3})};
+    const kept = new Set();
+    const more = [...el.querySelectorAll('[data-more]')].map(card=>{
+      const key = card.dataset.more, old = (habits.more||[]).find(h=>h.id===key);
+      const id = old ? key : 'x'+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
+      kept.add(id);
+      const h = old || {id, sched:[]};
+      const habit = field(key,'habit'), cue = field(key,'cue');
+      if(!old && !habit) return null; // an empty new card is ignored
+      return {...h, id, cue, habit, sched:readSched(key, h)};
+    }).filter(Boolean);
+    // removed habits stay listed so the days they ran still count right; they stop from today
+    (habits.more||[]).filter(h=>!kept.has(h.id)).forEach(h=>{
+      more.push(h.removed ? h : {...h, removed:true, sched:[...(h.sched||[]).filter(x=>x.from!==today), {from:today, every:'off'}]});
+    });
+    habits.more = more;
     if(document.getElementById('sc_cue')){
       habits.sc = {cue:document.getElementById('sc_cue').value.trim(), habit:document.getElementById('sc_habit').value.trim()};
     }
@@ -2100,7 +2291,7 @@ function renderSetup(){
     // no time zone on purpose: the event sits at this clock time wherever the user is
     const local=x=>x.getFullYear()+p(x.getMonth()+1)+p(x.getDate())+'T'+p(x.getHours())+p(x.getMinutes())+'00';
     const url=location.origin+'/arc-tracker/app';
-    return {start:local(d), end:local(end), title:'Log today’s arc', details:'Check off today’s three habits in Arc Tracker: '+url, url:url};
+    return {start:local(d), end:local(end), title:'Log today’s arc', details:'Check off today’s habits in Arc Tracker: '+url, url:url};
   }
   const calG=document.getElementById('calGoogleBtn');
   function refreshCalendarLink(){
@@ -2139,7 +2330,7 @@ function renderSetup(){
     const r=demoArche.ranks; queueCelebration(done=>showRankUpModal(demoArche, r[r.length-1], r[r.length-2], done));
   });
   document.getElementById('previewDayBtn').addEventListener('click', ()=>{
-    const names=[habits.h1.habit||'Non-negotiable', habits.h2.habit||'Habit 2', habits.h3.habit||'Habit 3'];
+    const names=[habits.h1.habit||'Non-negotiable', ...otherHabits().filter(h=>{ const x=scheduleOn(h, todayStr()); return x && x.every!=='off' && x.every!=='bonus'; }).map(h=>h.habit||habitFallback(h.id))];
     queueCelebration(done=>showDayCleared(demoArche, Math.max(1,computeStats().currentStreak), names, done));
   });
   el.querySelectorAll('[data-prev]').forEach(b=>b.addEventListener('click',()=>{ previewKey=b.dataset.prev; renderSetup(); }));
@@ -2243,7 +2434,7 @@ const PUSH_OK = 'serviceWorker' in navigator && 'PushManager' in window && 'Noti
 const IS_IOS = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
 const IS_STANDALONE = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone===true;
 function b64ToBytes(s){ const pad='='.repeat((4-s.length%4)%4); const raw=atob((s+pad).replace(/-/g,'+').replace(/_/g,'/')); return Uint8Array.from(raw, c=>c.charCodeAt(0)); }
-function clearedToday(){ const e=log.find(x=>x.date===todayStr()); return !!(e&&e.h1&&e.h2&&e.h3); }
+function clearedToday(){ return dayCleared(log.find(x=>x.date===todayStr())); }
 async function pushApi(action, body){
   const r=await fetch('/api/arc-push/'+action,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
   return r.json();
@@ -2345,13 +2536,13 @@ function renderGuide(){
   <h2 class="section-title">Setup (about 5 minutes, once)</h2>
   <ol class="steps">`+
     step(!!arche,'Pick your archetype','Open the <b>Archetypes</b> tab and read the self-checks. Not sure? Pick the one that stings a little. That’s usually yours.', arche?'':go('archetypes','Choose an archetype'))+
-    step(named===3,'Name 3 habits, max','In <b>Setup</b>: one non-negotiable plus two supporting habits. Size each one to the <b>two-minute rule</b>: “open the book,” not “read 30 pages.” Your archetype has ideas you can tap to fill in.', named===3?'':go('setup','Open Setup'))+
-    step(!!(habits.sc && habits.sc.habit),'Pick one shadow-check','Also in <b>Setup</b>. It’s separate from your 3 habits and works against your archetype’s specific failure mode.')+
+    step(named>=2,'Name your habits','In <b>Setup</b>: one daily non-negotiable plus up to ${MAX_MORE+2} more. Give each one a schedule: <b>every day</b>, <b>times a week</b> (like gym 5× a week), <b>set days</b>, or <b>bonus</b>. Size each one to the <b>two-minute rule</b>: “open the book,” not “read 30 pages.” Your archetype has ideas you can tap to fill in. Start small: two or three is plenty.', named>=2?'':go('setup','Open Setup'))+
+    step(!!(habits.sc && habits.sc.habit),'Pick one shadow-check','Also in <b>Setup</b>. It’s separate from your habits and works against your archetype’s specific failure mode.')+
     step(!!(habits.h1 && habits.h1.cue),'Stack each habit on something you already do','Fill the “After I…” box for each habit: your morning coffee, sitting down at your desk, brushing your teeth. <i>After I pour my coffee, I will open my book and read one page.</i>')+
     step(IS_STANDALONE,'Add Arc Tracker to your Home Screen','On iPhone: tap Share, then <b>Add to Home Screen</b>. On Android: the browser menu, then <b>Install app</b>. It opens full screen and can send reminders. Your arc is backed up to your key, so a new phone picks up where you left off.')+
     step(pushState==='on','Turn on your daily reminder','In <b>Setup</b>, pick a time. If you haven’t cleared the day by then, you get a nudge.')+
   `</ol>
-  <div class="banner note"><div>If setup is taking longer than 15 minutes, you’re overbuilding it. Three habits and one shadow-check. That’s the whole system.</div></div>
+  <div class="banner note"><div>If setup is taking longer than 15 minutes, you’re overbuilding it. A non-negotiable, a couple of habits and one shadow-check. That’s the whole system.</div></div>
 
   <h2 class="section-title">The daily loop (under a minute)</h2>
   <div class="card"><ol>
@@ -2361,13 +2552,21 @@ function renderGuide(){
     <li>Tap your <b>shadow-check</b> if you did it.</li>
     <li>Write <b>one line</b>: a win or something you’re grateful for (+2 XP).</li>
     <li>Got a <b>challenge</b> running? Tap <b>Done today</b> on its card.</li>
-    <li>All three habits on the same day is a <img class="kbolt" src="/assets/kaminari-bolt.png" alt="" width="12" height="16"> <b>Day Cleared</b>.</li>
+    <li>Your non-negotiable plus everything <b>due today</b> is a <img class="kbolt" src="/assets/kaminari-bolt.png" alt="" width="12" height="16"> <b>Day Cleared</b>, and it keeps your streak going.</li>
+  </ol></div>
+
+  <h2 class="section-title">Habits that aren’t every day</h2>
+  <div class="card"><ol>
+    <li><b>Times a week</b> (gym 5× a week): do it on any days you like. Days you skip don’t count against you. It only becomes <b>due</b> when the week has just enough days left to hit your number, and Today tells you when that is. Each week you hit it adds to its own 🔥 weekly streak.</li>
+    <li><b>Set days</b> (meal prep Sunday and Wednesday): due on those days, hidden on the rest.</li>
+    <li><b>Bonus</b>: +5 XP when you do it, never required.</li>
+    <li>Changing a schedule starts today. Days you already logged keep the schedule they ran on.</li>
   </ol></div>
   <div class="banner warn"><div><b>Never miss twice.</b> Missing one day is an accident. Missing two is the start of a new (worse) habit. If you miss a day, the only rule is: don’t miss the next one. Forgot to log before midnight? Switch to <b>Yesterday</b> on the Today tab.</div></div>
 
   <h2 class="section-title">Your rank: earned, then held</h2>
   <div class="card"><ol>
-    <li><b>Unlock</b> a rank with <b>full-clear days</b> (all 3 habits on the same day). Every archetype has five ranks, unlocked at 0, 10, 25, 50 and 100 full clears.</li>
+    <li><b>Unlock</b> a rank with <b>full-clear days</b> (your non-negotiable plus everything due that day). Every archetype has five ranks, unlocked at 0, 10, 25, 50 and 100 full clears.</li>
     <li><b>Hold</b> it with consistency. Each rank needs a number of full clears in your last ${HOLD_WINDOW} days: ${RANK_HOLD.slice(1).join(', ')} from the second rank up to the top. The ring on <b>Progress</b> shows how close you are.</li>
     <li><b>Slip</b> below that for ${HOLD_GRACE} days in a row and you drop one rank. You get a warning on Today first. Even Grandmaster has to be held.</li>
     <li><b>Climb back</b> the same way: hit the number again and the rank is yours.</li>
@@ -2375,8 +2574,8 @@ function renderGuide(){
 
   <h2 class="section-title">XP and Second Wind</h2>
   <div class="card"><ol>
-    <li><b>XP:</b> non-negotiable 10 · habits 2 and 3: 5 each · shadow-check 5 · proof +${PROOF_XP} · win line 2 · finished challenge +${CHALLENGE_XP}. Every 100 XP is a new level, and spending XP never lowers it.</li>
-    <li><b>Second Wind:</b> miss a day, clear all three the next day, then spend <b>${SECOND_WIND_COST} XP</b> to repair the miss and keep your streak. Once every ${SECOND_WIND_EVERY} days, only for yesterday. It doesn’t count as a full clear, and two misses in a row can’t be repaired.</li>
+    <li><b>XP:</b> non-negotiable 10 · every other habit: 5 · shadow-check 5 · proof +${PROOF_XP} · win line 2 · finished challenge +${CHALLENGE_XP}. Every 100 XP is a new level, and spending XP never lowers it.</li>
+    <li><b>Second Wind:</b> miss a day, clear the next day, then spend <b>${SECOND_WIND_COST} XP</b> to repair the miss and keep your streak. Once every ${SECOND_WIND_EVERY} days, only for yesterday. It doesn’t count as a full clear, and two misses in a row can’t be repaired.</li>
   </ol></div>
 
   <h2 class="section-title">Character challenges (optional)</h2>
@@ -2388,7 +2587,7 @@ function renderGuide(){
     <li><b>Discipline</b> from your non-negotiable.</li>
     <li><b>Consistency</b> from full clears and long streaks.</li>
     <li><b>Courage</b> from shadow-checks and challenges.</li>
-    <li><b>Focus</b> from habits 2 and 3, and your win lines.</li>
+    <li><b>Focus</b> from your other habits, and your win lines.</li>
   </ol></div>
   <p class="guide-p">Early levels come fast; later ones take real work. Each trait shows what it gained this week.</p>
 
