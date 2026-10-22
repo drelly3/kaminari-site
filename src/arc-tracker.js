@@ -950,10 +950,11 @@ function avatarStage(archetype, extra){
 
 // Daily: the non-negotiable and everything due checked
 function showDayCleared(archetype, streak, habitNames, onDone, hint){
+  lightningStrike();
   const check='<svg class="cel-check" viewBox="0 0 74 74"><circle cx="37" cy="37" r="33"/><path d="M22 38 L32.5 48.5 L52 27"/></svg>';
   const items=(habitNames||[]).map((n,i)=>'<li style="animation-delay:'+(1.05+i*0.18)+'s;"><b>\u2713</b>'+escapeHtml(n)+'</li>').join('');
   const inner = avatarStage(archetype, check)+
-    '<div class="cel-kicker">DAY CLEARED</div>'+
+    '<div class="cel-kicker cel-strike">DAY CLEARED</div>'+
     '<div class="cel-title">Everything due. Done.</div>'+
     (items?'<ul class="cel-list">'+items+'</ul><br>':'')+
     '<div class="cel-streak">\uD83D\uDD25 '+streak+'-day streak</div>'+
@@ -1022,6 +1023,7 @@ function renderToday(){
 
   if(viewDay==='today' && arche && arche.ranks) html += rankRiskHtml(arche, rankState(arche));
   const yMissing = stats.totalDays>0 && !yEntry;
+  html += powerCardHtml(d, existing, stats);
   html += '<div class="day-switch" role="group" aria-label="Day to log">'+
     '<button type="button" data-day="today" class="'+(viewDay==='today'?'on':'')+'">Today · '+fmtDate(t)+'</button>'+
     '<button type="button" data-day="yesterday" class="'+(viewDay==='yesterday'?'on':'')+'">Yesterday'+(yMissing?' <span class="dot" title="Not logged"></span>':'')+'</button></div>';
@@ -1068,7 +1070,8 @@ function renderToday(){
     const line = (h, tag)=>checkline('f_'+h.id, h, didHabit(e, h.id), habitFallback(h.id)+' (name it in Setup)', false, tag ? '<div class="hab-tag">'+tag+'</div>' : '');
     const weekTag = h=>{
       const n = weekTarget(h, day), got = weekCount(h.id, day, by, true), wks = weeksHit(h);
-      return '<b>'+Math.min(got,n)+'/'+n+'</b> this week'+(n < (scheduleOn(h, day).n||3) ? ' (first week)' : '')+(got>=n ? ' · target hit' : '')+(wks ? ' · 🔥 '+wks+(wks===1?' week':' weeks') : '');
+      return '<span class="wk-segs'+(got>=n?' all':'')+'" aria-hidden="true">'+Array.from({length:n},(_,i)=>'<i'+(i<got?' class="on"':'')+'></i>').join('')+'</span>'+
+        '<b>'+Math.min(got,n)+'/'+n+'</b> this week'+(n < (scheduleOn(h, day).n||3) ? ' (first week)' : '')+(got>=n ? ' · target hit' : '')+(wks ? ' · 🔥 '+wks+(wks===1?' week':' weeks') : '');
     };
     let out = due.map(h=>{
       const sch = scheduleOn(h, day);
@@ -1111,7 +1114,7 @@ function renderToday(){
     await loadDayProof();
     renderToday();
   }));
-  ['f_h1','f_sc', ...otherHabits().map(h=>'f_'+h.id)].forEach(id=>{ const c=document.getElementById(id); if(c) c.addEventListener('change', commitDay); });
+  ['f_h1','f_sc', ...otherHabits().map(h=>'f_'+h.id)].forEach(id=>{ const c=document.getElementById(id); if(c) c.addEventListener('change', ()=>{ pendingBurst = c.checked ? {id, xp: id==='f_h1' ? 10 : 5} : null; commitDay(); }); });
   // the non-negotiable only checks off with proof: without it, a tap asks for the photo instead
   const nn = document.getElementById('f_h1');
   if(nn) nn.addEventListener('click', e=>{
@@ -1129,6 +1132,8 @@ function renderToday(){
   const cbBtn=document.getElementById('secondWindBtn'); if(cbBtn) cbBtn.addEventListener('click', useSecondWind);
   const note=document.getElementById('f_note');
   note.addEventListener('change', commitDay);
+  animatePowerCard();
+  if(pendingBurst){ const b = pendingBurst; pendingBurst = null; checkBurst(b); }
   document.getElementById('saveDayBtn').addEventListener('click', commitDay);
 }
 
@@ -1299,6 +1304,7 @@ async function addProof(slot, file){
   await loadDayProof();
   // proof of a habit means it happened, so it checks the habit off too
   const box=document.getElementById('f_'+slot); if(box) box.checked=true;
+  pendingBurst = {id:'f_'+slot, xp:10+PROOF_XP};
   commitDay();
   syncPhotos();
 }
@@ -2373,6 +2379,91 @@ function renderSetup(){
     renderAll();
     syncNow({reset:true});
   });
+}
+
+/* ---------------- Motion: rewards on Today ---------------- */
+// Picked in the Motion Lab: a burst on every check, a ring for today's progress, an XP bar that
+// levels up, a lightning strike for a cleared day, and weekly segments that light up.
+const CALM = matchMedia('(prefers-reduced-motion: reduce)').matches;
+let pendingBurst = null;      // the box just ticked: {id, xp}
+let lastPower = null;         // what the ring and XP bar showed last time, so they move from there
+// today's ring: the non-negotiable, everything due, and the weakness habit if there is one
+function dayProgress(d, e){
+  const by = logBy(), due = dueHabits(d, by), withSc = !!(habits.sc && habits.sc.habit);
+  const total = 1 + due.length + (withSc?1:0);
+  const done = (e && e.h1 ? 1 : 0) + due.filter(h=>didHabit(e, h.id)).length + (withSc && e && e.sc ? 1 : 0);
+  return {done, total};
+}
+function powerCardHtml(d, e, stats){
+  const p = dayProgress(d, e), level = Math.floor(stats.xp/100)+1, inLevel = stats.xp%100;
+  const from = lastPower || {pct:0, xp:stats.xp - inLevel, done:0};
+  const fromPct = from.pct, fromIn = lastPower ? lastPower.xp%100 : 0;
+  const C = 2*Math.PI*30;
+  return '<div class="card power" data-pct="'+(p.done/p.total)+'" data-done="'+p.done+'" data-xp="'+stats.xp+'" data-from-xp="'+from.xp+'">'+
+    '<div class="pw-ring"><svg viewBox="0 0 72 72"><circle class="trk" cx="36" cy="36" r="30"/><circle class="fil" cx="36" cy="36" r="30" style="stroke-dasharray:'+C+';stroke-dashoffset:'+(C*(1-fromPct))+'"/></svg>'+
+    '<div class="pw-num"><b class="pw-done">'+(lastPower ? from.done : 0)+'</b>/'+p.total+'</div></div>'+
+    '<div class="pw-side"><div class="pw-top"><span>'+(viewDay==='yesterday'?'Yesterday':'Today')+(p.done>=p.total?' · cleared ⚡':'')+'</span><span>Level <b class="pw-lv">'+level+'</b></span></div>'+
+    '<div class="pw-bar"><i style="width:'+fromIn+'%"></i></div>'+
+    '<div class="pw-xp"><b class="pw-xpn">'+inLevel+'</b>/100 XP</div><div class="pw-lvup" aria-live="polite"></div></div></div>';
+}
+function countUp(el, from, to, ms){
+  if(!el) return;
+  if(CALM || from===to){ el.textContent = to; return; }
+  const t0 = performance.now();
+  const step = now=>{ const k = Math.min(1,(now-t0)/ms); el.textContent = Math.round(from + (to-from)*k); if(k<1) requestAnimationFrame(step); };
+  requestAnimationFrame(step);
+}
+function animatePowerCard(){
+  const card = document.querySelector('#tab-today .card.power'); if(!card) return;
+  const pct = +card.dataset.pct, done = +card.dataset.done, xp = +card.dataset.xp, fromXp = +card.dataset.fromXp;
+  const C = 2*Math.PI*30, fil = card.querySelector('.fil'), bar = card.querySelector('.pw-bar i');
+  const prev = lastPower;
+  lastPower = {pct, xp, done};
+  const levelUp = prev && Math.floor(xp/100) > Math.floor(fromXp/100);
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    fil.style.strokeDashoffset = C*(1-pct);
+    countUp(card.querySelector('.pw-done'), prev ? prev.done : 0, done, 700);
+    if(levelUp){
+      // fill to the top in gold, burst the new level, then settle at the new level's XP
+      bar.style.width = '100%'; card.classList.add('leveling');
+      setTimeout(()=>{
+        const m = card.querySelector('.pw-lvup'); m.textContent = 'LEVEL '+(Math.floor(xp/100)+1); m.classList.add('go');
+        bar.style.transition = 'none'; bar.style.width = '0%'; void bar.offsetWidth; bar.style.transition = '';
+        bar.style.width = (xp%100)+'%';
+        setTimeout(()=>card.classList.remove('leveling'), 1400);
+      }, CALM ? 0 : 750);
+    } else bar.style.width = (xp%100)+'%';
+    countUp(card.querySelector('.pw-xpn'), prev && !levelUp ? Math.max(0, prev.xp%100) : xp%100, xp%100, 700);
+  }));
+}
+// the box pops, a check draws, sparks fly and the XP floats up; a weekly habit lights its segment
+function checkBurst(b){
+  const box = document.getElementById(b.id); if(!box) return;
+  const line = box.closest('.checkline'); if(!line) return;
+  line.classList.add('burst');
+  setTimeout(()=>line.classList.remove('burst'), 900);
+  const segs = line.querySelector('.wk-segs');
+  if(segs){ const on = segs.querySelectorAll('i.on'); if(on.length) on[on.length-1].classList.add('lit'); }
+  if(CALM) return;
+  const fx = document.createElement('span'); fx.className = 'burst-fx'; fx.setAttribute('aria-hidden','true');
+  const colors = ['var(--accent)','var(--gold)','var(--success)','var(--text)'];
+  let html = '';
+  for(let i=0;i<10;i++){ const a = Math.PI*2*i/10; html += '<i style="--x:'+Math.round(Math.cos(a)*40)+'px;--y:'+Math.round(Math.sin(a)*30)+'px;background:'+colors[i%4]+'"></i>'; }
+  fx.innerHTML = html; line.appendChild(fx);
+  // the XP floats up at the right end of the habit's row
+  const xpEl = document.createElement('b'); xpEl.className = 'burst-xp'; xpEl.setAttribute('aria-hidden','true'); xpEl.textContent = '+'+b.xp+' XP';
+  line.appendChild(xpEl);
+  setTimeout(()=>xpEl.remove(), 1100);
+  setTimeout(()=>fx.remove(), 1100);
+}
+// Kaminari: a flash and a bolt before the Day Cleared screen
+function lightningStrike(){
+  if(CALM) return;
+  const root = document.querySelector('.arc-root'); if(!root) return;
+  const el = document.createElement('div'); el.className = 'strike'; el.setAttribute('aria-hidden','true');
+  el.innerHTML = '<div class="strike-flash"></div><svg class="strike-bolt" viewBox="0 0 70 150"><path d="M42 0 8 84h24L20 150 62 58H38L52 0z"/></svg>';
+  root.appendChild(el);
+  setTimeout(()=>el.remove(), 1000);
 }
 
 /* ---------------- Main Quests: the big goals the habits build toward ---------------- */
