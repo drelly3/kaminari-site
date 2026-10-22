@@ -1,10 +1,10 @@
 /* Arc Tracker — ported from prototype/arc-tracker.html. Everything is scoped to .arc-root so the
    tracker keeps its own look (Space Grotesk + Inter, its own palette) without touching the rest of the site. */
 .arc-root{
-  --bg:#0A0D13; --bg-elev:#11151F; --surface:#141926; --surface-2:#1B2130;
-    --border:rgba(255,255,255,0.09); --text:#E9EEF5; --text-dim:#96A1B4; --text-faint:#5C6577;
-    --accent:#00D0FF; --accent-soft:rgba(0,208,255,0.14); --gold:#F5B942; --gold-soft:rgba(245,185,66,0.14);
-    --danger:#FF7A70; --success:#59E68C; --radius:8px;
+  --bg:#121826; --bg-elev:#18202F; --surface:#1D2638; --surface-2:#263149;
+    --border:rgba(255,255,255,0.13); --text:#F4F7FB; --text-dim:#B4BED0; --text-faint:#808AA0;
+    --accent:#2BDCFF; --accent-soft:rgba(43,220,255,0.16); --gold:#FFC857; --gold-soft:rgba(255,200,87,0.16);
+    --danger:#FF8A80; --success:#6BF09A; --radius:8px;
     --font-display:'Space Grotesk', sans-serif; --font-body:'Inter', sans-serif;
   background:var(--bg); color:var(--text); font-family:var(--font-body);
   -webkit-font-smoothing:antialiased; min-height:100vh; min-height:100dvh; line-height:normal;
@@ -52,7 +52,7 @@
   /* bottom tab bar, like a phone app; sits above the home indicator on iPhone */
   .arc-root nav.tabs{
     position:fixed; left:0; right:0; bottom:0; z-index:100; display:flex; justify-content:center;
-    background:rgba(10,13,19,0.94); -webkit-backdrop-filter:blur(14px); backdrop-filter:blur(14px);
+    background:rgba(18,24,38,0.94); -webkit-backdrop-filter:blur(14px); backdrop-filter:blur(14px);
     border-top:1px solid var(--border); padding:0 max(6px, env(safe-area-inset-left)) env(safe-area-inset-bottom) max(6px, env(safe-area-inset-right));
   }
   .arc-root[data-theme="light"] nav.tabs{background:rgba(255,255,255,0.94);}
@@ -358,7 +358,7 @@
 .arc-root .guide .banner{line-height:1.6;}
 
 /* the tracker page has no site header or footer, so the whole page is the app */
-body.app{background:#0A0D13;}
+body.app{background:#121826;}
 body.app main{display:block;}
 
 /* small labels and notes inside cards */
@@ -733,3 +733,44 @@ html.arc-intro-lock,html.arc-intro-lock body{overflow:hidden;}
 .arc-root .more-head{display:flex;align-items:center;justify-content:space-between;gap:10px;}
 .arc-root .more-head label{margin:0;}
 .arc-root .more-head .linkbtn{font-size:13px;}
+
+/* Main Quests on Today */
+.arc-root .quest-empty{appearance:none;display:block;width:100%;text-align:left;cursor:pointer;margin:0 0 14px;padding:16px 18px;border-radius:var(--radius);border:1.5px dashed var(--gold);background:var(--gold-soft);color:var(--text);font-family:var(--font-body);}
+.arc-root .quest-empty b{display:block;font-family:var(--font-display);font-size:16px;margin-bottom:3px;color:var(--gold);}
+.arc-root .quest-empty span{font-size:13px;color:var(--text-dim);}
+.arc-root .card.quest{border-color:var(--gold);background:linear-gradient(180deg,var(--gold-soft),transparent 70%),var(--surface);margin-bottom:14px;}
+.arc-root .quest-head{appearance:none;display:block;width:100%;text-align:left;background:none;border:none;padding:0;color:inherit;cursor:pointer;font-family:var(--font-body);}
+.arc-root .quest-head > span{display:block;}
+.arc-root .quest-kicker{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--gold);}
+.arc-root .quest-title{font-family:var(--font-display);font-size:19px;font-weight:700;margin:3px 0 2px;color:var(--text);}
+.arc-root .quest-why{font-size:13px;color:var(--text-dim);font-style:italic;}
+.arc-root .quest-bar{height:8px;border-radius:99px;background:var(--surface-2);overflow:hidden;margin:12px 0 7px;}
+.arc-root .quest-bar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--gold),#FFE08A);transition:width .4s ease;}
+.arc-root .quest-meta{font-size:12.5px;color:var(--text-dim);margin-top:6px;}
+.arc-root .quest-ms{margin:12px 0 4px;display:flex;flex-direction:column;gap:2px;}
+.arc-root .quest-m{display:flex;align-items:center;gap:10px;margin:0;padding:7px 0;font-size:14px;font-weight:500;color:var(--text);cursor:pointer;}
+.arc-root .quest-m input{width:20px;height:20px;margin:0;accent-color:var(--gold);flex:none;}
+.arc-root .quest-m.done span{color:var(--text-dim);text-decoration:line-through;}
+.arc-root .quest-fed{font-size:12.5px;color:var(--text-dim);margin:10px 0;}
+.arc-root .quest-fed b{color:var(--text);}
+.arc-root .quest-more{display:block;margin:-4px 0 14px;font-size:13px;}
+.arc-root .quest-form label{margin-top:10px;}
+.arc-root .quest-form textarea{min-height:96px;}
+.arc-root .quest-habits{display:flex;flex-direction:column;gap:4px;}
+.arc-root .quest-h{display:flex;align-items:center;gap:8px;font-weight:500;font-size:14px;margin:0;color:var(--text);}
+.arc-root .quest-done-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);}
+.arc-root .quest-done-row:last-child{border-bottom:none;}
+.arc-root .quest-done-row b{display:block;font-size:14.5px;}
+.arc-root .quest-done-row span{font-size:12px;color:var(--text-dim);}
+/* the Main Quest pulses with a gold glow, and a shine runs along its bar, so it catches the eye */
+@keyframes questGlow{0%,100%{box-shadow:0 0 0 0 rgba(255,200,87,0);border-color:var(--gold);}50%{box-shadow:0 0 22px 2px rgba(255,200,87,.45);border-color:#FFE08A;}}
+@keyframes questShine{0%{transform:translateX(-120%);}60%,100%{transform:translateX(320%);}}
+.arc-root .card.quest,.arc-root .quest-empty{animation:questGlow 2.4s ease-in-out infinite;}
+.arc-root .quest-bar{position:relative;}
+.arc-root .quest-bar::after{content:'';position:absolute;top:0;bottom:0;left:0;width:30%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.55),transparent);animation:questShine 2.8s ease-in-out infinite;}
+@media (prefers-reduced-motion: reduce){ .arc-root .card.quest,.arc-root .quest-empty,.arc-root .quest-bar::after{animation:none;} }
+/* optional reminder time on each habit in Setup */
+.arc-root .hab-remind{margin-top:10px;}
+.arc-root .hab-remind-row{display:flex;align-items:center;gap:12px;}
+.arc-root .hab-remind-row input[type=time]{width:auto;min-width:140px;}
+.arc-root .hab-remind-row .linkbtn[hidden]{display:none;}

@@ -1,6 +1,6 @@
 // Arc Tracker cloud backup (runs on the Cloudflare Worker).
 //
-// A member's arc (character, habits, daily log, weekly reviews, Second Winds, challenges) is stored under their
+// A member's arc (character, habits, daily log, weekly reviews, Second Winds, challenges, quests) is stored under their
 // licence key, so entering the key on a new phone brings everything back. Proof photos are backed up
 // separately, in R2 (see api/arc-photos.js).
 //
@@ -56,6 +56,8 @@ export function mergeArc(stored = {}, incoming = {}) {
     noteFolders: mergeList('noteFolders', f => f.id),
     // the member's own reminders (Setup); deleted ones stay as markers
     reminders: mergeList('reminders', r => r.id),
+    // Main Quests; a deleted one stays as a marker
+    quests: mergeList('quests', q => q.id),
   };
 }
 
