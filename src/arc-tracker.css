@@ -778,7 +778,7 @@ html.arc-intro-lock,html.arc-intro-lock body{overflow:hidden;}
 .arc-root .hab-opts .sched-n select{width:auto;}
 .arc-root .hab-remind{display:inline-flex;align-items:center;gap:6px;flex:none;}
 .arc-root .hab-remind input[type=time]{width:auto;min-width:108px;padding-top:8px;padding-bottom:8px;}
-.arc-root .hab-remind-icon{font-size:15px;}
+.arc-root .hab-remind-lbl{margin:0;padding:0;line-height:1;align-self:center;font-size:12.5px;font-weight:500;color:var(--text-dim);white-space:nowrap;}
 .arc-root .hab-remind .linkbtn{font-size:12.5px;}
 .arc-root .hab-remind .linkbtn[hidden]{display:none;}
 .arc-root .sched select{padding-top:8px;padding-bottom:8px;}
@@ -847,3 +847,15 @@ html.arc-intro-lock,html.arc-intro-lock body{overflow:hidden;}
   .arc-root .pw-ring .fil,.arc-root .pw-bar i{transition:none;}
   .arc-root .checkline.burst input[type=checkbox],.arc-root .wk-segs i.lit,.arc-root .cel-kicker.cel-strike,.arc-root .pw-lvup.go{animation:none;}
 }
+
+/* Start Here: short lead, then folded detail */
+.arc-root .guide-lead{font-size:15px;color:var(--text-dim);margin:4px 0 18px;max-width:60ch;}
+.arc-root .guide-list{display:flex;flex-direction:column;gap:8px;}
+.arc-root details.guide-more{border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);}
+.arc-root details.guide-more > summary{display:flex;align-items:center;padding:13px 16px;cursor:pointer;list-style:none;font-weight:600;font-size:14.5px;color:var(--text);}
+.arc-root details.guide-more > summary::-webkit-details-marker{display:none;}
+.arc-root details.guide-more > summary::after{content:'›';margin-left:auto;font-size:20px;color:var(--text-dim);transition:transform .2s ease;}
+.arc-root details.guide-more[open] > summary::after{transform:rotate(90deg);}
+.arc-root .gm-body{padding:0 16px 12px;font-size:14px;color:var(--text-dim);}
+.arc-root .gm-body p{margin:0 0 8px;}
+.arc-root .gm-body b{color:var(--text);}

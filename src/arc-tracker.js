@@ -1050,7 +1050,7 @@ function renderToday(){
   if(viewDay==='today' && arche) html += challengeCardHtml();
 
   html += '<div class="card"><label for="f_note">One line — a win or something you’re grateful for <span class="xp-tag">+2 XP</span></label>';
-  html += '<textarea id="f_note" placeholder="Small counts." maxlength="280">'+escapeHtml(vals.note||'')+'</textarea>';
+  html += '<textarea id="f_note" placeholder="Ex. Took the stairs instead of the elevator" maxlength="280">'+escapeHtml(vals.note||'')+'</textarea>';
   html += '<div class="note-foot"><button class="btn" id="saveDayBtn">Save note</button><span class="helptext" id="noteSaved" aria-live="polite"></span></div>';
   html += '</div>';
 
@@ -2147,7 +2147,7 @@ function renderSetup(){
     html += '<details class="ideas"><summary>💡 Need ideas?</summary><div class="ideas-body" style="display:flex;flex-wrap:wrap;gap:7px;">'+
       arche.shadowOptions.map(t=>'<span class="chip" style="cursor:pointer;" data-shadow-suggest="'+escapeHtml(t)+'">'+escapeHtml(t)+'</span>').join('')+
       '</div></details>';
-    html += habitField('sc','', habits.sc||{habit:''}).replace('I will… (open my book and read one page)','I will… (one small thing that fights it)')+'<div class="hab-opts">'+remindField('sc', habits.sc||{})+'</div>';
+    html += habitField('sc','', habits.sc||{habit:''}).replace('placeholder="Ex. Read one page"','placeholder="Ex. '+escapeHtml((arche.shadowOptions[0]||'One small thing that fights it'))+'"')+'<div class="hab-opts">'+remindField('sc', habits.sc||{})+'</div>';
     html += '</div>';
   } else if(arche && arche.endgame){
     html += '<div class="banner info" style="margin-top:20px;">The Balanced Master has no weakness of its own \u2014 it\u2019s where beating every other weakness leads.</div>';
@@ -2212,11 +2212,11 @@ function renderSetup(){
   }
   function habitField(key, label, h){
     return (label ? '<label for="'+key+'_habit">'+label+'</label>' : '')+
-      '<input type="text" id="'+key+'_habit" value="'+escapeHtml(h.habit||'')+'" placeholder="I will… (open my book and read one page)" aria-label="I will…">';
+      '<input type="text" id="'+key+'_habit" value="'+escapeHtml(h.habit||'')+'" placeholder="'+({h1:'Ex. Read one page', h2:'Ex. Plan tomorrow’s top 3', h3:'Ex. 10 push-ups', sc:'Ex. Read one page'}[key] || 'Ex. Go to the gym')+'" aria-label="I will…">';
   }
   // optional reminder time for one habit
   function remindField(key, h){
-    return '<div class="hab-remind"><span class="hab-remind-icon" aria-hidden="true">⏰</span><input type="time" id="'+key+'_remind" value="'+((h&&h.remind)||'')+'" aria-label="Reminder time (optional)">'+
+    return '<div class="hab-remind"><label for="'+key+'_remind" class="hab-remind-lbl">Remind me</label><input type="time" id="'+key+'_remind" value="'+((h&&h.remind)||'')+'">'+
       '<button type="button" class="linkbtn" data-remind-clear="'+key+'"'+(h&&h.remind?'':' hidden')+'>Clear</button></div>';
   }
 
@@ -2519,10 +2519,10 @@ function questCardHtml(q){
 function questFormHtml(q){
   const all = [{id:'h1', ...habits.h1}, ...otherHabits().filter(h=>{ const x=scheduleOn(h, todayStr()); return x && x.every!=='off'; })];
   const sel = new Set(q ? q.habits||[] : []);
-  return '<div class="quest-form"><label for="qTitle">The goal</label><input type="text" id="qTitle" maxlength="80" placeholder="Run a half marathon" value="'+escapeHtml(q?q.title:'')+'">'+
-    '<label for="qWhy">Why it matters (optional)</label><input type="text" id="qWhy" maxlength="140" placeholder="Prove to myself I finish what I start" value="'+escapeHtml(q?q.why||'':'')+'">'+
+  return '<div class="quest-form"><label for="qTitle">The goal</label><input type="text" id="qTitle" maxlength="80" placeholder="Ex. Run a half marathon" value="'+escapeHtml(q?q.title:'')+'">'+
+    '<label for="qWhy">Why it matters (optional)</label><input type="text" id="qWhy" maxlength="140" placeholder="Ex. Prove to myself I finish what I start" value="'+escapeHtml(q?q.why||'':'')+'">'+
     '<label for="qDue">Finish by (optional)</label><input type="date" id="qDue" value="'+(q?q.due||'':'')+'">'+
-    '<label for="qMs">Milestones, one per line (optional)</label><textarea id="qMs" rows="4" placeholder="Run 5K without stopping&#10;Run 10K&#10;Run 15K&#10;Race day">'+escapeHtml(q ? (q.milestones||[]).filter(m=>m.text).map(m=>m.text).join('\n') : '')+'</textarea>'+
+    '<label for="qMs">Milestones, one per line (optional)</label><textarea id="qMs" rows="4" placeholder="Ex. Run 5K without stopping&#10;Run 10K&#10;Race day">'+escapeHtml(q ? (q.milestones||[]).filter(m=>m.text).map(m=>m.text).join('\n') : '')+'</textarea>'+
     '<label>Habits that feed it</label><div class="quest-habits">'+all.map(h=>'<label class="quest-h"><input type="checkbox" value="'+h.id+'"'+(sel.has(h.id)?' checked':'')+'> '+escapeHtml(h.habit || (h.id==='h1'?'Non-negotiable':habitFallback(h.id)))+'</label>').join('')+'</div>'+
     '<div class="rem-actions"><button type="button" class="btn" id="qSave">Save</button><button type="button" class="linkbtn" id="qCancel">Cancel</button>'+
     (q ? '<button type="button" class="linkbtn" id="qComplete">Mark complete</button><button type="button" class="linkbtn danger" id="qDelete">Delete</button>' : '')+
@@ -2628,8 +2628,8 @@ function remindersHtml(){
 }
 function remFormHtml(r){
   const days = r ? r.days : [0,1,2,3,4,5,6];
-  return '<div class="rem-form"><label for="remLabel">Reminder</label><input type="text" id="remLabel" maxlength="60" placeholder="Drink water" value="'+escapeHtml(r?r.label:'')+'">'+
-    '<label for="remNote">Note (optional)</label><input type="text" id="remNote" maxlength="120" placeholder="One full glass" value="'+escapeHtml(r?(r.note||''):'')+'">'+
+  return '<div class="rem-form"><label for="remLabel">Reminder</label><input type="text" id="remLabel" maxlength="60" placeholder="Ex. Drink water" value="'+escapeHtml(r?r.label:'')+'">'+
+    '<label for="remNote">Note (optional)</label><input type="text" id="remNote" maxlength="120" placeholder="Ex. One full glass" value="'+escapeHtml(r?(r.note||''):'')+'">'+
     '<label for="remTime">Time</label><input type="time" id="remTime" value="'+(r?r.time:'12:00')+'">'+
     '<label>Days</label><div class="rem-days">'+DAY_LETTERS.map((l,i)=>'<button type="button" class="rem-day'+(days.includes(i)?' on':'')+'" data-rem-day="'+i+'" aria-pressed="'+days.includes(i)+'" aria-label="'+DAY_NAMES[i]+'">'+l+'</button>').join('')+'</div>'+
     '<div class="rem-actions"><button type="button" class="btn" id="remSave">Save</button><button type="button" class="linkbtn" id="remCancel">Cancel</button>'+
@@ -2790,92 +2790,50 @@ function renderGuide(){
   const named=['h1','h2','h3'].filter(k=>habits[k] && habits[k].habit).length;
   const go=(tab,label)=>'<button type="button" class="btn ghost go" data-goto="'+tab+'">'+label+' →</button>';
   const step=(done,title,body,action)=>'<li class="'+(done?'done':'')+'"><span class="step-mark" aria-hidden="true">'+(done?'✓':'')+'</span><div><b>'+title+'</b><p>'+body+'</p>'+(action||'')+'</div></li>';
+  // the deeper detail folds away; a new member reads the checklist and the daily loop
+  const more=(title,body)=>'<details class="guide-more"><summary>'+title+'</summary><div class="gm-body">'+body+'</div></details>';
   let html=`
-  <div class="banner info"><div><b>One system. Nine arcs. Pick yours and start today.</b><br>
-  The habit science comes from Atomic Habits. Your archetype’s identity, weakness and rank ladder sit on top. Rank, XP and level work themselves out. You never do math.</div></div>
+  <p class="guide-lead">Pick an archetype, name a few habits, and check them off every day. Rank, XP and levels work themselves out.</p>
 
-  <h2 class="section-title">Setup (about 5 minutes, once)</h2>
+  <h2 class="section-title">Get started</h2>
   <ol class="steps">`+
-    step(!!arche,'Pick your archetype','Open the <b>Archetypes</b> tab and read the self-checks. Not sure? Pick the one that stings a little. That’s usually yours.', arche?'':go('archetypes','Choose an archetype'))+
-    step(named>=2,'Name your habits','In <b>Setup</b>: one daily non-negotiable plus up to ${MAX_MORE+2} more. Give each one a schedule: <b>every day</b>, <b>times a week</b> (like gym 5× a week), <b>set days</b>, or <b>bonus</b>. Size each one to the <b>two-minute rule</b>: “open the book,” not “read 30 pages.” Your archetype has ideas you can tap to fill in. Start small: two or three is plenty.', named>=2?'':go('setup','Open Setup'))+
-    step(!!(habits.sc && habits.sc.habit),'Pick your weakness habit','Also in <b>Setup</b>. Every archetype has a weak spot. Pick one small thing that fights yours.')+
-    step(otherHabits().some(h=>h.remind) || !!(habits.h1 && habits.h1.remind),'Give a habit a reminder time (optional)','In <b>Setup</b>, each habit has an optional reminder. Pick a time and that habit gets its own nudge once notifications are on.')+
-    step(IS_STANDALONE,'Add Arc Tracker to your Home Screen','On iPhone: tap Share, then <b>Add to Home Screen</b>. On Android: the browser menu, then <b>Install app</b>. It opens full screen and can send reminders. Your arc is backed up to your key, so a new phone picks up where you left off.')+
-    step(pushState==='on','Turn on your daily reminder','In <b>Setup</b>, pick a time. If you haven’t cleared the day by then, you get a nudge.')+
+    step(!!arche,'Pick your archetype','On <b>Archetypes</b>. Not sure? Pick the one that stings a little.', arche?'':go('archetypes','Choose an archetype'))+
+    step(named>=2,'Name your habits','In <b>Setup</b>: one daily non-negotiable plus a couple more. Keep each one tiny, like “open the book.”', named>=2?'':go('setup','Open Setup'))+
+    step(!!(habits.sc && habits.sc.habit),'Pick your weakness habit','In <b>Setup</b>. One small thing that fights your archetype’s weak spot.')+
+    step(IS_STANDALONE,'Add it to your Home Screen','iPhone: Share, then <b>Add to Home Screen</b>. Android: the browser menu, then <b>Install app</b>.')+
+    step(pushState==='on','Turn on reminders','In <b>Setup</b>, under <b>Reminders</b>.')+
   `</ol>
-  <div class="banner note"><div>If setup is taking longer than 15 minutes, you’re overbuilding it. A non-negotiable, a couple of habits and one weakness habit. That’s the whole system.</div></div>
 
-  <h2 class="section-title">The daily loop (under a minute)</h2>
+  <h2 class="section-title">Every day</h2>
   <div class="card"><ol>
-    <li>Open <b>Today</b> and tap each habit you did. It saves as you tap.</li>
-    <li>Your <b>non-negotiable</b> needs proof. Tap it and add a photo or video; that checks it off and earns <b>+${PROOF_XP} XP</b>. No proof, no check, so it can’t count toward your streak on your word alone. Every proof builds your arc gallery on <b>Progress</b>, so you can look back at every day you showed up.</li>
-    <li>Anything else from the day worth keeping? Tap the small camera under your habits to add up to ${MAX_EXTRAS} extra photos. No XP, nothing to tick. They go in your gallery on <b>Progress</b> (remove one there) and back up with your key.</li>
-    <li>Tap your <b>weakness</b> habit if you did it.</li>
-    <li>Write <b>one line</b>: a win or something you’re grateful for (+2 XP).</li>
-    <li>Got a <b>challenge</b> running? Tap <b>Done today</b> on its card.</li>
-    <li>Your non-negotiable plus everything <b>due today</b> is a <img class="kbolt" src="/assets/kaminari-bolt.png" alt="" width="12" height="16"> <b>Day Cleared</b>, and it keeps your streak going.</li>
+    <li>Tap each habit you did on <b>Today</b>.</li>
+    <li>Your <b>non-negotiable</b> needs a photo or video as proof (+${PROOF_XP} XP).</li>
+    <li>Write <b>one line</b>: a win or something you’re grateful for.</li>
+    <li>Non-negotiable plus everything <b>due today</b> = <img class="kbolt" src="/assets/kaminari-bolt.png" alt="" width="12" height="16"> <b>Day Cleared</b>. That keeps your streak going.</li>
   </ol></div>
+  <div class="banner warn"><div><b>Never miss twice.</b> Missed a day? Just don’t miss the next one. Forgot to log? Switch to <b>Yesterday</b> on Today.</div></div>
 
-  <h2 class="section-title">Habits that aren’t every day</h2>
-  <div class="card"><ol>
-    <li><b>Times a week</b> (gym 5× a week): do it on any days you like. Days you skip don’t count against you. It only becomes <b>due</b> when the week has just enough days left to hit your number, and Today tells you when that is. Each week you hit it adds to its own 🔥 weekly streak.</li>
-    <li><b>Set days</b> (meal prep Sunday and Wednesday): due on those days, hidden on the rest.</li>
-    <li><b>Bonus</b>: +5 XP when you do it, never required.</li>
-    <li>Changing a schedule starts today. Days you already logged keep the schedule they ran on.</li>
-  </ol></div>
+  <h2 class="section-title">How it works</h2>
+  <div class="guide-list">`+
+    more('Habits that aren’t every day',
+      '<p><b>Times a week</b> (ex. gym 5× a week): do it any days you like. It only counts against you when the week runs out of days to hit the number.</p><p><b>Set days</b> show only on those days. <b>Bonus</b> habits earn +5 XP and are never required.</p>')+
+    more('Main Quests',
+      '<p>The big goal your habits build toward (ex. run a half marathon). Add a why, a finish date and milestones on <b>Today</b>. Tick the last milestone for the finale.</p>')+
+    more('Ranks',
+      '<p>Full-clear days unlock ranks at 10, 25, 50 and 100. Keep one by clearing enough days in the last ${HOLD_WINDOW}. Fall short for ${HOLD_GRACE} days in a row and you drop a rank. Today warns you first.</p>')+
+    more('XP and Second Wind',
+      '<p><b>XP:</b> non-negotiable 10 · other habits 5 · weakness 5 · proof +${PROOF_XP} · win line 2 · challenge +${CHALLENGE_XP}. Every 100 XP is a level.</p><p><b>Second Wind:</b> missed yesterday but cleared today? Spend ${SECOND_WIND_COST} XP to save your streak, once every ${SECOND_WIND_EVERY} days.</p>')+
+    more('Challenges and your character',
+      '<p>Take one character challenge a week on <b>Archetypes</b> (ex. The Goku Challenge) for +${CHALLENGE_XP} XP.</p><p>Your four traits on <b>Progress</b> grow from what you do: Discipline, Consistency, Courage and Focus.</p>')+
+    more('Weekly review and look back',
+      '<p>Every Sunday you get a report on your week and a few questions to reflect on. <b>Progress</b> keeps every month, your photos and a recap when each month ends.</p>')+
+    more('Reminders, notes and photos',
+      '<p>Add your own reminders and a reminder time on any habit in <b>Setup</b>. Notes live at the bottom of <b>Progress</b>. Tap the camera under your habits to keep extra photos of your day.</p>')+
+    more('Coming from another tracker?',
+      '<p>In <b>Setup</b>, under <b>More</b>, bring over an export from your old app or the streak you’re carrying.</p>')+
+  `</div>
 
-  <h2 class="section-title">Main Quests (optional)</h2>
-  <div class="card"><ol>
-    <li>A <b>Main Quest</b> is the big goal your habits are building toward: “Run a half marathon,” “Launch my business.” Tap <b>Set a Main Quest</b> at the top of Today.</li>
-    <li>Give it a <b>why</b>, an optional finish date, and <b>milestones</b> to tick off on the way. The bar fills as you hit them.</li>
-    <li>Pick the <b>habits that feed it</b> and the quest card counts your check-ins each week.</li>
-    <li>Tick the last milestone, or tap <b>Mark complete</b>, for the finale. Finished quests stay on <b>Progress</b>. Run as many quests as you like, or none.</li>
-  </ol></div>
-  <div class="banner warn"><div><b>Never miss twice.</b> Missing one day is an accident. Missing two is the start of a new (worse) habit. If you miss a day, the only rule is: don’t miss the next one. Forgot to log before midnight? Switch to <b>Yesterday</b> on the Today tab.</div></div>
-
-  <h2 class="section-title">Your rank: earned, then held</h2>
-  <div class="card"><ol>
-    <li><b>Unlock</b> a rank with <b>full-clear days</b> (your non-negotiable plus everything due that day). Every archetype has five ranks, unlocked at 0, 10, 25, 50 and 100 full clears.</li>
-    <li><b>Hold</b> it with consistency. Each rank needs a number of full clears in your last ${HOLD_WINDOW} days: ${RANK_HOLD.slice(1).join(', ')} from the second rank up to the top. The ring on <b>Progress</b> shows how close you are.</li>
-    <li><b>Slip</b> below that for ${HOLD_GRACE} days in a row and you drop one rank. You get a warning on Today first. Even Grandmaster has to be held.</li>
-    <li><b>Climb back</b> the same way: hit the number again and the rank is yours.</li>
-  </ol></div>
-
-  <h2 class="section-title">XP and Second Wind</h2>
-  <div class="card"><ol>
-    <li><b>XP:</b> non-negotiable 10 · every other habit: 5 · weakness 5 · proof +${PROOF_XP} · win line 2 · finished challenge +${CHALLENGE_XP}. Every 100 XP is a new level, and spending XP never lowers it.</li>
-    <li><b>Second Wind:</b> miss a day, clear the next day, then spend <b>${SECOND_WIND_COST} XP</b> to repair the miss and keep your streak. Once every ${SECOND_WIND_EVERY} days, only for yesterday. It doesn’t count as a full clear, and two misses in a row can’t be repaired.</li>
-  </ol></div>
-
-  <h2 class="section-title">Character challenges (optional)</h2>
-  <p class="guide-p">Not sure where to start, or want more? Take on one challenge a week, inspired by the characters behind each archetype: <i>The Goku Challenge</i>, <i>The Shikamaru Challenge</i>, <i>The Rock Lee Challenge</i> and more. Pick one on <b>Archetypes</b>, tap <b>Done today</b> on Today each day you do it, and finish by Sunday for <b>+${CHALLENGE_XP} XP</b> and a Courage boost.</p>
-
-  <h2 class="section-title">Your character profile</h2>
-  <p class="guide-p">Four traits on <b>Progress</b> that grow from what you actually do:</p>
-  <div class="card"><ol>
-    <li><b>Discipline</b> from your non-negotiable.</li>
-    <li><b>Consistency</b> from full clears and long streaks.</li>
-    <li><b>Courage</b> from your weakness habit and challenges.</li>
-    <li><b>Focus</b> from your other habits, and your win lines.</li>
-  </ol></div>
-  <p class="guide-p">Early levels come fast; later ones take real work. Each trait shows what it gained this week.</p>
-
-  <h2 class="section-title">Weekly Arc Review</h2>
-  <p class="guide-p">Every <b>Sunday</b> you get a personal report: <i>Your Week 04 Report</i>. It shows your missions completed, your commitment completion rate, your strongest area, your biggest obstacle, and one improvement for next week. With reminders on, it arrives as a notification. Then it asks you to <b>reflect</b> on what worked and <b>adjust</b> next week’s commitments. If a habit keeps slipping, make it smaller. You can reread any week’s report on <b>Progress</b>.</p>
-
-  <h2 class="section-title">Coming from another tracker?</h2>
-  <p class="guide-p">Don’t lose what you’ve built. In <b>Setup</b>, under <b>Bring over past progress</b>, upload an export from your old habit tracker (up to a year of history) or enter the streak you’re carrying over (up to 90 days).</p>
-
-  <h2 class="section-title">Look back</h2>
-  <p class="guide-p"><b>Your year</b> on <b>Progress</b> keeps every month you’ve logged: tap a month for its calendar, its numbers, and how it compares with the month before. Nothing is ever cleared out, so you can flip back through earlier years too. Each new month opens with a recap of the last one: your proof photos, full clears, best streak and best win line. At ${PROOF_MILESTONE} full clears you get a “${PROOF_MILESTONE} days of proof” reveal. Replay any of them on <b>Progress</b>. Weakness badges unlock at 10, 25 and 50 check-ins.</p>
-
-  <h2 class="section-title">Reminders</h2>
-  <p class="guide-p">Turn on notifications in <b>Setup</b> and you get a daily arc reminder at your chosen time, skipped on days you\u2019ve already cleared. Under <b>Your reminders</b> you can add up to 12 more for anything else in your day, like water, stretching or lights out, each with its own time, note and days. Switch any of them off without deleting it.</p>
-
-  <h2 class="section-title">Notes</h2>
-  <p class="guide-p">At the bottom of <b>Progress</b> there\u2019s a notes space for plans, lessons and ideas, set up like the Notes app on a phone. Make folders, then format with a title, headings, body text, bulleted and numbered lists, checklists you can tick, and bold, italic, underline or strikethrough. Notes save as you type and are backed up with your key.</p>
-
-  <div class="banner note" style="margin-top:18px;"><div><b>Final rule of the system</b><br><i>You do not wait to feel different. You act different until you become different.</i></div></div>`;
+  <div class="banner note" style="margin-top:18px;"><div><i>You do not wait to feel different. You act different until you become different.</i></div></div>`;
   el.innerHTML='<div class="guide">'+html+'</div>';
 }
 
