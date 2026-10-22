@@ -2113,9 +2113,10 @@ function playEmblemDemo(arche){
 
 /* ---------------- Setup tab ---------------- */
 let reminderTimer=null;
+const setupOpen = new Set(); // which folded Setup groups are open, kept across redraws
 function renderSetup(){
   const el=document.getElementById('tab-setup');
-  let html = '<h2 class="section-title">Character & habits</h2><p class="section-sub">Fill this once, then leave it alone. Change it any time your habits change.</p>';
+  let html = '<h2 class="section-title">Setup</h2>';
 
   html += '<div class="card"><label for="p_name">Your name</label><input type="text" id="p_name" value="'+escapeHtml(profile.name||'')+'" placeholder="Who\u2019s running this arc?"></div>';
 
@@ -2123,25 +2124,24 @@ function renderSetup(){
 
   html += '<h2 class="section-title" style="font-size:16px;margin-top:22px;">Your habits</h2>';
   if(arche && arche.lightHabits){
-    html += '<div class="banner info"><div><b>Ideas for '+arche.title+'</b> \u2014 things that build the strength you already lean on. Tap one to drop it into your next open habit slot.<div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:7px;">'+
+    html += '<details class="ideas"><summary>💡 Need ideas?</summary><div class="ideas-body">Tap one to drop it into your next empty habit.<div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:7px;">'+
       arche.lightHabits.map(t=>'<span class="chip" style="cursor:pointer;background:var(--accent-soft);color:var(--accent);border-color:var(--accent);" data-light-suggest="'+escapeHtml(t)+'">'+escapeHtml(t)+'</span>').join('')+
-      '</div></div></div>';
+      '</div></div></details>';
   }
-  html += '<div class="card">'+habitField('h1','Non-negotiable', habits.h1)+'</div>';
-  html += '<div class="card">'+habitField('h2','Habit 2', habits.h2)+schedField('h2', {id:'h2', ...habits.h2})+'</div>';
-  html += '<div class="card">'+habitField('h3','Habit 3', habits.h3)+schedField('h3', {id:'h3', ...habits.h3})+'</div>';
+  html += '<div class="card hab-card">'+habitField('h1','Non-negotiable · every day', habits.h1)+'<div class="hab-opts">'+remindField('h1', habits.h1)+'</div></div>';
+  html += '<div class="card hab-card">'+habitField('h2','Habit 2', habits.h2)+'<div class="hab-opts">'+schedField('h2', {id:'h2', ...habits.h2})+remindField('h2', habits.h2)+'</div></div>';
+  html += '<div class="card hab-card">'+habitField('h3','Habit 3', habits.h3)+'<div class="hab-opts">'+schedField('h3', {id:'h3', ...habits.h3})+remindField('h3', habits.h3)+'</div></div>';
   html += '<div id="moreHabits">'+(habits.more||[]).filter(h=>!h.removed).map(h=>moreHabitCard(h)).join('')+'</div>';
   html += '<button type="button" class="btn ghost" id="addHabitBtn"'+((habits.more||[]).filter(h=>!h.removed).length>=MAX_MORE?' hidden':'')+'>+ Add a habit</button>';
-  html += '<p class="card-note" style="margin-top:8px;">Up to '+(MAX_MORE+2)+' habits besides your non-negotiable. A day is cleared when your non-negotiable and everything due that day are done. Times-a-week habits only count against you when you run out of days to hit the number.</p>';
+  html += '<p class="card-note" style="margin-top:6px;">Up to '+(MAX_MORE+2)+' habits besides your non-negotiable.</p>';
 
   if(arche && arche.shadowOptions){
     html += '<h2 class="section-title" style="font-size:16px;margin-top:26px;">Your weakness</h2>';
-    html += '<p class="section-sub">Every archetype has a weak spot. Pick one small thing that fights yours, and check it off on the days you do it.</p>';
-    html += '<div class="card accent"><div style="font-size:12.5px;color:var(--text-dim);margin-bottom:10px;"><b style="color:var(--text);">What you’re overcoming:</b> '+arche.shadow+'</div>';
-    html += '<div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px;">'+
+    html += '<div class="card accent hab-card"><div style="font-size:12.5px;color:var(--text-dim);margin-bottom:10px;"><b style="color:var(--text);">What you’re overcoming:</b> '+arche.shadow+' Pick one small thing that fights it.</div>';
+    html += '<details class="ideas"><summary>💡 Need ideas?</summary><div class="ideas-body" style="display:flex;flex-wrap:wrap;gap:7px;">'+
       arche.shadowOptions.map(t=>'<span class="chip" style="cursor:pointer;" data-shadow-suggest="'+escapeHtml(t)+'">'+escapeHtml(t)+'</span>').join('')+
-      '</div>';
-    html += habitField('sc','Weakness habit', habits.sc||{habit:''});
+      '</div></details>';
+    html += habitField('sc','', habits.sc||{habit:''}).replace('I will… (open my book and read one page)','I will… (one small thing that fights it)')+'<div class="hab-opts">'+remindField('sc', habits.sc||{})+'</div>';
     html += '</div>';
   } else if(arche && arche.endgame){
     html += '<div class="banner info" style="margin-top:20px;">The Balanced Master has no weakness of its own \u2014 it\u2019s where beating every other weakness leads.</div>';
@@ -2151,59 +2151,67 @@ function renderSetup(){
 
   html += '<button class="btn" id="saveHabitsBtn" style="margin-top:6px;">Save character & habits</button>';
 
-  html += '<h2 class="section-title" style="font-size:16px;margin-top:30px;">Backup</h2><p class="section-sub">Your arc is saved to your licence key. Sign in with the same key on a new phone and everything comes back: habits, log, streaks, XP, reviews and your proof photos. Videos are backed up as a still frame.</p>';
-  html += '<div class="card" id="syncBox">'+syncBoxHtml()+'</div>';
-
-  html += '<h2 class="section-title" style="font-size:16px;margin-top:30px;">Daily reminder</h2><p class="section-sub">Get a notification on this device if you haven\u2019t cleared today by your reminder time. It arrives even when Arc Tracker is closed.</p>';
+  // everything past the habits folds away, so a new member sees a short page
+  const group = (key, icon, title, hint)=>'<details class="set-group" data-group="'+key+'"'+(setupOpen.has(key)?' open':'')+'><summary><span class="sg-icon">'+icon+'</span><span class="sg-title">'+title+'<small>'+hint+'</small></span></summary><div class="sg-body">';
+  html += group('reminders','🔔','Reminders','Daily nudge, your own reminders, calendar');
+  html += '<h2 class="section-title" style="font-size:16px;margin-top:4px;">Daily reminder</h2><p class="section-sub">Get a notification if you haven\u2019t cleared today by this time, even when Arc Tracker is closed.</p>';
   html += '<div class="card"><label for="r_time">Reminder time</label><input type="time" id="r_time" value="'+(reminder.time||'08:00')+'">';
   html += '<div id="pushBox">'+pushBoxHtml()+'</div></div>';
-
-  html += '<h2 class="section-title" style="font-size:16px;margin-top:30px;">Your reminders</h2><p class="section-sub">Anything else you want a nudge for during the day: water, stretching, a walk, lights out. Each one arrives as its own notification, on the days you pick, on every phone with notifications on.</p>';
+  html += '<h2 class="section-title" style="font-size:16px;margin-top:22px;">Your reminders</h2>';
   html += '<div id="remBox">'+remindersHtml()+'</div>';
-
-  // Calendar reminder: a repeating daily event in the user's own calendar, which then notifies
-  // them on every device that calendar is on. Uses the reminder time picked above.
-  html += '<div class="card"><label>Put it on your calendar</label>';
-  html += '<div class="helptext" style="margin-top:0;">Adds a repeating daily event at your reminder time. Your calendar app then reminds you on your phone and computer, even when Arc Tracker is closed.</div>';
+  html += '<div class="card" style="margin-top:14px;"><label>Put it on your calendar</label>';
+  html += '<div class="helptext" style="margin-top:0;">A repeating daily event at your reminder time.</div>';
   html += '<div class="row" style="gap:8px;"><a class="btn" id="calGoogleBtn" href="#" target="_blank" rel="noopener" style="text-decoration:none;">Add to Google Calendar</a>';
   html += '<button class="btn ghost" id="calFileBtn">Apple or Outlook (.ics file)</button></div></div>';
+  html += '</div></details>';
+  html += group('backup','☁️','Backup','Your arc on every phone you sign in on');
+  html += '<p class="section-sub" style="margin-top:4px;">Your arc is saved to your licence key. Sign in with the same key on a new phone and everything comes back: habits, log, streaks, XP, reviews and your proof photos. Videos are backed up as a still frame.</p>';
+  html += '<div class="card" id="syncBox">'+syncBoxHtml()+'</div>';
+
+  html += '</div></details>';
+  html += group('more','⚙️','More','Bring over past progress, reset'+(DEMO?', preview animations':''));
 
   const demoArche = getArchetype(previewKey) || ((arche && arche.ranks) ? arche : ARCHETYPES[0]);
   if(DEMO){
-  html += '<h2 class="section-title" style="font-size:16px;margin-top:30px;">Preview the animations</h2><p class="section-sub">See exactly what a level-up looks like, without needing real progress first \u2014 this doesn\u2019t touch your actual log.</p>';
+  html += '<h2 class="section-title" style="font-size:16px;margin-top:4px;">Preview the animations</h2><p class="section-sub">See exactly what a level-up looks like, without needing real progress first \u2014 this doesn\u2019t touch your actual log.</p>';
   html += '<div class="card"><div class="helptext" style="margin:0 0 8px;">Pick any archetype to preview:</div><div class="preview-picker">'+ARCHETYPES.filter(a=>a.ranks).map(a=>'<button data-prev="'+a.key+'" class="'+(a.key===demoArche.key?'on':'')+'" title="'+escapeHtml(a.title)+'">'+iconSVG(a,40)+'</button>').join('')+'</div><div style="display:flex;gap:18px;flex-wrap:wrap;align-items:center;">';
   html += '<div class="emblem-wrap"><div class="emblem" id="demoEmblem" data-tier="0" style="--hue:'+demoArche.hue+';"><div class="ring ring-outer"></div><div class="ring ring-mid"></div><div class="glow"></div><div class="icon">'+iconSVG(demoArche,40)+'</div></div><div class="emblem-name" id="demoEmblemLabel">'+escapeHtml(demoArche.ranks[0].name)+'</div></div>';
   html += '<div style="display:flex;flex-direction:column;gap:8px;"><button class="btn" id="previewLevelBtn">\u25B6 Emblem level-up</button><button class="btn" id="previewDayBtn">\u25B6 Day cleared</button><button class="btn ghost" id="previewRankUpBtn">\u25B6 Rank-up</button></div>';
   html += '</div></div>';
   }
 
-  html += '<h2 class="section-title" style="font-size:16px;margin-top:30px;">Bring over past progress</h2><p class="section-sub">Coming from another habit tracker? Don\u2019t start from zero. Days you bring over count toward your streak, full clears and rank.</p>';
+  html += '<h2 class="section-title" style="font-size:16px;margin-top:22px;">Bring over past progress</h2><p class="section-sub">Coming from another habit tracker? Don\u2019t start from zero. Days you bring over count toward your streak, full clears and rank.</p>';
   html += '<div class="card" id="impBox">'+importBoxHtml()+'</div>';
 
-  html += '<h2 class="section-title" style="font-size:16px;margin-top:30px;">Reset</h2>';
+  html += '<h2 class="section-title" style="font-size:16px;margin-top:22px;">Reset</h2>';
   html += '<div class="card"><p class="section-sub" style="margin-bottom:12px;">Clears your log, habits, character and proof, here and in your backup.</p><button class="btn danger" id="resetBtn">Reset my arc</button></div>';
+  html += '</div></details>';
 
   el.innerHTML = html;
+  el.querySelectorAll('[data-group]').forEach(d=>d.addEventListener('toggle',()=>{ d.open ? setupOpen.add(d.dataset.group) : setupOpen.delete(d.dataset.group); }));
 
   // how often a habit runs: every day, a number of times a week, set days, or bonus
   function schedField(key, h){
     const cur = scheduleOn(h, todayStr()) || {every:'daily'};
     const ev = cur.every==='off' ? 'daily' : cur.every;
     const opt = (v,l)=>'<option value="'+v+'"'+(ev===v?' selected':'')+'>'+l+'</option>';
-    return '<div class="sched" data-sched="'+key+'"><label for="'+key+'_every" style="font-weight:400;font-size:11.5px;">How often</label>'+
-      '<select id="'+key+'_every">'+opt('daily','Every day')+opt('week','Times a week')+opt('days','On set days')+opt('bonus','Bonus (never required)')+'</select>'+
+    return '<div class="sched" data-sched="'+key+'">'+
+      '<select id="'+key+'_every" aria-label="How often">'+opt('daily','Every day')+opt('week','Times a week')+opt('days','On set days')+opt('bonus','Bonus (never required)')+'</select>'+
       '<span class="sched-n"'+(ev==='week'?'':' hidden')+'><select id="'+key+'_n" aria-label="Times a week">'+[1,2,3,4,5,6].map(n=>'<option value="'+n+'"'+((cur.n||3)===n?' selected':'')+'>'+n+'× a week</option>').join('')+'</select></span>'+
       '<span class="sched-days"'+(ev==='days'?'':' hidden')+'>'+[1,2,3,4,5,6,0].map(dw=>'<button type="button" class="rem-day'+((cur.days||[]).includes(dw)?' on':'')+'" data-sched-day="'+dw+'" aria-pressed="'+(cur.days||[]).includes(dw)+'">'+DAY_SHORT[dw][0]+'</button>').join('')+'</span></div>';
   }
   function moreHabitCard(h){
-    return '<div class="card more-habit" data-more="'+h.id+'"><div class="more-head"><label>'+escapeHtml(h.habit ? 'Habit' : 'New habit')+'</label><button type="button" class="linkbtn danger" data-more-remove="'+h.id+'">Remove</button></div>'+
-      habitField(h.id, '', h)+schedField(h.id, h)+'</div>';
+    return '<div class="card more-habit hab-card" data-more="'+h.id+'"><div class="more-head"><label for="'+h.id+'_habit">'+escapeHtml(h.habit ? 'Habit' : 'New habit')+'</label><button type="button" class="linkbtn danger" data-more-remove="'+h.id+'">Remove</button></div>'+
+      habitField(h.id, '', h)+'<div class="hab-opts">'+schedField(h.id, h)+remindField(h.id, h)+'</div></div>';
   }
   function habitField(key, label, h){
-    return (label ? '<label>'+label+'</label>' : '')+
-      '<label for="'+key+'_habit" style="font-weight:400;font-size:11.5px;">I will\u2026</label><input type="text" id="'+key+'_habit" value="'+escapeHtml(h.habit||'')+'" placeholder="open my book and read one page">'+
-      '<div class="hab-remind"><label for="'+key+'_remind" style="font-weight:400;font-size:11.5px;">Reminder (optional)</label>'+
-      '<div class="hab-remind-row"><input type="time" id="'+key+'_remind" value="'+(h.remind||'')+'"><button type="button" class="linkbtn" data-remind-clear="'+key+'"'+(h.remind?'':' hidden')+'>Clear</button></div></div>';
+    return (label ? '<label for="'+key+'_habit">'+label+'</label>' : '')+
+      '<input type="text" id="'+key+'_habit" value="'+escapeHtml(h.habit||'')+'" placeholder="I will… (open my book and read one page)" aria-label="I will…">';
+  }
+  // optional reminder time for one habit
+  function remindField(key, h){
+    return '<div class="hab-remind"><span class="hab-remind-icon" aria-hidden="true">⏰</span><input type="time" id="'+key+'_remind" value="'+((h&&h.remind)||'')+'" aria-label="Reminder time (optional)">'+
+      '<button type="button" class="linkbtn" data-remind-clear="'+key+'"'+(h&&h.remind?'':' hidden')+'>Clear</button></div>';
   }
 
   function wireSched(root){
