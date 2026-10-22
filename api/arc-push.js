@@ -53,7 +53,7 @@ export function dueKind(meta, now = new Date()) {
 }
 
 /* ---------- the member's own reminders ---------- */
-export const MAX_REMINDERS = 12;
+export const MAX_REMINDERS = 20; // the member's own (up to 12) plus a reminder time on each habit (up to 8)
 // cleaned list from the app: [{id, label, note, time 'HH:MM', days [0-6, 0 = Sunday]}]
 export function cleanReminders(list) {
   return (Array.isArray(list) ? list : []).slice(0, MAX_REMINDERS).map(r => {

@@ -503,13 +503,13 @@ const arcTrackerSections = all => {
     <div class="branch-grid">
       <div class="branch-card">
         <div class="k">Habits</div>
-        <h3>Three habits, max</h3>
-        <p>One Non-Negotiable plus two supporting habits, each stacked onto something you already do: "After I pour my coffee, I will read one page."</p>
+        <h3>Habits on your schedule</h3>
+        <p>One daily Non-Negotiable, then habits that run every day, a few times a week, or on set days. Skip a gym day you didn't plan and your streak doesn't care.</p>
       </div>
       <div class="branch-card">
-        <div class="k">Shadow-Check</div>
-        <h3>Face your shadow</h3>
-        <p>Every archetype has a failure mode. Your shadow-check works against it and is tracked on its own, with badges at 10, 25 and 50 check-ins.</p>
+        <div class="k">Weakness</div>
+        <h3>Face your weakness</h3>
+        <p>Every archetype has a weak spot. Pick one small habit that fights yours. It's tracked on its own, with badges at 10, 25 and 50 check-ins.</p>
       </div>
       <div class="branch-card">
         <div class="k">Proof</div>
