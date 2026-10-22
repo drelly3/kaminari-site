@@ -154,7 +154,7 @@ function iconSVG(arche, size){
 }
 
 /* ---------------- Storage ---------------- */
-const LS = {profile:'arc_profile',habits:'arc_habits',log:'arc_log',weekly:'arc_weekly',reminder:'arc_reminder',secondWinds:'arc_second_winds',proofGone:'arc_proof_gone',challenges:'arc_challenges',notes:'arc_notes',noteFolders:'arc_note_folders',reminders:'arc_reminders'};
+const LS = {profile:'arc_profile',habits:'arc_habits',log:'arc_log',weekly:'arc_weekly',reminder:'arc_reminder',secondWinds:'arc_second_winds',proofGone:'arc_proof_gone',challenges:'arc_challenges',notes:'arc_notes',noteFolders:'arc_note_folders',reminders:'arc_reminders',quests:'arc_quests'};
 function load(k,fb){ try{ const r=localStorage.getItem(k); return r?JSON.parse(r):fb; }catch(e){ return fb; } }
 function persist(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} if(SYNCED.includes(k) && !applyingSync){ editSeq++; scheduleSync(); } }
 
@@ -173,6 +173,7 @@ let habits  = load(LS.habits,{h1:{cue:'',habit:''},h2:{cue:'',habit:''},h3:{cue:
 let log     = load(LS.log,[]);
 let weekly  = load(LS.weekly,[]);
 let reminder= load(LS.reminder,{enabled:false,time:'08:00',lastFired:''});
+let quests = load(LS.quests,[]); // [{id, title, why, due, milestones:[{id,text,done}], habits:[ids], created, completedOn, t, deleted}]
 let myReminders = load(LS.reminders,[]); // [{id, label, note, time, days:[0-6], on, t, deleted}]: the member's own reminders
 let notes = load(LS.notes,[]); // [{id, folder, html, t, deleted}]: the Notes section on Progress
 let noteFolders = load(LS.noteFolders,[]); // [{id, name, t, deleted}]
@@ -184,7 +185,7 @@ let secondWinds= load(LS.secondWinds,[]); // [{missed, on, cost}]: each Second W
 // Every change is sent a couple of seconds after it's made; the server merges it with the backup and
 // sends the merged arc back, so a second phone picks up days logged on the first. See api/arc-sync.js.
 // Proof photos stay on the device.
-const SYNCED = [LS.profile, LS.habits, LS.log, LS.weekly, LS.secondWinds, LS.proofGone, LS.challenges, LS.notes, LS.noteFolders, LS.reminders];
+const SYNCED = [LS.profile, LS.habits, LS.log, LS.weekly, LS.secondWinds, LS.proofGone, LS.challenges, LS.notes, LS.noteFolders, LS.reminders, LS.quests];
 const SYNC_DELAY = 2500;
 let sync = load('arc_sync', {at:0, owner:'', resetAt:0}); // last good backup, whose key the local arc belongs to
 let editSeq = 0; // bumped on every local change, so a backup reply never overwrites a newer tap
@@ -203,9 +204,9 @@ async function syncNow(opts){
   if(syncBusy){ syncAgain = true; return; }
   // a different key on this device means the local arc is someone else's: start from their backup instead
   if(sync.owner && sync.owner !== key){
-    profile=blankProfile(); habits=blankHabits(); log=[]; weekly=[]; secondWinds=[]; proofGone=[]; challenges=[]; notes=[]; noteFolders=[]; myReminders=[];
+    profile=blankProfile(); habits=blankHabits(); log=[]; weekly=[]; secondWinds=[]; proofGone=[]; challenges=[]; notes=[]; noteFolders=[]; myReminders=[]; quests=[];
     applyingSync = true;
-    persist(LS.profile,profile); persist(LS.habits,habits); persist(LS.log,log); persist(LS.weekly,weekly); persist(LS.secondWinds,secondWinds); persist(LS.proofGone,proofGone); persist(LS.challenges,challenges); persist(LS.notes,notes); persist(LS.noteFolders,noteFolders); persist(LS.reminders,myReminders);
+    persist(LS.profile,profile); persist(LS.habits,habits); persist(LS.log,log); persist(LS.weekly,weekly); persist(LS.secondWinds,secondWinds); persist(LS.proofGone,proofGone); persist(LS.challenges,challenges); persist(LS.notes,notes); persist(LS.noteFolders,noteFolders); persist(LS.reminders,myReminders); persist(LS.quests,quests);
     applyingSync = false;
     if(proofDb) proofTx('readwrite', s=>s.clear()).catch(()=>{});
     sync = {at:0, owner:key, resetAt:0};
@@ -215,7 +216,7 @@ async function syncNow(opts){
   const seq = editSeq;
   try{
     const res = await fetch('/api/arc-sync', {method:'POST', headers:{'Content-Type':'application/json'}, keepalive:!!opts.keepalive,
-      body: JSON.stringify({key, reset:!!opts.reset, state:{profile, habits, log, weekly, secondWinds, proofGone, challenges, notes, noteFolders, reminders:myReminders, resetAt:sync.resetAt||0}})});
+      body: JSON.stringify({key, reset:!!opts.reset, state:{profile, habits, log, weekly, secondWinds, proofGone, challenges, notes, noteFolders, reminders:myReminders, quests, resetAt:sync.resetAt||0}})});
     const out = await res.json().catch(()=>({ok:false}));
     if(out.ok && editSeq !== seq){ syncAgain = true; setSyncStatus('busy'); } // changed mid-flight: send again, apply that reply
     else if(out.ok){
@@ -234,15 +235,15 @@ async function syncNow(opts){
 function applyBackup(st){
   const next = {
     profile: st.profile || blankProfile(), habits: st.habits || blankHabits(),
-    log: st.log || [], weekly: st.weekly || [], secondWinds: st.secondWinds || [], proofGone: st.proofGone || [], challenges: st.challenges || [], notes: st.notes || [], noteFolders: st.noteFolders || [], reminders: st.reminders || []
+    log: st.log || [], weekly: st.weekly || [], secondWinds: st.secondWinds || [], proofGone: st.proofGone || [], challenges: st.challenges || [], notes: st.notes || [], noteFolders: st.noteFolders || [], reminders: st.reminders || [], quests: st.quests || []
   };
-  const changed = JSON.stringify(next) !== JSON.stringify({profile, habits, log, weekly, secondWinds, proofGone, challenges, notes, noteFolders, reminders:myReminders});
+  const changed = JSON.stringify(next) !== JSON.stringify({profile, habits, log, weekly, secondWinds, proofGone, challenges, notes, noteFolders, reminders:myReminders, quests});
   if(!changed) return;
   const hadArchetype = !!getArchetype(profile.archetypeKey);
-  profile=next.profile; habits=next.habits; log=next.log; weekly=next.weekly; secondWinds=next.secondWinds; proofGone=next.proofGone; challenges=next.challenges; notes=next.notes; noteFolders=next.noteFolders;
+  profile=next.profile; habits=next.habits; log=next.log; weekly=next.weekly; secondWinds=next.secondWinds; proofGone=next.proofGone; challenges=next.challenges; notes=next.notes; noteFolders=next.noteFolders; quests=next.quests;
   const remindersChanged = JSON.stringify(next.reminders)!==JSON.stringify(myReminders); myReminders=next.reminders;
   applyingSync = true;
-  persist(LS.profile,profile); persist(LS.habits,habits); persist(LS.log,log); persist(LS.weekly,weekly); persist(LS.secondWinds,secondWinds); persist(LS.proofGone,proofGone); persist(LS.challenges,challenges); persist(LS.notes,notes); persist(LS.noteFolders,noteFolders); persist(LS.reminders,myReminders);
+  persist(LS.profile,profile); persist(LS.habits,habits); persist(LS.log,log); persist(LS.weekly,weekly); persist(LS.secondWinds,secondWinds); persist(LS.proofGone,proofGone); persist(LS.challenges,challenges); persist(LS.notes,notes); persist(LS.noteFolders,noteFolders); persist(LS.reminders,myReminders); persist(LS.quests,quests);
   applyingSync = false;
   const a = document.activeElement;
   if(a && /^(INPUT|TEXTAREA)$/.test(a.tagName) && a.type!=='checkbox' && a.type!=='file') renderWhenIdle = true;
@@ -1016,6 +1017,7 @@ function renderToday(){
   }
 
   const dq = dailyQuote(arche, t);
+  if(viewDay==='today') html += questsHtml();
   if(dq) html += '<button type="button" class="daily-quote" id="dailyQuoteBtn" title="Replay the reveal"><p class="q">“'+escapeHtml(dq.q)+'”</p><div class="by">Inspired by '+escapeHtml(dq.c)+' · New quote every Monday and Thursday</div></button>';
 
   if(viewDay==='today' && arche && arche.ranks) html += rankRiskHtml(arche, rankState(arche));
@@ -1124,6 +1126,7 @@ function renderToday(){
   el.querySelectorAll('[data-proof-remove]').forEach(b=>b.addEventListener('click',()=>removeProof(b.dataset.proofRemove)));
   el.querySelectorAll('[data-extra-add]').forEach(inp=>inp.addEventListener('change',()=>{ if(inp.files && inp.files.length) addExtras([...inp.files]); }));
   wireChallenges(el);
+  wireQuests();
   const cbBtn=document.getElementById('secondWindBtn'); if(cbBtn) cbBtn.addEventListener('click', useSecondWind);
   const note=document.getElementById('f_note');
   note.addEventListener('change', commitDay);
@@ -1976,6 +1979,7 @@ function renderProgress(){
 
   html += '<div id="arcGallery"></div>';
   html += weeklyReviewBlock();
+  html += completedQuestsHtml();
   html += notesHtml();
 
   el.innerHTML = html;
@@ -1983,6 +1987,7 @@ function renderProgress(){
   wireWeekReviewCard(el);
   wireYearCard(el);
   wireNotes(el);
+  el.querySelectorAll('[data-quest-replay]').forEach(b=>b.addEventListener('click',()=>{ const q=quests.find(x=>x.id===b.dataset.questReplay); if(q) queueCelebration(done=>showQuestComplete(q, done)); }));
   renderGallery();
 
   function stat(num,lbl){ return '<div class="stat"><div class="num">'+num+'</div><div class="lbl">'+lbl+'</div></div>'; }
@@ -2345,12 +2350,141 @@ function renderSetup(){
     if(proofDb){ proofTx('readwrite', s=>s.clear()).catch(()=>{}); }
     Object.keys(dayProof).forEach(k=>URL.revokeObjectURL(dayProof[k].url)); dayProof={}; proofError='';
     profile={name:'',archetypeKey:''}; habits={h1:{cue:'',habit:''},h2:{cue:'',habit:''},h3:{cue:'',habit:''},sc:{cue:'',habit:''}}; log=[]; weekly=[];
-    secondWinds=[]; proofGone=[]; challenges=[]; notes=[]; noteFolders=[]; myReminders=[];
-    persist(LS.proofGone,proofGone); persist(LS.challenges,challenges); persist(LS.notes,notes); persist(LS.noteFolders,noteFolders); persist(LS.reminders,myReminders);
+    secondWinds=[]; proofGone=[]; challenges=[]; notes=[]; noteFolders=[]; myReminders=[]; quests=[];
+    persist(LS.proofGone,proofGone); persist(LS.challenges,challenges); persist(LS.notes,notes); persist(LS.noteFolders,noteFolders); persist(LS.reminders,myReminders); persist(LS.quests,quests);
     persist(LS.profile,profile); persist(LS.habits,habits); persist(LS.log,log); persist(LS.weekly,weekly); persist(LS.secondWinds,secondWinds);
     renderAll();
     syncNow({reset:true});
   });
+}
+
+/* ---------------- Main Quests: the big goals the habits build toward ---------------- */
+// Optional, and as many as you like. Each has a goal, a one-line why, an optional end date,
+// milestones to tick off and the habits that feed it. Ticking the last milestone (or marking it
+// complete) plays the finale and moves it to Completed quests on Progress. Backed up with the arc.
+let questEditing = null, questOpen = new Set();
+const liveQuests = () => quests.filter(q=>!q.deleted && !q.completedOn);
+function questProgress(q){
+  const ms = (q.milestones||[]).filter(m=>m.text);
+  return {done: ms.filter(m=>m.done).length, total: ms.length};
+}
+// how many times the quest's habits were checked off since it started (or since a given day)
+function questCheckins(q, from){
+  from = from || q.created || '';
+  let n = 0;
+  log.forEach(e=>{ if(e.date >= from) (q.habits||[]).forEach(id=>{ if(id==='h1' ? e.h1 : didHabit(e, id)) n++; }); });
+  return n;
+}
+function questHabitNames(q){
+  const all = [{id:'h1', ...habits.h1}, ...otherHabits()];
+  return (q.habits||[]).map(id=>all.find(h=>h.id===id)).filter(Boolean).map(h=>h.habit || (h.id==='h1' ? 'Non-negotiable' : habitFallback(h.id)));
+}
+function questsHtml(){
+  const list = liveQuests();
+  if(list.length===1 && !questOpen.size) questOpen.add(list[0].id);
+  let html = '<div id="questBox">';
+  html += list.map(q=> questEditing===q.id ? '<div class="card quest">'+questFormHtml(q)+'</div>' : questCardHtml(q)).join('');
+  if(questEditing==='new') html += '<div class="card quest">'+questFormHtml(null)+'</div>';
+  else if(!list.length) html += '<button type="button" class="quest-empty" id="questAdd"><b>⚔️ Set a Main Quest</b><span>The big goal your habits are building toward. Optional, and you can run more than one.</span></button>';
+  else html += '<button type="button" class="linkbtn quest-more" id="questAdd">+ Another quest</button>';
+  return html + '</div>';
+}
+function questCardHtml(q){
+  const p = questProgress(q), t = todayStr(), open = questOpen.has(q.id);
+  const pct = p.total ? Math.round(p.done/p.total*100) : 0;
+  const left = q.due ? dayGap(t, q.due) : null;
+  const when = left===null ? '' : left > 0 ? left+(left===1?' day left':' days left') : left===0 ? 'due today' : 'past its date';
+  const names = questHabitNames(q), week = questCheckins(q, weekStart(t));
+  let h = '<div class="card quest'+(open?' open':'')+'"><button type="button" class="quest-head" data-quest-toggle="'+q.id+'" aria-expanded="'+open+'">'+
+    '<span class="quest-kicker">Main Quest</span><span class="quest-title">'+escapeHtml(q.title)+'</span>'+
+    (q.why ? '<span class="quest-why">'+escapeHtml(q.why)+'</span>' : '')+
+    (p.total ? '<span class="quest-bar"><i style="width:'+pct+'%"></i></span>' : '')+
+    '<span class="quest-meta">'+[p.total ? p.done+'/'+p.total+' milestones' : '', when, open ? '' : 'tap to open'].filter(Boolean).join(' · ')+'</span></button>';
+  if(open){
+    if(p.total) h += '<div class="quest-ms">'+(q.milestones||[]).filter(m=>m.text).map(m=>
+      '<label class="quest-m'+(m.done?' done':'')+'"><input type="checkbox" data-quest-ms="'+q.id+'|'+m.id+'"'+(m.done?' checked':'')+'><span>'+escapeHtml(m.text)+'</span></label>').join('')+'</div>';
+    if(names.length) h += '<p class="quest-fed">Fed by '+names.map(escapeHtml).join(', ')+' · <b>'+week+'</b> check-in'+(week===1?'':'s')+' this week</p>';
+    h += '<button type="button" class="linkbtn" data-quest-edit="'+q.id+'">Edit quest</button>';
+  }
+  return h + '</div>';
+}
+function questFormHtml(q){
+  const all = [{id:'h1', ...habits.h1}, ...otherHabits().filter(h=>{ const x=scheduleOn(h, todayStr()); return x && x.every!=='off'; })];
+  const sel = new Set(q ? q.habits||[] : []);
+  return '<div class="quest-form"><label for="qTitle">The goal</label><input type="text" id="qTitle" maxlength="80" placeholder="Run a half marathon" value="'+escapeHtml(q?q.title:'')+'">'+
+    '<label for="qWhy">Why it matters (optional)</label><input type="text" id="qWhy" maxlength="140" placeholder="Prove to myself I finish what I start" value="'+escapeHtml(q?q.why||'':'')+'">'+
+    '<label for="qDue">Finish by (optional)</label><input type="date" id="qDue" value="'+(q?q.due||'':'')+'">'+
+    '<label for="qMs">Milestones, one per line (optional)</label><textarea id="qMs" rows="4" placeholder="Run 5K without stopping&#10;Run 10K&#10;Run 15K&#10;Race day">'+escapeHtml(q ? (q.milestones||[]).filter(m=>m.text).map(m=>m.text).join('\n') : '')+'</textarea>'+
+    '<label>Habits that feed it</label><div class="quest-habits">'+all.map(h=>'<label class="quest-h"><input type="checkbox" value="'+h.id+'"'+(sel.has(h.id)?' checked':'')+'> '+escapeHtml(h.habit || (h.id==='h1'?'Non-negotiable':habitFallback(h.id)))+'</label>').join('')+'</div>'+
+    '<div class="rem-actions"><button type="button" class="btn" id="qSave">Save</button><button type="button" class="linkbtn" id="qCancel">Cancel</button>'+
+    (q ? '<button type="button" class="linkbtn" id="qComplete">Mark complete</button><button type="button" class="linkbtn danger" id="qDelete">Delete</button>' : '')+
+    '</div><div class="proof-error" id="qErr"></div></div>';
+}
+function saveQuests(){ persist(LS.quests, quests); }
+function refreshQuests(){ const box = document.getElementById('questBox'); if(box){ box.outerHTML = questsHtml(); wireQuests(); } }
+function completeQuest(q){
+  q.completedOn = todayStr(); q.t = Date.now(); saveQuests();
+  questOpen.delete(q.id);
+  queueCelebration(done=>showQuestComplete(q, done));
+  renderProgress();
+}
+function wireQuests(){
+  const box = document.getElementById('questBox'); if(!box) return;
+  const add = box.querySelector('#questAdd'); if(add) add.addEventListener('click',()=>{ questEditing='new'; refreshQuests(); const i=document.getElementById('qTitle'); if(i) i.focus(); });
+  box.querySelectorAll('[data-quest-toggle]').forEach(b=>b.addEventListener('click',()=>{ const id=b.dataset.questToggle; questOpen.has(id) ? questOpen.delete(id) : questOpen.add(id); refreshQuests(); }));
+  box.querySelectorAll('[data-quest-edit]').forEach(b=>b.addEventListener('click',()=>{ questEditing=b.dataset.questEdit; refreshQuests(); }));
+  box.querySelectorAll('[data-quest-ms]').forEach(c=>c.addEventListener('change',()=>{
+    const [qid, mid] = c.dataset.questMs.split('|'), q = quests.find(x=>x.id===qid); if(!q) return;
+    const m = (q.milestones||[]).find(x=>x.id===mid); if(!m) return;
+    m.done = c.checked; q.t = Date.now(); saveQuests();
+    const p = questProgress(q);
+    if(p.total && p.done===p.total) completeQuest(q);
+    refreshQuests();
+  }));
+  const save = box.querySelector('#qSave');
+  if(save) save.addEventListener('click',()=>{
+    const title = document.getElementById('qTitle').value.trim();
+    if(!title){ document.getElementById('qErr').textContent='Give your quest a goal, like “Run a half marathon”.'; return; }
+    const old = questEditing==='new' ? null : quests.find(x=>x.id===questEditing);
+    const lines = document.getElementById('qMs').value.split('\n').map(x=>x.trim()).filter(Boolean).slice(0,12);
+    // a milestone keeps its tick when its line is unchanged
+    const milestones = lines.map((text,i)=>{ const m = old && (old.milestones||[]).find(x=>x.text===text); return m ? m : {id:Date.now().toString(36)+i, text, done:false}; });
+    const fields = {title, why:document.getElementById('qWhy').value.trim(), due:document.getElementById('qDue').value,
+      milestones, habits:[...box.querySelectorAll('.quest-habits input:checked')].map(x=>x.value), t:Date.now()};
+    if(old) Object.assign(old, fields);
+    else { const q = {id:'q'+Date.now().toString(36)+Math.random().toString(36).slice(2,5), created:todayStr(), ...fields}; quests.push(q); questOpen.add(q.id); }
+    questEditing = null; saveQuests(); refreshQuests();
+  });
+  const cancel = box.querySelector('#qCancel'); if(cancel) cancel.addEventListener('click',()=>{ questEditing=null; refreshQuests(); });
+  const comp = box.querySelector('#qComplete');
+  if(comp) comp.addEventListener('click',()=>{ const q = quests.find(x=>x.id===questEditing); if(!q) return; questEditing=null; completeQuest(q); refreshQuests(); });
+  const del = box.querySelector('#qDelete');
+  if(del) del.addEventListener('click',()=>{
+    if(!confirm('Delete this quest? This can’t be undone.')) return;
+    const q = quests.find(x=>x.id===questEditing); if(!q) return;
+    q.deleted = true; q.t = Date.now(); questEditing = null; saveQuests(); refreshQuests();
+  });
+}
+// the finale: the goal, how long it took, and what built it
+function showQuestComplete(q, onDone){
+  const arche = getArchetype(profile.archetypeKey);
+  const days = Math.max(1, dayGap(q.created || q.completedOn, q.completedOn) + 1), p = questProgress(q), ins = questCheckins(q);
+  const inner = '<div class="month-recap">'+
+    '<div class="cel-kicker">QUEST COMPLETE</div>'+
+    '<div class="cel-title">'+escapeHtml(q.title)+'</div>'+
+    (q.why ? '<p class="cel-sub">“'+escapeHtml(q.why)+'”</p>' : '')+
+    '<div class="recap-stats">'+recapStat(days, days===1?'day':'days')+(p.total ? recapStat(p.total, p.total===1?'milestone':'milestones') : '')+(ins ? recapStat(ins, 'habit check-ins') : '')+'</div>'+
+    '<p class="cel-sub">'+(arche ? escapeHtml(arche.title)+' set a goal and finished it. ' : '')+'Pick your next quest when you’re ready.</p>'+
+    '<button class="btn" id="celOk">Claim it</button></div>';
+  mountCelebration(arche, inner, 10*60*1000, ()=>{ onDone&&onDone(); }, false);
+  setTimeout(()=>spawnConfetti(arche?arche.hue:45), 600);
+}
+function completedQuestsHtml(){
+  const done = quests.filter(q=>!q.deleted && q.completedOn).sort((a,b)=>b.completedOn.localeCompare(a.completedOn));
+  if(!done.length) return '';
+  return '<h2 class="section-title" style="margin-top:26px;">Completed quests</h2><div class="card quest-done">'+done.map(q=>
+    '<div class="quest-done-row"><div><b>'+escapeHtml(q.title)+'</b><span>Done '+fmtDate(q.completedOn)+(q.created ? ' · '+(dayGap(q.created, q.completedOn)+1)+(dayGap(q.created, q.completedOn)===0?' day':' days') : '')+'</span></div>'+
+    '<button type="button" class="linkbtn" data-quest-replay="'+q.id+'">Replay</button></div>').join('')+'</div>';
 }
 
 /* ---------------- The member's own reminders ---------------- */
@@ -2561,6 +2695,14 @@ function renderGuide(){
     <li><b>Set days</b> (meal prep Sunday and Wednesday): due on those days, hidden on the rest.</li>
     <li><b>Bonus</b>: +5 XP when you do it, never required.</li>
     <li>Changing a schedule starts today. Days you already logged keep the schedule they ran on.</li>
+  </ol></div>
+
+  <h2 class="section-title">Main Quests (optional)</h2>
+  <div class="card"><ol>
+    <li>A <b>Main Quest</b> is the big goal your habits are building toward: “Run a half marathon,” “Launch my business.” Tap <b>Set a Main Quest</b> at the top of Today.</li>
+    <li>Give it a <b>why</b>, an optional finish date, and <b>milestones</b> to tick off on the way. The bar fills as you hit them.</li>
+    <li>Pick the <b>habits that feed it</b> and the quest card counts your check-ins each week.</li>
+    <li>Tick the last milestone, or tap <b>Mark complete</b>, for the finale. Finished quests stay on <b>Progress</b>. Run as many quests as you like, or none.</li>
   </ol></div>
   <div class="banner warn"><div><b>Never miss twice.</b> Missing one day is an accident. Missing two is the start of a new (worse) habit. If you miss a day, the only rule is: don’t miss the next one. Forgot to log before midnight? Switch to <b>Yesterday</b> on the Today tab.</div></div>
 
