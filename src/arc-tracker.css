@@ -772,13 +772,23 @@ html.arc-intro-lock,html.arc-intro-lock body{overflow:hidden;}
 /* Setup: compact habit cards, folded groups */
 .arc-root .hab-card{padding:14px 16px;margin-bottom:10px;}
 .arc-root .hab-card > label{font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--text-dim);margin:0 0 6px;}
-.arc-root .hab-opts{display:flex;flex-wrap:nowrap;align-items:flex-start;gap:8px;margin-top:8px;}
+.arc-root .hab-opts{display:flex;flex-wrap:nowrap;align-items:center;gap:8px;margin-top:8px;}
 .arc-root .hab-opts .sched{margin-top:0;flex:1 1 0;min-width:0;}
 .arc-root .hab-opts .sched > select{width:100%;}
 .arc-root .hab-opts .sched-n select{width:auto;}
 .arc-root .hab-remind{display:inline-flex;align-items:center;gap:6px;flex:none;}
 .arc-root .hab-remind input[type=time]{width:auto;min-width:108px;padding-top:8px;padding-bottom:8px;}
-.arc-root .hab-remind-lbl{margin:0;padding:0;line-height:1;align-self:center;font-size:12.5px;font-weight:500;color:var(--text-dim);white-space:nowrap;}
+.arc-root .time-box{position:relative;display:block;}
+.arc-root .time-box input[type=time]{display:block;margin:0;}
+/* an empty reminder shows a faint outlined digital 00:00, so it reads as a time box */
+.arc-root .time-ph{position:absolute;left:14px;top:50%;transform:translateY(-50%);display:none;pointer-events:none;
+  font:400 20px 'Share Tech Mono', ui-monospace, 'SF Mono', Menlo, monospace;letter-spacing:.06em;color:transparent;-webkit-text-stroke:1px var(--text-faint);}
+.arc-root .time-box.is-empty .time-ph{display:block;}
+.arc-root .time-box.is-empty input{color:transparent;}
+.arc-root .time-box.is-empty input::-webkit-datetime-edit{color:transparent;}
+.arc-root .time-box.is-empty input:focus{color:var(--text);}
+.arc-root .time-box.is-empty input:focus::-webkit-datetime-edit{color:var(--text);}
+.arc-root .time-box.is-empty input:focus + .time-ph{display:none;}
 .arc-root .hab-remind .linkbtn{font-size:12.5px;}
 .arc-root .hab-remind .linkbtn[hidden]{display:none;}
 .arc-root .sched select{padding-top:8px;padding-bottom:8px;}

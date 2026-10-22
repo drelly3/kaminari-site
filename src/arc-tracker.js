@@ -2216,7 +2216,7 @@ function renderSetup(){
   }
   // optional reminder time for one habit
   function remindField(key, h){
-    return '<div class="hab-remind"><label for="'+key+'_remind" class="hab-remind-lbl">Remind me</label><input type="time" id="'+key+'_remind" value="'+((h&&h.remind)||'')+'">'+
+    return '<div class="hab-remind"><span class="time-box'+(h&&h.remind?'':' is-empty')+'"><input type="time" id="'+key+'_remind" value="'+((h&&h.remind)||'')+'" aria-label="Reminder time (optional)"><span class="time-ph" aria-hidden="true">00:00</span></span>'+
       '<button type="button" class="linkbtn" data-remind-clear="'+key+'"'+(h&&h.remind?'':' hidden')+'>Clear</button></div>';
   }
 
@@ -2236,12 +2236,13 @@ function renderSetup(){
   wireSched(el);
   el.addEventListener('click', e=>{
     const b = e.target.closest('[data-remind-clear]'); if(!b) return;
-    const inp = document.getElementById(b.dataset.remindClear+'_remind'); if(inp) inp.value = '';
+    const inp = document.getElementById(b.dataset.remindClear+'_remind'); if(inp){ inp.value = ''; inp.parentElement.classList.add('is-empty'); }
     b.hidden = true;
   });
   el.addEventListener('input', e=>{
     if(!e.target.id || !e.target.id.endsWith('_remind')) return;
     const b = el.querySelector('[data-remind-clear="'+e.target.id.slice(0,-7)+'"]'); if(b) b.hidden = !e.target.value;
+    e.target.parentElement.classList.toggle('is-empty', !e.target.value);
   });
   document.getElementById('addHabitBtn').addEventListener('click',()=>{
     const id = 'new'+Date.now().toString(36);
