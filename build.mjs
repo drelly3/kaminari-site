@@ -83,6 +83,12 @@ write('/blog', {
   description: 'Anime lessons, watch orders, filler lists, character quotes, and recommendations from the Kaminari universe.',
   body: pages.blogIndex(posts),
 });
+// partner feature page (not in the main menu; the footer, character posts and shared links point here)
+write('/anime-art-academy', {
+  title: 'Learn to Draw Anime & Manga from Japanese Pros | Kaminari',
+  description: 'Learn to draw anime and manga online from Japanese pro animators and manga artists, with personal red-line corrections. Watch two free lessons, no account needed.',
+  body: pages.animeArtAcademy(),
+});
 // a page for each kind of post: watch orders, filler lists, quotes and the rest
 for (const k of kinds) {
   const list = posts.filter(p => p.kind === k.id);

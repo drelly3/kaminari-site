@@ -416,6 +416,90 @@ export const blogCategory = (kind, posts) => {
 ${shock()}`;
 };
 
+/* ---------- PARTNER: ANIME ART ACADEMY ---------- */
+// A feature page for an affiliate partner. It isn't in the main menu: blog posts, the footer and
+// shared links point here. Every sign-up button goes through /go/anime-art-academy, which adds
+// Kaminari's affiliate code (api/go-links.js).
+export const animeArtAcademy = () => {
+  const url = abs('/anime-art-academy');
+  const share = encodeURIComponent(url);
+  const text = encodeURIComponent('Learn to draw anime & manga from Japanese pros');
+  const go = '/go/anime-art-academy';
+  const sponsored = 'target="_blank" rel="sponsored noopener"';
+  const cta = label => `<a class="btn btn-primary partner-btn" href="${go}" ${sponsored}>${label} →</a>`;
+  return `
+<article>
+  <header class="post-head">
+    <div class="wrap">
+      <div class="crumb"><span>Partner</span><span>/</span><span>Anime Art Academy</span></div>
+      <h1>Learn to Draw Anime &amp; Manga from Japanese Pros</h1>
+      <p class="summary">Anime Art Academy teaches you to draw anime and manga online with English video lessons from Japanese pro animators and manga artists, who send your drawings back with personal corrections. Two lessons are free to watch.</p>
+      <div class="partner-actions">${cta('Watch a free lesson')}<span class="partner-note">No account needed. Opens Anime Art Academy.</span></div>
+      <div class="post-cover partner-hero" role="img" aria-label="Free anime and manga course, taught by Japanese pros">
+        <div class="ph-inner"><span class="ph-kicker">Anime Art Academy × Kaminari</span><span class="ph-big">Learn Anime &amp; Manga Drawing</span><span class="ph-sub">With personal corrections from Japanese pros</span></div>
+      </div>
+    </div>
+  </header>
+  <div class="wrap post-layout">
+    <div class="rich">
+<h2>Why Kaminari recommends it</h2>
+<p>Kaminari is about turning the anime you love into real growth. Watching a training arc is fun. Running your own is better. Drawing is one of the most direct ways to do it: a skill you can practice a little every day and actually see improve on the page.</p>
+<p>Anime Art Academy goes straight to the source. Its lessons are made by Japanese pro animators and manga artists, and when you submit a drawing, they send it back with <b>red-line corrections</b> showing exactly what to fix. You don’t get that from a video tutorial.</p>
+<h2>Try it free first</h2>
+<p>You can watch two full lessons right now, no account needed:</p>
+<ul>
+<li><b>Drawing a woman’s face from the front</b></li>
+<li><b>The Basics of Balanced Character Design</b></li>
+</ul>
+<p>Every course also has free preview lessons, so you can see if it clicks before you pay for anything.</p>
+<h2>What you get</h2>
+<ul>
+<li><b>English video lessons</b> from Japanese professional animators, illustrators and manga artists.</li>
+<li><b>Unlimited personal feedback</b> on the drawings you submit.</li>
+<li><b>Just paper and pen.</b> Most courses need nothing else. Only a few coloring lessons use digital tools.</li>
+<li><b>Beginner to pro:</b> faces, bodies, poses and coloring, from the basics to advanced.</li>
+<li><b>A community</b> on Discord, plus live talk shows and workshops with Japanese manga artists.</li>
+</ul>
+<h2>What it costs</h2>
+<p>Two ways to pay, with no sign-up fee:</p>
+<ul>
+<li><b>Monthly:</b> from $47 a month, or $68 for Premium, with new lessons added every month.</li>
+<li><b>Pay once:</b> lesson packs from $340 with lifetime access, and bundles that cost less than buying packs separately.</li>
+</ul>
+<p>Prices are from their site as of October 2026, so check there for the latest.</p>
+<h2>Who’s behind it</h2>
+<p>Anime Art Academy partners with MyAnimeList and MediBang, and ran a “How to Draw Manga” workshop at Anime Expo in Los Angeles attended by over 1,200 people.</p>
+<blockquote>“I started from absolute 0 on learning anime and manga, but now I am able to confidently produce authentic anime illustrations after only 3 months.” <br>— Haruka, a student, from their reviews</blockquote>
+<h2>Make it your training arc</h2>
+<p>Skills come from reps, not motivation. Add “Draw for 10 minutes” to your <a href="/anime-mindset">Arc Tracker</a> as a few-times-a-week habit and watch the streak, and your art, build.</p>
+<div class="partner-cta">
+  <h3>Ready to draw?</h3>
+  <p>Watch Anime Art Academy’s two free lessons, no account needed, then decide.</p>
+  ${cta('Watch a free lesson')}
+  <p class="partner-disclosure">Kaminari earns a commission if you sign up through our link, at no extra cost to you. We only partner with things we’d recommend anyway.</p>
+</div>
+    </div>
+    <aside class="post-aside">
+      <div>
+        <h4>Share</h4>
+        <div class="share">
+          <a href="https://x.com/intent/tweet?url=${share}&text=${text}" ${ext}>X</a>
+          <a href="https://www.facebook.com/sharer/sharer.php?u=${share}" ${ext}>Facebook</a>
+          <button type="button" data-copy-link>Copy link</button>
+        </div>
+      </div>
+      <div class="aside-cta">
+        <h3>Two free lessons</h3>
+        <p>From Japanese pros. No account needed.</p>
+        <a class="btn btn-primary btn-sm" href="${go}" ${sponsored}>Start drawing →</a>
+      </div>
+    </aside>
+  </div>
+</article>
+
+${shock()}`;
+};
+
 /* ---------- BLOG POST ---------- */
 export const blogPost = (p, related) => {
   const author = authors[p.author] || { name: 'Kaminari' };
@@ -441,6 +525,7 @@ export const blogPost = (p, related) => {
   <div class="wrap post-layout">
     <div class="rich">
 ${p.html}
+${p.kind === 'characters' ? `<div class="partner-card"><b>Want to draw your favorite characters?</b><span>Learn from Japanese pro animators and manga artists. Two lessons are free to watch.</span><a href="/anime-art-academy">Learn to draw anime →</a></div>` : ''}
     </div>
     <aside class="post-aside">
       ${p.toc.length > 1 ? `<div><h4>On this page</h4><ul class="toc">${p.toc.map(t => `<li><a href="#${t.id}">${esc(t.text)}</a></li>`).join('')}</ul></div>` : ''}
