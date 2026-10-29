@@ -433,10 +433,10 @@ export const animeArtAcademy = () => {
     <div class="wrap">
       <div class="crumb"><span>Partner</span><span>/</span><span>Anime Art Academy</span></div>
       <h1>Learn to Draw Anime &amp; Manga from Japanese Pros</h1>
-      <p class="summary">Anime Art Academy teaches you to draw anime and manga online, with lessons from professionals in Japan’s anime and manga industry. You can start with a free course.</p>
+      <p class="summary">Anime Art Academy teaches you to draw anime and manga online, with English video lessons from Japanese professional animators, illustrators and manga artists, and personal feedback on your drawings. You can start with a free taster course.</p>
       <div class="partner-actions">${cta('Start the free course')}<span class="partner-note">Free to start. Opens Anime Art Academy.</span></div>
       <div class="post-cover partner-hero" role="img" aria-label="Free anime and manga course, taught by Japanese pros">
-        <div class="ph-inner"><span class="ph-kicker">Anime Art Academy × Kaminari</span><span class="ph-big">Free Anime &amp; Manga Course</span><span class="ph-sub">Japanese pros teach you</span></div>
+        <div class="ph-inner"><span class="ph-kicker">Anime Art Academy × Kaminari</span><span class="ph-big">Free Anime &amp; Manga Course</span><span class="ph-sub">Japanese pros teach you, and give you feedback</span></div>
       </div>
     </div>
   </header>
@@ -444,11 +444,12 @@ export const animeArtAcademy = () => {
     <div class="rich">
 <h2>Why Kaminari recommends it</h2>
 <p>Kaminari is about turning the anime you love into real growth. Watching a training arc is fun. Running your own is better. Drawing is one of the most direct ways to do it: a skill you can practice a little every day and actually see improve on the page.</p>
-<p>Anime Art Academy goes straight to the source. Instead of guessing from tutorials, you learn from people who work in the industry in Japan, the way the studios teach it.</p>
+<p>Anime Art Academy goes straight to the source. Instead of guessing from tutorials, you learn from people who work in the industry in Japan, and they look at your drawings and tell you how to improve them.</p>
 <h2>What you get</h2>
 <ul>
-<li><b>A free course to start.</b> Try it before you spend anything.</li>
-<li><b>Lessons from Japanese pros</b> who work in anime and manga.</li>
+<li><b>A free taster course.</b> Two lessons, drawing a face from the front and balancing the body, taken from their full courses.</li>
+<li><b>English video lessons from Japanese pros:</b> professional animators, illustrators and manga artists.</li>
+<li><b>Personal feedback</b> on your drawings, straight from the pros.</li>
 <li><b>Online and at your own pace,</b> so it fits around school, work or your watchlist.</li>
 <li><b>A path to keep going.</b> Paid courses take you further when you’re ready. Check their site for current courses and prices.</li>
 </ul>
@@ -458,7 +459,7 @@ export const animeArtAcademy = () => {
 <p>Skills come from reps, not motivation. Add “Draw for 10 minutes” to your <a href="/anime-mindset">Arc Tracker</a> as a few-times-a-week habit and watch the streak, and your art, build.</p>
 <div class="partner-cta">
   <h3>Ready to draw?</h3>
-  <p>Start with the free anime &amp; manga course from Anime Art Academy.</p>
+  <p>Start with Anime Art Academy’s free taster course: two lessons from Japanese pros.</p>
   ${cta('Start the free course')}
   <p class="partner-disclosure">Kaminari earns a commission if you sign up through our link, at no extra cost to you. We only partner with things we’d recommend anyway.</p>
 </div>
