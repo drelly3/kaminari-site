@@ -1,5 +1,5 @@
 // Cloudflare Worker entry. Cloudflare builds the site from GitHub (node build.mjs) and serves dist/
-// as plain files; this script only runs for /api/* and for the notification timer.
+// as plain files; this script only runs for /api/*, the /go/* partner links and the notification timer.
 // Settings on the Worker: GUMROAD_PRODUCT_ID, ARC_TESTER_KEYS and VAPID_PRIVATE_JWK (secrets),
 // plus the ARC_PUSH storage (notification devices and Arc Tracker backups), the ARC_PHOTOS bucket
 // (proof photo backups) and VAPID_PUBLIC_KEY in wrangler.jsonc.
@@ -7,6 +7,7 @@ import { verifyLicense } from './api/arc-verify.js';
 import { handlePush, sendDue } from './api/arc-push.js';
 import { handleSync } from './api/arc-sync.js';
 import { handlePhotos } from './api/arc-photos.js';
+import { GO_LINKS } from './api/go-links.js';
 import { handleWaitlist } from './api/waitlist.js';
 
 const json = (status, body) => new Response(JSON.stringify(body), {
@@ -28,6 +29,11 @@ export default {
     if (pathname === '/api/arc-sync') return handleSync(request, env);
     if (pathname === '/api/waitlist') return handleWaitlist(request, env);
     if (pathname === '/api/arc-photos' || pathname.startsWith('/api/arc-photos/')) return handlePhotos(request, env, pathname);
+    // partner short links: /go/<name> forwards to the partner with Kaminari's affiliate code
+    if (pathname.startsWith('/go/')) {
+      const to = GO_LINKS[pathname.slice(4).replace(/\/$/, '')];
+      return to ? Response.redirect(to, 302) : Response.redirect(new URL('/', request.url).toString(), 302);
+    }
     return env.ASSETS.fetch(request);
   },
 

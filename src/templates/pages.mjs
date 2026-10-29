@@ -416,6 +416,74 @@ export const blogCategory = (kind, posts) => {
 ${shock()}`;
 };
 
+/* ---------- PARTNER: ANIME ART ACADEMY ---------- */
+// A feature page for an affiliate partner. It isn't in the main menu: blog posts, the footer and
+// shared links point here. Every sign-up button goes through /go/anime-art-academy, which adds
+// Kaminari's affiliate code (api/go-links.js).
+export const animeArtAcademy = () => {
+  const url = abs('/anime-art-academy');
+  const share = encodeURIComponent(url);
+  const text = encodeURIComponent('Learn to draw anime & manga from Japanese pros');
+  const go = '/go/anime-art-academy';
+  const sponsored = 'target="_blank" rel="sponsored noopener"';
+  const cta = label => `<a class="btn btn-primary partner-btn" href="${go}" ${sponsored}>${label} →</a>`;
+  return `
+<article>
+  <header class="post-head">
+    <div class="wrap">
+      <div class="crumb"><span>Partner</span><span>/</span><span>Anime Art Academy</span></div>
+      <h1>Learn to Draw Anime &amp; Manga from Japanese Pros</h1>
+      <p class="summary">Anime Art Academy teaches you to draw anime and manga online, with lessons from professionals in Japan’s anime and manga industry. You can start with a free course.</p>
+      <div class="partner-actions">${cta('Start the free course')}<span class="partner-note">Free to start. Opens Anime Art Academy.</span></div>
+      <div class="post-cover partner-hero" role="img" aria-label="Free anime and manga course, taught by Japanese pros">
+        <div class="ph-inner"><span class="ph-kicker">Anime Art Academy × Kaminari</span><span class="ph-big">Free Anime &amp; Manga Course</span><span class="ph-sub">Japanese pros teach you</span></div>
+      </div>
+    </div>
+  </header>
+  <div class="wrap post-layout">
+    <div class="rich">
+<h2>Why Kaminari recommends it</h2>
+<p>Kaminari is about turning the anime you love into real growth. Watching a training arc is fun. Running your own is better. Drawing is one of the most direct ways to do it: a skill you can practice a little every day and actually see improve on the page.</p>
+<p>Anime Art Academy goes straight to the source. Instead of guessing from tutorials, you learn from people who work in the industry in Japan, the way the studios teach it.</p>
+<h2>What you get</h2>
+<ul>
+<li><b>A free course to start.</b> Try it before you spend anything.</li>
+<li><b>Lessons from Japanese pros</b> who work in anime and manga.</li>
+<li><b>Online and at your own pace,</b> so it fits around school, work or your watchlist.</li>
+<li><b>A path to keep going.</b> Paid courses take you further when you’re ready. Check their site for current courses and prices.</li>
+</ul>
+<h2>Who it’s for</h2>
+<p>Anyone who has ever wanted to draw their favorite characters, from total beginners to artists who want to learn the Japanese studio approach.</p>
+<h2>Make it your training arc</h2>
+<p>Skills come from reps, not motivation. Add “Draw for 10 minutes” to your <a href="/anime-mindset">Arc Tracker</a> as a few-times-a-week habit and watch the streak, and your art, build.</p>
+<div class="partner-cta">
+  <h3>Ready to draw?</h3>
+  <p>Start with the free anime &amp; manga course from Anime Art Academy.</p>
+  ${cta('Start the free course')}
+  <p class="partner-disclosure">Kaminari earns a commission if you sign up through our link, at no extra cost to you. We only partner with things we’d recommend anyway.</p>
+</div>
+    </div>
+    <aside class="post-aside">
+      <div>
+        <h4>Share</h4>
+        <div class="share">
+          <a href="https://x.com/intent/tweet?url=${share}&text=${text}" ${ext}>X</a>
+          <a href="https://www.facebook.com/sharer/sharer.php?u=${share}" ${ext}>Facebook</a>
+          <button type="button" data-copy-link>Copy link</button>
+        </div>
+      </div>
+      <div class="aside-cta">
+        <h3>Free anime &amp; manga course</h3>
+        <p>Taught by Japanese pros. Free to start.</p>
+        <a class="btn btn-primary btn-sm" href="${go}" ${sponsored}>Start drawing →</a>
+      </div>
+    </aside>
+  </div>
+</article>
+
+${shock()}`;
+};
+
 /* ---------- BLOG POST ---------- */
 export const blogPost = (p, related) => {
   const author = authors[p.author] || { name: 'Kaminari' };
@@ -441,6 +509,7 @@ export const blogPost = (p, related) => {
   <div class="wrap post-layout">
     <div class="rich">
 ${p.html}
+${p.kind === 'characters' ? `<div class="partner-card"><b>Want to draw your favorite characters?</b><span>Learn anime &amp; manga drawing from Japanese pros, starting with a free course.</span><a href="/anime-art-academy">Learn to draw anime →</a></div>` : ''}
     </div>
     <aside class="post-aside">
       ${p.toc.length > 1 ? `<div><h4>On this page</h4><ul class="toc">${p.toc.map(t => `<li><a href="#${t.id}">${esc(t.text)}</a></li>`).join('')}</ul></div>` : ''}

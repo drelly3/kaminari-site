@@ -13,8 +13,8 @@
     "binding": "ASSETS",
     // unknown addresses show dist/404.html
     "not_found_handling": "404-page",
-    // everything is served as a plain file except the /api addresses
-    "run_worker_first": ["/api/*"]
+    // everything is served as a plain file except the /api addresses and /go partner links
+    "run_worker_first": ["/api/*", "/go/*"]
   },
   // Arc Tracker storage: notification devices (sub:), cloud backups (arc:) and recent licence checks (lic:),
   // plus the timer that sends reminders
