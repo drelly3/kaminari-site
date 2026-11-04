@@ -2794,11 +2794,12 @@ function renderGuide(){
   // the deeper detail folds away; a new member reads the checklist and the daily loop
   const more=(title,body)=>'<details class="guide-more"><summary>'+title+'</summary><div class="gm-body">'+body+'</div></details>';
   let html=`
-  <p class="guide-lead">Pick an archetype, name a few habits, and check them off every day. Rank, XP and levels work themselves out.</p>
+  <p class="guide-lead">Pick an archetype, set your Main Quest, name a few habits, and check them off every day. Rank, XP and levels work themselves out.</p>
 
   <h2 class="section-title">Get started</h2>
   <ol class="steps">`+
     step(!!arche,'Pick your archetype','On <b>Archetypes</b>. Not sure? Pick the one that stings a little.', arche?'':go('archetypes','Choose an archetype'))+
+    step(quests.some(q=>!q.deleted),'Set your Main Quest','The big goal you’re working toward, with a few milestones. Tap <b>Set a Main Quest</b> on <b>Today</b>.', quests.some(q=>!q.deleted)?'':go('today','Set your quest'))+
     step(named>=2,'Name your habits','In <b>Setup</b>: one daily non-negotiable plus a couple more. Keep each one tiny, like “open the book.”', named>=2?'':go('setup','Open Setup'))+
     step(!!(habits.sc && habits.sc.habit),'Pick your weakness habit','In <b>Setup</b>. One small thing that fights your archetype’s weak spot.')+
     step(IS_STANDALONE,'Add it to your Home Screen','iPhone: Share, then <b>Add to Home Screen</b>. Android: the browser menu, then <b>Install app</b>.')+
@@ -2819,7 +2820,7 @@ function renderGuide(){
     more('Habits that aren’t every day',
       '<p><b>Times a week</b> (ex. gym 5× a week): do it any days you like. It only counts against you when the week runs out of days to hit the number.</p><p><b>Set days</b> show only on those days. <b>Bonus</b> habits earn +5 XP and are never required.</p>')+
     more('Main Quests',
-      '<p>The big goal your habits build toward (ex. run a half marathon). Add a why, a finish date and milestones on <b>Today</b>. Tick the last milestone for the finale.</p>')+
+      '<p>The big goal your habits build toward (ex. run a half marathon). Add a why, a finish date and milestones on <b>Today</b>, and pick the habits that feed it. Tick the last milestone for the finale.</p>')+
     more('Ranks',
       '<p>Full-clear days unlock ranks at 10, 25, 50 and 100. Keep one by clearing enough days in the last ${HOLD_WINDOW}. Fall short for ${HOLD_GRACE} days in a row and you drop a rank. Today warns you first.</p>')+
     more('XP and Second Wind',
