@@ -1019,6 +1019,7 @@ function renderToday(){
 
   const dq = dailyQuote(arche, t);
   if(dq) html += '<button type="button" class="daily-quote" id="dailyQuoteBtn" title="Replay the reveal"><p class="q">“'+escapeHtml(dq.q)+'”</p><div class="by">Inspired by '+escapeHtml(dq.c)+' · New quote every Monday and Thursday</div></button>';
+  if(viewDay==='today' && arche && !load(TOUR_SEEN, false)) html += tourOfferHtml();
   if(viewDay==='today') html += questsHtml();
 
   if(viewDay==='today' && arche && arche.ranks) html += rankRiskHtml(arche, rankState(arche));
@@ -2467,6 +2468,100 @@ function lightningStrike(){
   setTimeout(()=>el.remove(), 1000);
 }
 
+/* ---------------- Feature tour: points at the extras a new member might miss ---------------- */
+// Dims the screen, lights up one feature at a time and says what it's for. It moves between tabs on
+// its own and skips anything that isn't on screen yet. Offered once on Today, always in Start Here.
+const TOUR_SEEN = 'arc_tour_seen';
+const TOUR = [
+  {tab:'today', sel:'#questBox', title:'Your Main Quest', text:'The big goal you’re working toward. Tick milestones as you hit them and the bar fills.'},
+  {tab:'today', sel:'.card.power', title:'Today at a glance', text:'The ring fills as you check things off. Every habit earns XP, and every 100 XP is a new level.'},
+  {tab:'today', sel:'.day-switch', title:'Forgot to log?', text:'Switch to Yesterday to fix the day before.'},
+  {tab:'today', sel:'#tab-today .card.accent', title:'Your weakness', text:'Check this off on days you fight your archetype’s weak spot. It builds your Courage.'},
+  {tab:'today', sel:'.extras-row', title:'Extra photos', text:'Keep up to 6 more photos of your day. They land in your gallery.'},
+  {tab:'today', sel:()=>{ const n=document.getElementById('f_note'); return n && n.closest('.card'); }, title:'Your win line', text:'One line a day: a win, or something you’re grateful for. +2 XP.'},
+  {tab:'progress', sel:'.rank-card', title:'Your rank', text:'Full-clear days unlock ranks. Keep clearing days to hold yours.'},
+  {tab:'progress', sel:'.week-review', title:'Weekly review', text:'Every Sunday: your week in numbers, plus a few questions to help you adjust.'},
+  {tab:'progress', sel:'.char-profile', title:'Character profile', text:'Discipline, Consistency, Courage and Focus grow from what you actually do.'},
+  {tab:'progress', sel:'.year-card', title:'Your year', text:'Every month you’ve logged, with its calendar and a recap.'},
+  {tab:'progress', sel:'#arcGallery', title:'Your gallery', text:'Every proof photo in one place, so you can look back at how far you’ve come.'},
+  {tab:'progress', sel:'#arcNotes', title:'Notes', text:'Plans, lessons and ideas, with folders and checklists, like the Notes app.'},
+  {tab:'archetypes', sel:'#tab-archetypes .card.ch-list', title:'Weekly challenges', text:'Take on a character challenge for bonus XP when you want an extra push.'},
+  {tab:'setup', sel:'details[data-group="reminders"]', title:'Reminders', text:'Turn on notifications, set your daily reminder, and add your own.'},
+  {tab:'guide', sel:'.guide-list', title:'Need a refresher?', text:'Everything is explained here in Start Here. You can take this tour again any time.'},
+];
+let tourAt = -1, tourEls = null;
+function tourFind(step){ return typeof step.sel==='function' ? step.sel() : document.querySelector(step.sel); }
+let tourSteps = TOUR; // the steps whose feature exists for this member, worked out when the tour starts
+function startTour(){
+  persist(TOUR_SEEN, true);
+  document.querySelectorAll('.tour-offer').forEach(x=>x.remove());
+  if(tourEls) endTour();
+  const wrap = document.createElement('div'); wrap.className = 'tour'; wrap.setAttribute('role','dialog'); wrap.setAttribute('aria-modal','true'); wrap.setAttribute('aria-label','Feature tour');
+  wrap.innerHTML = '<div class="tour-block"></div><div class="tour-spot"></div><div class="tour-card"><div class="tour-kicker"></div><h3></h3><p></p>'+
+    '<div class="tour-btns"><button type="button" class="linkbtn tour-skip">Skip tour</button><span></span><button type="button" class="btn ghost tour-back">Back</button><button type="button" class="btn tour-next">Next</button></div></div>';
+  document.querySelector('.arc-root').appendChild(wrap);
+  tourEls = {wrap, spot:wrap.querySelector('.tour-spot'), card:wrap.querySelector('.tour-card')};
+  wrap.querySelector('.tour-skip').addEventListener('click', endTour);
+  wrap.querySelector('.tour-next').addEventListener('click', ()=>tourGo(tourAt+1, 1));
+  wrap.querySelector('.tour-back').addEventListener('click', ()=>tourGo(tourAt-1, -1));
+  window.addEventListener('resize', tourPlace); window.addEventListener('scroll', tourPlace, {passive:true});
+  document.addEventListener('keydown', tourKey);
+  tourSteps = TOUR.filter(st=>tourFind(st));
+  tourGo(0, 1);
+}
+function tourKey(e){ if(e.key==='Escape') endTour(); else if(e.key==='ArrowRight') tourGo(tourAt+1, 1); else if(e.key==='ArrowLeft') tourGo(tourAt-1, -1); }
+function endTour(){
+  if(!tourEls) return;
+  tourEls.wrap.remove(); tourEls = null; tourAt = -1;
+  window.removeEventListener('resize', tourPlace); window.removeEventListener('scroll', tourPlace);
+  document.removeEventListener('keydown', tourKey);
+  showTab('today');
+}
+// moves to step i, skipping in the direction of travel any step whose feature isn't showing
+function tourGo(i, dir){
+  if(!tourEls) return;
+  const steps = tourSteps;
+  while(i >= 0 && i < steps.length){
+    showTab(steps[i].tab);
+    if(tourFind(steps[i])) break;
+    i += dir;
+  }
+  if(i >= steps.length) return endTour();
+  if(i < 0) return;
+  tourAt = i;
+  const st = steps[i], el = tourFind(st);
+  const shown = steps.length;
+  tourEls.card.querySelector('.tour-kicker').textContent = 'Tour · '+(i+1)+' of '+shown;
+  tourEls.card.querySelector('h3').textContent = st.title;
+  tourEls.card.querySelector('p').textContent = st.text;
+  tourEls.card.querySelector('.tour-back').hidden = i===0;
+  tourEls.card.querySelector('.tour-next').textContent = i===steps.length-1 ? 'Done' : 'Next';
+  tourEls.card.classList.remove('in'); void tourEls.card.offsetWidth; tourEls.card.classList.add('in');
+  el.scrollIntoView({block: el.offsetHeight > window.innerHeight*0.45 ? 'start' : 'center', behavior: CALM ? 'auto' : 'smooth'});
+  tourPlace(); setTimeout(tourPlace, 380); setTimeout(tourPlace, 700);
+  tourEls.card.querySelector('.tour-next').focus({preventScroll:true});
+}
+// fits the spotlight to the feature and puts the card on whichever side has room
+function tourPlace(){
+  if(!tourEls || tourAt < 0) return;
+  const el = tourFind(tourSteps[tourAt]); if(!el) return;
+  const r = el.getBoundingClientRect(), pad = 8, vh = window.innerHeight;
+  // a tall feature shows its top part, so the card fits underneath
+  const top = Math.max(6, r.top - pad), bottom = Math.min(vh - 6, r.bottom + pad, top + vh*0.45);
+  Object.assign(tourEls.spot.style, {left:(r.left-pad)+'px', top:top+'px', width:(r.width+pad*2)+'px', height:Math.max(24, bottom-top)+'px'});
+  const card = tourEls.card, ch = card.offsetHeight || 170;
+  const below = vh - bottom > ch + 24, above = top > ch + 24;
+  card.style.top = below ? (bottom + 12)+'px' : above ? (top - ch - 12)+'px' : Math.max(12, vh - ch - 90)+'px';
+}
+function tourOfferHtml(){
+  return '<div class="tour-offer"><div><b>New here?</b> Take a one-minute tour of everything Arc Tracker can do.</div>'+
+    '<div class="tour-offer-btns"><button type="button" class="btn" data-tour-start>Take the tour</button><button type="button" class="linkbtn" data-tour-dismiss>Not now</button></div></div>';
+}
+document.addEventListener('click', e=>{
+  if(e.target.closest('[data-tour-start]')) startTour();
+  else if(e.target.closest('[data-tour-dismiss]')){ persist(TOUR_SEEN, true); document.querySelectorAll('.tour-offer').forEach(x=>x.remove()); }
+});
+
 /* ---------------- Main Quests: the big goals the habits build toward ---------------- */
 // Optional, and as many as you like. Each has a goal, a one-line why, an optional end date,
 // milestones to tick off and the habits that feed it. Ticking the last milestone (or marking it
@@ -2794,11 +2889,13 @@ function renderGuide(){
   // the deeper detail folds away; a new member reads the checklist and the daily loop
   const more=(title,body)=>'<details class="guide-more"><summary>'+title+'</summary><div class="gm-body">'+body+'</div></details>';
   let html=`
-  <p class="guide-lead">Pick an archetype, name a few habits, and check them off every day. Rank, XP and levels work themselves out.</p>
+  <p class="guide-lead">Pick an archetype, set your Main Quest, name a few habits, and check them off every day. Rank, XP and levels work themselves out.</p>
+  <button type="button" class="btn ghost tour-btn" data-tour-start>Take the tour</button>
 
   <h2 class="section-title">Get started</h2>
   <ol class="steps">`+
     step(!!arche,'Pick your archetype','On <b>Archetypes</b>. Not sure? Pick the one that stings a little.', arche?'':go('archetypes','Choose an archetype'))+
+    step(quests.some(q=>!q.deleted),'Set your Main Quest','The big goal you’re working toward, with a few milestones. Tap <b>Set a Main Quest</b> on <b>Today</b>.', quests.some(q=>!q.deleted)?'':go('today','Set your quest'))+
     step(named>=2,'Name your habits','In <b>Setup</b>: one daily non-negotiable plus a couple more. Keep each one tiny, like “open the book.”', named>=2?'':go('setup','Open Setup'))+
     step(!!(habits.sc && habits.sc.habit),'Pick your weakness habit','In <b>Setup</b>. One small thing that fights your archetype’s weak spot.')+
     step(IS_STANDALONE,'Add it to your Home Screen','iPhone: Share, then <b>Add to Home Screen</b>. Android: the browser menu, then <b>Install app</b>.')+
@@ -2819,7 +2916,7 @@ function renderGuide(){
     more('Habits that aren’t every day',
       '<p><b>Times a week</b> (ex. gym 5× a week): do it any days you like. It only counts against you when the week runs out of days to hit the number.</p><p><b>Set days</b> show only on those days. <b>Bonus</b> habits earn +5 XP and are never required.</p>')+
     more('Main Quests',
-      '<p>The big goal your habits build toward (ex. run a half marathon). Add a why, a finish date and milestones on <b>Today</b>. Tick the last milestone for the finale.</p>')+
+      '<p>The big goal your habits build toward (ex. run a half marathon). Add a why, a finish date and milestones on <b>Today</b>, and pick the habits that feed it. Tick the last milestone for the finale.</p>')+
     more('Ranks',
       '<p>Full-clear days unlock ranks at 10, 25, 50 and 100. Keep one by clearing enough days in the last ${HOLD_WINDOW}. Fall short for ${HOLD_GRACE} days in a row and you drop a rank. Today warns you first.</p>')+
     more('XP and Second Wind',
