@@ -869,3 +869,22 @@ html.arc-intro-lock,html.arc-intro-lock body{overflow:hidden;}
 .arc-root .gm-body{padding:0 16px 12px;font-size:14px;color:var(--text-dim);}
 .arc-root .gm-body p{margin:0 0 8px;}
 .arc-root .gm-body b{color:var(--text);}
+
+/* Feature tour: a spotlight on one feature, with a card that explains it */
+.arc-root .tour{position:fixed;inset:0;z-index:250;}
+.arc-root .tour-block{position:absolute;inset:0;}
+.arc-root .tour-spot{position:fixed;border-radius:12px;box-shadow:0 0 0 9999px rgba(5,8,15,.74);outline:2px solid var(--gold);outline-offset:2px;pointer-events:none;transition:left .3s ease,top .3s ease,width .3s ease,height .3s ease;}
+.arc-root .tour-card{position:fixed;left:max(14px, env(safe-area-inset-left));right:max(14px, env(safe-area-inset-right));max-width:460px;margin:0 auto;background:var(--surface);border:1px solid var(--gold);border-radius:14px;padding:16px 16px 12px;box-shadow:0 18px 40px rgba(0,0,0,.5);transition:top .3s ease;}
+.arc-root .tour-card.in{animation:tourIn .3s ease-out;}
+@keyframes tourIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.arc-root .tour-kicker{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);}
+.arc-root .tour-card h3{font-family:var(--font-display);font-size:18px;margin:4px 0 4px;color:var(--text);}
+.arc-root .tour-card p{margin:0 0 12px;font-size:14px;line-height:1.45;color:var(--text-dim);}
+.arc-root .tour-btns{display:flex;align-items:center;gap:8px;}
+.arc-root .tour-btns > span{flex:1;}
+.arc-root .tour-btns .btn{padding:8px 16px;}
+.arc-root .tour-skip{font-size:13px;color:var(--text-dim);}
+.arc-root .tour-offer{display:flex;flex-direction:column;gap:10px;margin:0 0 14px;padding:14px 16px;border-radius:var(--radius);border:1px solid var(--accent);background:var(--accent-soft);font-size:14px;color:var(--text);}
+.arc-root .tour-offer-btns{display:flex;align-items:center;gap:14px;}
+.arc-root .tour-btn{margin:0 0 18px;}
+@media (prefers-reduced-motion: reduce){ .arc-root .tour-spot,.arc-root .tour-card{transition:none;} .arc-root .tour-card.in{animation:none;} }
