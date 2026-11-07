@@ -8,3 +8,4 @@ tester-keys.txt
 .tester-keys.env
 meeting/
 .wrangler/
+private/

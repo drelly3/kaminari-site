@@ -1,7 +1,7 @@
 // Cloudflare Pages version of the Arc Tracker licence check (the Vercel version is api/arc-verify.js).
 // Both use the same checking code; only the way the host hands over the request differs.
-// Settings on the Pages project: GUMROAD_PRODUCT_ID and ARC_TESTER_KEYS.
-import { verifyLicense } from '../../api/arc-verify.js';
+// Settings on the Pages project: GUMROAD_PRODUCT_ID, ARC_TESTER_KEYS and ARC_BETA_KEYS.
+import { verifyLicense, inviteKeys } from '../../api/arc-verify.js';
 
 const json = (status, body) => new Response(JSON.stringify(body), {
   status,
@@ -11,7 +11,7 @@ const json = (status, body) => new Response(JSON.stringify(body), {
 export async function onRequestPost({ request, env }) {
   let body = {};
   try { body = await request.json(); } catch {}
-  const out = await verifyLicense(body.key, env.GUMROAD_PRODUCT_ID || '', env.ARC_TESTER_KEYS || '');
+  const out = await verifyLicense(body.key, env.GUMROAD_PRODUCT_ID || '', inviteKeys(env));
   return json(out.status, out.body);
 }
 

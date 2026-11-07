@@ -1,9 +1,9 @@
 // Cloudflare Worker entry. Cloudflare builds the site from GitHub (node build.mjs) and serves dist/
 // as plain files; this script only runs for /api/*, the /go/* partner links and the notification timer.
-// Settings on the Worker: GUMROAD_PRODUCT_ID, ARC_TESTER_KEYS and VAPID_PRIVATE_JWK (secrets),
+// Settings on the Worker: GUMROAD_PRODUCT_ID, ARC_TESTER_KEYS, ARC_BETA_KEYS and VAPID_PRIVATE_JWK (secrets),
 // plus the ARC_PUSH storage (notification devices and Arc Tracker backups), the ARC_PHOTOS bucket
 // (proof photo backups) and VAPID_PUBLIC_KEY in wrangler.jsonc.
-import { verifyLicense } from './api/arc-verify.js';
+import { verifyLicense, inviteKeys } from './api/arc-verify.js';
 import { handlePush, sendDue } from './api/arc-push.js';
 import { handleSync } from './api/arc-sync.js';
 import { handlePhotos } from './api/arc-photos.js';
@@ -22,7 +22,7 @@ export default {
       if (request.method !== 'POST') return json(405, { ok: false, reason: 'method_not_allowed' });
       let body = {};
       try { body = await request.json(); } catch {}
-      const out = await verifyLicense(body.key, env.GUMROAD_PRODUCT_ID || '', env.ARC_TESTER_KEYS || '');
+      const out = await verifyLicense(body.key, env.GUMROAD_PRODUCT_ID || '', inviteKeys(env));
       return json(out.status, out.body);
     }
     if (pathname.startsWith('/api/arc-push/')) return handlePush(request, env, pathname);

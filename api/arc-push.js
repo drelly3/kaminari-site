@@ -12,7 +12,7 @@
 //    show, and displays it. That keeps the sending code small and the wording editable in one place.
 //
 // Settings on the Worker: ARC_PUSH (KV), VAPID_PUBLIC_KEY, VAPID_PRIVATE_JWK (secret), VAPID_SUBJECT.
-import { verifyLicense } from './arc-verify.js';
+import { verifyLicense, inviteKeys } from './arc-verify.js';
 import { quoteFor, dropFor } from './arc-quotes.js';
 import { reminderFor } from './arc-reminders.js';
 
@@ -169,7 +169,7 @@ export async function handlePush(request, env, pathname) {
 
   if (action === 'subscribe') {
     // only members can register a device
-    const licence = await verifyLicense(body.key, env.GUMROAD_PRODUCT_ID || '', env.ARC_TESTER_KEYS || '');
+    const licence = await verifyLicense(body.key, env.GUMROAD_PRODUCT_ID || '', inviteKeys(env));
     if (!licence.body.ok) return json(403, { ok: false, reason: 'no_access' });
     const [h, m] = String(body.time || '08:00').split(':').map(Number);
     const tz = String(body.tz || 'UTC').slice(0, 64);

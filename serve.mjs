@@ -10,6 +10,7 @@ const memory = new Map();
 const photos = new Map();
 const previewEnv = {
   ARC_TESTER_KEYS: [process.env.ARC_TESTER_KEYS, 'ARC7-K2MQ-9XTD-4HPL'].filter(Boolean).join(','),
+  ARC_BETA_KEYS: process.env.ARC_BETA_KEYS || '',
   ARC_PUSH: { get: async k => memory.get(k) ?? null, put: async (k, v) => { memory.set(k, v); } },
   // just enough of R2 for the proof photo backup
   ARC_PHOTOS: {

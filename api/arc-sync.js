@@ -10,7 +10,7 @@
 // stamps resetAt and every record older than that is dropped, on every device.
 //
 // Stored in the ARC_PUSH KV namespace under "arc:" (the arc) and "lic:" (a recent licence check).
-import { verifyLicense } from './arc-verify.js';
+import { verifyLicense, inviteKeys } from './arc-verify.js';
 import { wipePhotos } from './arc-photos.js';
 
 const json = (status, body) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
@@ -65,7 +65,7 @@ export function mergeArc(stored = {}, incoming = {}) {
 export async function licenceOk(key, env) {
   const id = 'lic:' + await hashKey(key);
   if (await env.ARC_PUSH.get(id)) return true;
-  const out = await verifyLicense(key, env.GUMROAD_PRODUCT_ID || '', env.ARC_TESTER_KEYS || '');
+  const out = await verifyLicense(key, env.GUMROAD_PRODUCT_ID || '', inviteKeys(env));
   if (!out.body.ok) return false;
   await env.ARC_PUSH.put(id, '1', { expirationTtl: LICENCE_CACHE_SECONDS });
   return true;

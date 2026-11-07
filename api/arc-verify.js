@@ -4,7 +4,11 @@
 // Needs one setting on the host: GUMROAD_PRODUCT_ID (Gumroad > Arc Tracker > Content > licence key block).
 // Optional: ARC_TESTER_KEYS, a comma-separated list of invite keys that unlock the tracker for free
 // (for test runs). Remove a key from the list, or delete the setting, to switch that access off.
-export async function verifyLicense(key, productId = process.env.GUMROAD_PRODUCT_ID, testerKeys = process.env.ARC_TESTER_KEYS) {
+// Optional: ARC_BETA_KEYS, a second list in the same format for the beta batch, kept apart so the
+// whole batch can be switched off without touching ARC_TESTER_KEYS.
+export const inviteKeys = env => [env.ARC_TESTER_KEYS, env.ARC_BETA_KEYS].filter(Boolean).join(',');
+
+export async function verifyLicense(key, productId = process.env.GUMROAD_PRODUCT_ID, testerKeys = inviteKeys(process.env)) {
   key = String(key || '').trim();
   if (!key || key.length > 80) return { status: 400, body: { ok: false, reason: 'missing_key' } };
   const testers = String(testerKeys || '').split(',').map(k => k.trim().toUpperCase()).filter(Boolean);
