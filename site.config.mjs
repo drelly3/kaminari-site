@@ -37,6 +37,27 @@ export const nav = [
   { label: 'Newsletter', href: '/newsletter' },
   { label: 'Community', href: '/#community' },
   { label: 'Anime Mindset', href: '/anime-mindset' },
+  { label: 'Partners', href: '/partners' },
+];
+
+// Partners and affiliates. One entry per partner: the Partners page, the home page, the blog and the
+// footer all read this list, so a new partner shows up everywhere once it's added here.
+// To add one:
+//   1. Put their affiliate link in api/go-links.js under a short name (that becomes joinkaminari.com/go/<name>).
+//   2. Add an entry below with the same `go` name.
+//   3. Optional: give them a feature page of their own (see /anime-art-academy) and set `page`.
+export const partners = [
+  {
+    go: 'anime-art-academy',            // the /go/ short link name in api/go-links.js
+    name: 'Anime Art Academy',
+    category: 'Learn to Draw',          // the small label above the title
+    title: 'Learn to draw anime & manga from Japanese pros',
+    blurb: 'English video lessons from Japanese pro animators and manga artists, with personal corrections on your drawings. Two lessons are free to watch.',
+    cta: 'Watch a free lesson',
+    page: '/anime-art-academy',         // optional: our own page about them
+    kinds: ['characters'],              // blog categories it suits best; other posts show the first featured partner
+    featured: true,                     // featured partners are shown on the home page and blog
+  },
 ];
 
 export const authors = {

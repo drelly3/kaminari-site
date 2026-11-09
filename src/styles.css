@@ -414,3 +414,28 @@ dialog.waitlist .waitlist-msg{ min-height:1.4em; margin:4px 0 0; font-size:14px;
 .partner-card a{font-weight:600;margin-top:4px;}
 .rich a.partner-btn{color:#0B0B0F;text-decoration:none;}
 .rich a.partner-btn:hover{color:#0B0B0F;}
+
+/* partners: tiles on the Partners page and home page, the blog strip and the post sidebar pick */
+.partner-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;}
+.partner-tile{display:flex;flex-direction:column;gap:10px;padding:26px;border:1px solid var(--line-strong);border-radius:var(--r);
+  background:radial-gradient(circle at 100% 0%,rgba(255,200,87,.14),transparent 45%),radial-gradient(circle at 0% 100%,rgba(0,192,249,.14),transparent 50%),var(--card);}
+.partner-tile h3{margin:0;font-size:22px;line-height:1.2;color:var(--ink);}
+.partner-tile p{margin:0;color:var(--muted);flex:1;}
+.pt-cat{font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#FFC857;}
+.pt-name{font-size:13px;font-weight:600;color:var(--accent);}
+.pt-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px;}
+.partner-tile.soon{background:transparent;border-style:dashed;}
+.partner-tile.soon .pt-cat{color:var(--muted);}
+.partner-disclosure.center{text-align:center;max-width:640px;margin:26px auto 0;}
+.partner-band{background:linear-gradient(180deg,rgba(255,200,87,.06),transparent 70%);}
+.partner-strip{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin:0 0 28px;padding:14px 18px;border:1px solid rgba(255,200,87,.45);border-radius:var(--r);
+  background:linear-gradient(90deg,rgba(255,200,87,.12),rgba(0,192,249,.08));color:var(--ink);text-decoration:none;transition:border-color .2s,transform .2s;}
+.partner-strip:hover{border-color:#FFC857;transform:translateY(-1px);}
+.ps-tag{font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#0B0B0F;background:#FFC857;padding:4px 8px;border-radius:6px;}
+.ps-text{flex:1;min-width:200px;}
+.ps-text span{color:var(--muted);}
+.ps-go{font-weight:700;color:var(--accent);white-space:nowrap;}
+.partner-card small{font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#FFC857;}
+.partner-side a{display:flex;flex-direction:column;gap:6px;padding:16px;border:1px solid rgba(255,200,87,.45);border-radius:var(--r);background:var(--card);color:var(--ink);text-decoration:none;}
+.partner-side a:hover{border-color:#FFC857;}
+.partner-side b{line-height:1.3;}
