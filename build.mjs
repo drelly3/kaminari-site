@@ -83,6 +83,12 @@ write('/blog', {
   description: 'Anime lessons, watch orders, filler lists, character quotes, and recommendations from the Kaminari universe.',
   body: pages.blogIndex(posts),
 });
+// every partner and affiliate (the list is in site.config.mjs)
+write('/partners', {
+  title: 'Partners | Kaminari — Courses, Tools & Shops for Anime Fans',
+  description: 'Hand-picked partners for anime fans: learn to draw anime and manga from Japanese pros, and more. Recommended by the Kaminari team.',
+  body: pages.partnersPage(),
+});
 // partner feature page (not in the main menu; the footer, character posts and shared links point here)
 write('/anime-art-academy', {
   title: 'Learn to Draw Anime & Manga from Japanese Pros | Kaminari',
