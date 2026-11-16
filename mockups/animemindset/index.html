@@ -4,7 +4,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap">
 <style>
-/* Layout: a single-column brief. The move first, then the three concepts as cards, a comparison table, the recommendation and the checklist. */
+/* Layout: a single-column brief. What gets copied first, then the starting point and three concepts as cards, a comparison table, the recommendation and next steps. */
 :root{
   --bg:#F6F7F9;
   --surface:#FFFFFF;
@@ -76,6 +76,8 @@ td .arrow{color:var(--accent);font-weight:700}
 .concept{display:grid;grid-template-columns:200px minmax(0,1fr);background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden}
 .swatch{position:relative;min-height:180px;display:flex;align-items:flex-end;padding:16px}
 .swatch b{font:700 40px/1 var(--display);letter-spacing:-.03em}
+.sw0{background:#0B0B0F;color:#F5F5F7}
+.sw0 b{color:#00C0F9}
 .sw1{background:var(--c1);color:#F2F1EC}
 .sw1::before{content:"第一話";position:absolute;top:16px;left:16px;font:900 30px/1 'Hiragino Sans','Yu Gothic',sans-serif;color:transparent;-webkit-text-stroke:1px rgba(242,241,236,.35)}
 .sw1 b{color:var(--c1b)}
@@ -117,62 +119,74 @@ footer{border-top:1px solid var(--line);padding-block:28px 48px;font-size:14px;c
 </style>
 
 <header><div class="wrap">
-  <span class="label">Kaminari · site split proposal</span>
-  <h1>The Anime Mindset moves to <span>animemindset.com</span></h1>
-  <p>joinkaminari.com keeps the entertainment side (filler lists, watch orders, quotes, recommendations) and takes on ads and affiliate links. The Anime Mindset, the archetype quiz and the Arc Tracker get their own home with no ads. Below are three ways that home could look.</p>
+  <span class="label">Kaminari · animemindset.com mockups</span>
+  <h1><span>animemindset.com</span> starts as a copy of the Anime Mindset</h1>
+  <p>Step one copies the Anime Mindset section of joinkaminari.com as the starting point for the new site. Nothing on joinkaminari.com changes, and Arc Tracker members and their data stay where they are. Below is that copy, plus three directions the new site could take from it. These are mockups only; nothing is built or deployed.</p>
   <div class="jump">
+    <a href="starting-point.html">0 · Starting point</a>
     <a href="concept-1-the-arc.html">1 · The Arc</a>
     <a href="concept-2-nine-doors.html">2 · Nine Doors</a>
     <a href="concept-3-dojo-hq.html">3 · Dojo HQ</a>
   </div>
 </div></header>
 
-<section id="move"><div class="wrap">
-  <h2>What moves and what stays</h2>
-  <p class="intro">The new site is everything that helps someone change their habits. The current site is everything people come to read and watch.</p>
+<section id="copy"><div class="wrap">
+  <h2>What this step copies, and what it leaves alone</h2>
+  <p class="intro">The starting point is a straight copy of the Anime Mindset page as it renders today, with the same text, layout, archetypes and Arc Tracker section. Both sites run side by side; nothing is redirected.</p>
   <div class="split">
     <div class="box">
-      <h3><span class="dot"></span>Moves to animemindset.com</h3>
+      <h3><span class="dot"></span>Copied as the starting point</h3>
       <ul>
-        <li><b>The Anime Mindset page</b>, which becomes the new home page</li>
-        <li><b>The archetype quiz</b> and the 9 archetypes</li>
-        <li><b>The Arc Tracker</b>: sales page, app and its API (sync, photos, reminders, push)</li>
-        <li><b>“Lessons” blog posts</b> such as Think Like Shikamaru, which become the Codex</li>
-        <li><b>Gumroad products</b>: the Mindset System templates and the tracker</li>
-        <li><b>Discord / community</b> waitlist</li>
+        <li><b>The Anime Mindset page</b>, word for word, as the animemindset.com home page</li>
+        <li><b>The 9 archetypes</b> table and avatars</li>
+        <li><b>The Arc Tracker section</b> of that page (habits, weakness, rank ladder)</li>
+        <li><b>Its styles and logo</b>, copied so the page renders on its own</li>
       </ul>
     </div>
     <div class="box">
-      <h3><span class="dot stay"></span>Stays on joinkaminari.com</h3>
+      <h3><span class="dot stay"></span>Not touched in this step</h3>
       <ul>
-        <li><b>Filler lists, watch orders, quotes, “anime like…” and character lists</b></li>
-        <li><b>Ads and affiliate links</b>, kept off the mindset site</li>
-        <li><b>About</b> and the team page</li>
-        <li><b>One banner</b> pointing readers to “Find your anime archetype”</li>
-        <li><b>The Substack newsletter</b>, unless you split it (see open questions)</li>
+        <li><b>joinkaminari.com</b>: every page stays live and unchanged, including /anime-mindset</li>
+        <li><b>No redirects</b> from the current site</li>
+        <li><b>Arc Tracker members</b>: their keys, progress, photos and installed apps stay put. You're handling that transfer later.</li>
+        <li><b>The Arc Tracker app and its API</b>: not copied</li>
+        <li><b>No build or deploy</b> of animemindset.com yet</li>
       </ul>
     </div>
   </div>
 
   <div class="table-wrap">
     <table>
-      <thead><tr><th>Today on joinkaminari.com</th><th></th><th>On animemindset.com</th><th>Note</th></tr></thead>
+      <thead><tr><th>On joinkaminari.com today</th><th>In these mockups</th><th>Status</th></tr></thead>
       <tbody>
-        <tr><td><code>/anime-mindset</code></td><td class="arrow">→</td><td><code>/</code></td><td>301 redirect</td></tr>
-        <tr><td><code>/quiz</code></td><td class="arrow">→</td><td><code>/quiz</code></td><td>301 redirect</td></tr>
-        <tr><td><code>/arc-tracker</code></td><td class="arrow">→</td><td><code>/arc-tracker</code></td><td>301 redirect</td></tr>
-        <tr><td><code>/arc-tracker/app</code></td><td class="arrow">→</td><td><code>/arc-tracker/app</code></td><td>Members sign in again and reinstall the home-screen app</td></tr>
-        <tr><td><code>/blog/&lt;lesson&gt;</code></td><td class="arrow">→</td><td><code>/codex/&lt;lesson&gt;</code></td><td>301 for each Lessons post</td></tr>
-        <tr><td><code>/api/arc-*</code></td><td class="arrow">→</td><td><code>/api/arc-*</code></td><td>Keep the old routes alive until every installed app has updated</td></tr>
+        <tr><td><code>/anime-mindset</code></td><td><a href="starting-point.html">Starting point</a></td><td>Exact copy. Analytics, the canonical tag and search verification are removed so the copy can't compete with the live page.</td></tr>
+        <tr><td><code>/quiz</code></td><td>Linked</td><td>Buttons open the live quiz; not copied yet</td></tr>
+        <tr><td><code>/arc-tracker/app</code></td><td>Linked</td><td>Sign-in buttons open the live app; no user data involved</td></tr>
+        <tr><td><code>/blog</code>, <code>/about</code>, <code>/newsletter</code></td><td>Linked</td><td>Header and footer links go to the live site</td></tr>
+        <tr><td>“Lessons” blog posts</td><td>Concept 3 only</td><td>Titles shown as a Codex idea; posts not copied</td></tr>
       </tbody>
     </table>
   </div>
 </div></section>
 
 <section id="concepts"><div class="wrap">
-  <h2>The three concepts</h2>
-  <p class="intro">Each mockup is a full homepage at animemindset.com, using the real archetypes, ranks and quotes from the current site. Every mockup shows the “moved from joinkaminari.com” notice members would see.</p>
+  <h2>The starting point and three concepts</h2>
+  <p class="intro">Each concept is a full homepage at animemindset.com, built from the starting point and using the real archetypes, ranks and quotes from the current site.</p>
   <div class="concepts">
+    <article class="concept">
+      <div class="swatch sw0"><b>Today</b></div>
+      <div class="c-body">
+        <span class="label">Starting point</span>
+        <h3>The current Anime Mindset page, copied as is</h3>
+        <p>An exact copy of joinkaminari.com/anime-mindset, opened as animemindset.com would show it on day one. Use it as the baseline when comparing the three concepts.</p>
+        <div class="c-meta">
+          <div><b>What changed</b>Nothing in the content. Analytics and search tags removed, and links point to the live site.</div>
+          <div><b>What's missing</b>The quiz and the Arc Tracker app aren't copied; their buttons open the live versions.</div>
+        </div>
+        <a class="open" href="starting-point.html">Open the starting point</a>
+      </div>
+    </article>
+
 
     <article class="concept">
       <div class="swatch sw1"><b>The Arc</b></div>
@@ -241,16 +255,17 @@ footer{border-top:1px solid var(--line);padding-block:28px 48px;font-size:14px;c
   </div>
 </div></section>
 
-<section id="checklist"><div class="wrap">
-  <h2>Before the move</h2>
+<section id="next"><div class="wrap">
+  <h2>Next steps</h2>
   <ul class="check">
-    <li class="must"><div><b>Protect Arc Tracker progress <span class="tagm">Must</span></b><span>Progress is saved in each member's browser for joinkaminari.com. A new domain starts empty, so confirm every member's data is synced to the server (or add an export button) before switching.</span></div></li>
-    <li class="must"><div><b>Set up the 301 redirects <span class="tagm">Must</span></b><span>Every path in the table above, so search rankings and shared links carry over.</span></div></li>
-    <li class="must"><div><b>Keep the old API routes running <span class="tagm">Must</span></b><span>Installed home-screen apps keep calling joinkaminari.com until members reinstall from the new domain.</span></div></li>
-    <li><div><b>Update Gumroad, Substack and social links</b><span>Product pages, receipt emails, link-in-bio and the newsletter footer.</span></div></li>
-    <li><div><b>Add animemindset.com to Google Search Console</b><span>Then submit the new sitemap and use the change-of-address tool where it applies.</span></div></li>
-    <li><div><b>Add the banner on joinkaminari.com</b><span>That's where your traffic is today, so it's how people will find the new site.</span></div></li>
+    <li class="must"><div><b>Pick a direction</b><span>Starting point as is, one of the three concepts, or a mix.</span></div></li>
+    <li><div><b>Answer the open questions below</b><span>The newsletter and branding choices change the build.</span></div></li>
+    <li><div><b>Then build animemindset.com</b><span>Not started. Nothing gets built or deployed until you say so.</span></div></li>
   </ul>
+  <div class="rec">
+    <p><b>Heads-up for when you do the Arc Tracker transfer.</b> These are notes, not part of this step.</p>
+    <p>Each member's progress is saved in their own browser for joinkaminari.com, so a copy of the app on a new domain starts empty unless their data has been synced to the server first. Home-screen installs keep opening joinkaminari.com until members reinstall from the new domain.</p>
+  </div>
 </div></section>
 
 <section id="questions"><div class="wrap">
@@ -263,4 +278,4 @@ footer{border-top:1px solid var(--line);padding-block:28px 48px;font-size:14px;c
   </ol>
 </div></section>
 
-<footer><div class="wrap">Mockups only. Nothing here changes the live joinkaminari.com site. Lesson blurbs, the Season and the leaderboard in Concept 3 are placeholder copy and example data.</div></footer>
+<footer><div class="wrap">Mockups only. Nothing here changes joinkaminari.com or touches Arc Tracker members or their data. Lesson blurbs, the Season and the leaderboard in Concept 3 are placeholder copy and example data.</div></footer>
