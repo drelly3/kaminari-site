@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Concept 2 · Nine Doors</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;800&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: the nine archetypes ARE the home page. A 3x3 grid of doors; picking one re-tints the whole site with that archetype's hue and opens its profile page below. */
+:root{
+  --h:255;
+  --paper:hsl(var(--h) 30% 97%);
+  --card:hsl(var(--h) 40% 99.5%);
+  --ink:hsl(var(--h) 35% 10%);
+  --mute:hsl(var(--h) 12% 38%);
+  --line:hsl(var(--h) 20% 86%);
+  --tint:hsl(var(--h) 75% 44%);
+  --tint-ink:hsl(var(--h) 80% 98%);
+  --tint-soft:hsl(var(--h) 80% 55% / .12);
+  --display:'Unbounded', 'Arial Black', system-ui, sans-serif;
+  --body:'Zen Kaku Gothic New', system-ui, -apple-system, sans-serif;
+  --mono:'IBM Plex Mono', ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --paper:hsl(var(--h) 22% 7%);
+  --card:hsl(var(--h) 20% 10%);
+  --ink:hsl(var(--h) 25% 95%);
+  --mute:hsl(var(--h) 12% 68%);
+  --line:hsl(var(--h) 15% 20%);
+  --tint:hsl(var(--h) 85% 66%);
+  --tint-ink:hsl(var(--h) 40% 8%);
+  --tint-soft:hsl(var(--h) 85% 60% / .14);
+  color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --paper:hsl(var(--h) 22% 7%);
+  --card:hsl(var(--h) 20% 10%);
+  --ink:hsl(var(--h) 25% 95%);
+  --mute:hsl(var(--h) 12% 68%);
+  --line:hsl(var(--h) 15% 20%);
+  --tint:hsl(var(--h) 85% 66%);
+  --tint-ink:hsl(var(--h) 40% 8%);
+  --tint-soft:hsl(var(--h) 85% 60% / .14);
+  color-scheme:dark;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--paper);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.65;-webkit-font-smoothing:antialiased;overflow-x:hidden;transition:background-color .5s ease}
+a{color:inherit;text-decoration:none}
+img{display:block;max-width:100%}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+:focus-visible{outline:2px solid var(--tint);outline-offset:3px}
+.wrap{max-width:1160px;margin:0 auto;padding-left:max(20px, env(safe-area-inset-left, 0px));padding-right:max(20px, env(safe-area-inset-right, 0px))}
+h1,h2,h3{font-family:var(--display);font-weight:800;letter-spacing:-.02em;line-height:1.05;text-wrap:balance}
+.label{font:500 11px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--mute)}
+
+/* mockup chrome */
+.mockbar{background:var(--ink);color:var(--paper);font:500 12px/1.3 var(--body)}
+.mockbar .wrap{display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center;padding-block:8px}
+.mockbar b{font-weight:700}
+.mockbar nav{display:flex;gap:12px;margin-left:auto;flex-wrap:wrap}
+.mockbar a{text-decoration:underline;text-underline-offset:2px}
+.mockbar a[aria-current]{text-decoration:none;opacity:.55}
+.urlbar{border-bottom:1px solid var(--line);font:500 12px/1 var(--mono);color:var(--mute)}
+.urlbar .wrap{padding-block:7px}
+.urlbar span{display:inline-block;background:var(--card);border:1px solid var(--line);border-radius:99px;padding:6px 12px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.urlbar b{color:var(--ink);font-weight:500}
+
+.ribbon{background:var(--tint-soft);font-size:14px;transition:background-color .5s ease}
+.ribbon .wrap{display:flex;flex-wrap:wrap;gap:4px 14px;justify-content:center;padding-block:9px;text-align:center}
+.ribbon a{color:var(--tint);font-weight:700;text-decoration:underline;text-underline-offset:3px}
+
+.nav .wrap{display:flex;align-items:center;gap:24px;padding-block:20px}
+.logo{display:flex;align-items:center;gap:10px;font:800 16px/1 var(--display);letter-spacing:-.01em}
+.logo i{display:grid;place-items:center;width:34px;height:34px;border-radius:10px;background:var(--tint);color:var(--tint-ink);transition:background-color .5s ease}
+.logo small{display:block;font:500 11px/1 var(--body);color:var(--mute);margin-top:4px;letter-spacing:0}
+.nav ul{display:flex;gap:22px;list-style:none;margin-left:auto;font-size:15px;color:var(--mute)}
+.nav ul a:hover{color:var(--ink)}
+.btn{display:inline-flex;align-items:center;gap:8px;font:700 15px/1 var(--body);padding:15px 22px;border-radius:999px;border:1.5px solid transparent;transition:background-color .5s ease, transform .15s ease}
+.btn:hover{transform:translateY(-1px)}
+.btn-tint{background:var(--tint);color:var(--tint-ink)}
+.btn-line{border-color:var(--line)}
+.btn-line:hover{border-color:var(--ink)}
+.nav .btn{padding:11px 18px;font-size:14px}
+@media (max-width:820px){.nav ul{display:none}.nav .btn{margin-left:auto}}
+
+/* hero */
+.hero{padding-block:40px 64px}
+.hero .wrap{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:48px;align-items:center}
+.hero h1{font-size:clamp(36px, 5.2vw, 62px);margin-top:16px}
+.hero h1 span{color:var(--tint);transition:color .5s ease}
+.hero p{color:var(--mute);font-size:18px;max-width:46ch;margin-top:20px}
+.hero .actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:30px}
+.hero .meta{font:500 12px/1.4 var(--mono);color:var(--mute);margin-top:16px}
+@media (max-width:900px){.hero .wrap{grid-template-columns:1fr}}
+
+.doors{display:grid;grid-template-columns:repeat(3, minmax(0,1fr));gap:10px}
+.door{--dh:0;position:relative;text-align:left;background:var(--card);border:1.5px solid var(--line);border-radius:18px;padding:14px 14px 16px;display:flex;flex-direction:column;gap:10px;transition:border-color .25s ease, transform .2s ease, box-shadow .25s ease;min-width:0}
+.door:hover{transform:translateY(-2px);border-color:hsl(var(--dh) 70% 55%)}
+.door img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:12px;background:hsl(var(--dh) 60% 50% / .2)}
+.door b{font:700 13px/1.15 var(--display);letter-spacing:-.01em}
+.door small{font:500 10px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--mute)}
+.door[aria-pressed="true"]{border-color:var(--tint);box-shadow:0 0 0 4px var(--tint-soft)}
+.door[aria-pressed="true"]::after{content:"Your result";position:absolute;top:22px;left:22px;font:500 10px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;background:var(--tint);color:var(--tint-ink);padding:5px 7px;border-radius:99px}
+@media (max-width:480px){.door{padding:8px 8px 10px;border-radius:14px}.door b{font-size:11px}.door small{display:none}.door[aria-pressed="true"]::after{top:12px;left:12px;font-size:9px}}
+.demo-note{font-size:13px;color:var(--mute);margin-top:12px;text-align:center}
+
+/* profile */
+.profile{border-top:1px solid var(--line);padding-block:72px;scroll-margin-top:12px}
+.p-head{display:grid;grid-template-columns:auto minmax(0,1fr);gap:28px;align-items:center}
+.p-head img{width:132px;height:132px;border-radius:32px;object-fit:cover;border:3px solid var(--tint);transition:border-color .5s ease}
+.p-head h2{font-size:clamp(34px, 5vw, 56px);margin-top:10px}
+.p-head q{display:block;font-size:20px;margin-top:10px;color:var(--mute);quotes:"“" "”"}
+@media (max-width:600px){.p-head{grid-template-columns:1fr}.p-head img{width:96px;height:96px;border-radius:24px}}
+
+.facts{display:grid;grid-template-columns:repeat(3, minmax(0,1fr));gap:16px;margin-top:44px}
+.fact{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px}
+.fact p{margin-top:10px;font-size:16px}
+.fact.shadow{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.fact.shadow .label{color:var(--paper);opacity:.7}
+@media (max-width:820px){.facts{grid-template-columns:1fr}}
+
+.integration{margin-top:40px;padding:28px 0;border-block:1px solid var(--line);font:700 clamp(20px, 2.6vw, 28px)/1.3 var(--display);letter-spacing:-.015em;max-width:30ch}
+.integration::before{content:"The way through";display:block;font:500 11px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--tint);margin-bottom:14px}
+
+.build{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:40px;margin-top:48px}
+.build h3{font-size:22px;margin-bottom:16px}
+.habits{list-style:none;display:grid;gap:10px}
+.habits li{display:grid;grid-template-columns:28px 1fr;gap:12px;align-items:start;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+.habits li::before{content:"";width:20px;height:20px;border-radius:6px;border:2px solid var(--tint);margin-top:3px}
+.habits.shadow li::before{border-style:dashed}
+.build .hint{font-size:14px;color:var(--mute);margin-top:12px}
+@media (max-width:820px){.build{grid-template-columns:1fr}}
+
+.ranks{margin-top:56px}
+.ranks h3{font-size:22px}
+.rank-row{display:grid;grid-template-columns:repeat(5, minmax(0,1fr));gap:8px;margin-top:18px;counter-reset:r}
+.rk{position:relative;padding:16px 14px;border-radius:14px;border:1px solid var(--line);background:var(--card);min-width:0}
+.rk::before{counter-increment:r;content:"Rank " counter(r);font:500 10px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--mute)}
+.rk b{display:block;font:700 15px/1.2 var(--display);margin-top:8px;overflow-wrap:anywhere}
+.rk span{display:block;font:500 12px/1 var(--mono);color:var(--mute);margin-top:8px}
+.rk:nth-child(1){background:var(--tint-soft)}
+.rk:nth-child(2){background:hsl(var(--h) 80% 55% / .2)}
+.rk:nth-child(3){background:hsl(var(--h) 80% 55% / .3)}
+.rk:nth-child(4){background:hsl(var(--h) 80% 55% / .45)}
+.rk:nth-child(5){background:var(--tint);color:var(--tint-ink);border-color:var(--tint)}
+.rk:nth-child(5)::before,.rk:nth-child(5) span{color:var(--tint-ink);opacity:.8}
+@media (max-width:700px){.rank-row{grid-template-columns:1fr 1fr}.rk:nth-child(5){grid-column:1/-1}}
+.p-cta{display:flex;flex-wrap:wrap;gap:12px;margin-top:40px}
+
+/* what else */
+.more{border-top:1px solid var(--line);padding-block:64px}
+.more-grid{display:grid;grid-template-columns:repeat(3, minmax(0,1fr));gap:16px;margin-top:24px}
+.more-grid a{border:1px solid var(--line);border-radius:18px;padding:22px;background:var(--card);transition:border-color .2s ease}
+.more-grid a:hover{border-color:var(--tint)}
+.more-grid h3{font-size:18px}
+.more-grid p{color:var(--mute);font-size:15px;margin-top:8px}
+@media (max-width:820px){.more-grid{grid-template-columns:1fr}}
+
+footer{border-top:1px solid var(--line);padding-block:36px;font-size:14px;color:var(--mute)}
+footer .wrap{display:flex;flex-wrap:wrap;gap:12px 32px;justify-content:space-between}
+footer a{color:var(--ink);text-decoration:underline;text-underline-offset:3px}
+
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<div class="mockbar"><div class="wrap">
+  <span><b>Mockup</b> · Concept 2 of 3: Nine Doors · animemindset.com</span>
+  <nav aria-label="Mockups"><a href="index.html">All concepts</a><a href="concept-1-the-arc.html">1 The Arc</a><a href="concept-2-nine-doors.html" aria-current="page">2 Nine Doors</a><a href="concept-3-dojo-hq.html">3 Dojo HQ</a></nav>
+</div></div>
+<div class="urlbar"><div class="wrap"><span>animemindset.com<b id="url-path">/archetypes/the-strategist</b></span></div></div>
+
+<div class="ribbon"><div class="wrap">
+  <span>The Anime Mindset has moved here from joinkaminari.com.</span>
+  <a href="#profile">Have an Arc Tracker key? Sign in</a>
+</div></div>
+
+<header class="nav"><div class="wrap">
+  <a class="logo" href="#top">
+    <i><svg width="16" height="19" viewBox="0 0 22 26" aria-hidden="true"><path fill="currentColor" d="M13 0 1 15h8l-2 11L21 9h-8l2-9z"/></svg></i>
+    <span>Anime Mindset<small>by Kaminari</small></span>
+  </a>
+  <ul>
+    <li><a href="#doors">Archetypes</a></li>
+    <li><a href="#profile">Arc Tracker</a></li>
+    <li><a href="#more">Codex</a></li>
+    <li><a href="#more">Guild</a></li>
+  </ul>
+  <a class="btn btn-tint" href="#top">Take the quiz</a>
+</div></header>
+
+<main id="top">
+<section class="hero"><div class="wrap">
+  <div>
+    <span class="label">The Anime Mindset</span>
+    <h1>Nine ways to become the main character. <span>Which one are you?</span></h1>
+    <p>Every great character runs on a core identity. Find yours and you stop guessing who you're becoming. Then you build on purpose, one habit and one shadow at a time.</p>
+    <div class="actions">
+      <a class="btn btn-tint" href="#top">Take the archetype quiz</a>
+      <a class="btn btn-line" href="#doors">Explore all nine</a>
+    </div>
+    <p class="meta">12 questions · under 5 minutes · free</p>
+  </div>
+  <div id="doors">
+    <div class="doors" id="door-grid" role="group" aria-label="The nine archetypes"></div>
+    <p class="demo-note">Mockup: tap a door to see the site as someone with that quiz result would. The colour, profile and URL all change.</p>
+  </div>
+</div></section>
+
+<section class="profile" id="profile"><div class="wrap">
+  <div class="p-head">
+    <img id="p-img" src="avatars/strategist.png" alt="" width="132" height="132">
+    <div>
+      <span class="label" id="p-root">Archetype page · Jungian root: Magician</span>
+      <h2 id="p-name">The Strategist</h2>
+      <q id="p-quote">I don't chase outcomes. I position myself for them.</q>
+    </div>
+  </div>
+  <div class="facts">
+    <div class="fact"><span class="label">What drives you</span><p id="p-light"></p></div>
+    <div class="fact shadow"><span class="label">Your shadow</span><p id="p-shadow"></p></div>
+    <div class="fact"><span class="label">Characters who live it</span><p id="p-anime"></p></div>
+  </div>
+  <p class="integration" id="p-int"></p>
+  <div class="build">
+    <div>
+      <h3>Start with these three habits</h3>
+      <ul class="habits" id="p-habits"></ul>
+    </div>
+    <div>
+      <h3>Pick one shadow habit</h3>
+      <ul class="habits shadow" id="p-shadowopts"></ul>
+      <p class="hint">It's tracked on its own, with badges at 10, 25 and 50 check-ins.</p>
+    </div>
+  </div>
+  <div class="ranks">
+    <h3 id="p-rank-title">Your rank ladder</h3>
+    <div class="rank-row" id="p-ranks"></div>
+  </div>
+  <div class="p-cta">
+    <a class="btn btn-tint" href="#profile" id="p-cta">Track this arc in the Arc Tracker</a>
+    <a class="btn btn-line" href="#top">Retake the quiz</a>
+  </div>
+</div></section>
+
+<section class="more" id="more"><div class="wrap">
+  <span class="label">Keep going</span>
+  <div class="more-grid">
+    <a href="#more"><h3>Codex</h3><p>Lessons pulled out of the stories you love, like “Think Like Shikamaru” and “Take the Jump”.</p></a>
+    <a href="#more"><h3>Scrolls</h3><p>The Anime Mindset System templates and other tools from the Kaminari team.</p></a>
+    <a href="#more"><h3>Guild</h3><p>Monthly Seasons where everyone runs the same training arc together. Discord waitlist open.</p></a>
+  </div>
+</div></section>
+</main>
+
+<footer><div class="wrap">
+  <span>Anime Mindset is a Kaminari project. No ads, no affiliate links.</span>
+  <span>Looking for filler lists and watch orders? <a href="https://www.joinkaminari.com">joinkaminari.com</a></span>
+</div></footer>
+
+<script src="archetypes.js"></script>
+<script>
+(() => {
+  const A = window.ARCH || [];
+  const slug = a => a.title.toLowerCase().replace(/[^a-z]+/g, '-').replace(/^-|-$/g, '');
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const ms = [0, 10, 25, 50, 100];
+
+  $('door-grid').innerHTML = A.map(a => `<button type="button" class="door" style="--dh:${a.hue}" data-key="${a.key}" aria-pressed="false"><img src="avatars/${a.key}.png" alt="" width="200" height="200"><span><b>${esc(a.title.replace('The ', ''))}</b><br><small>${esc(a.alias)}</small></span></button>`).join('');
+
+  function show(key, scroll) {
+    const a = A.find(x => x.key === key) || A[0];
+    if (!a) return;
+    document.documentElement.style.setProperty('--h', a.hue);
+    document.querySelectorAll('.door').forEach(d => d.setAttribute('aria-pressed', String(d.dataset.key === a.key)));
+    $('url-path').textContent = '/archetypes/' + slug(a);
+    $('p-img').src = 'avatars/' + a.key + '.png';
+    $('p-root').textContent = 'Archetype page · Jungian root: ' + a.alias;
+    $('p-name').textContent = a.title;
+    $('p-quote').textContent = a.quote;
+    $('p-light').textContent = a.light;
+    $('p-shadow').textContent = a.shadow;
+    $('p-anime').textContent = a.anime;
+    $('p-int').textContent = a.integration;
+    $('p-habits').innerHTML = a.lightHabits.map(h => `<li>${esc(h)}</li>`).join('');
+    $('p-shadowopts').innerHTML = a.shadowOptions.map(h => `<li>${esc(h)}</li>`).join('');
+    $('p-rank-title').textContent = a.title + ': your rank ladder';
+    $('p-ranks').innerHTML = a.ranks.map((r, i) => `<div class="rk"><b>${esc(r)}</b><span>${ms[i]} full-clear days</span></div>`).join('');
+    try { localStorage.setItem('am-mock-archetype', a.key); } catch (e) {}
+    if (location.hash.slice(1) !== slug(a)) history.replaceState(null, '', '#' + slug(a));
+    if (scroll) $('profile').scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+  }
+
+  $('door-grid').addEventListener('click', e => {
+    const d = e.target.closest('.door');
+    if (d) show(d.dataset.key, true);
+  });
+
+  const fromHash = () => (A.find(a => slug(a) === location.hash.slice(1)) || {}).key;
+  let start = fromHash();
+  if (!start) { try { start = localStorage.getItem('am-mock-archetype'); } catch (e) {} }
+  show(start || 'strategist', false);
+  addEventListener('hashchange', () => { const k = fromHash(); if (k) show(k, false); });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,347 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Concept 3 · Dojo HQ</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: an app shell, not a brochure. Side rail (bottom tabs on phones) with four areas: Train, Codex, Scrolls, Guild. Visitors land in a demo account. Single committed dark look, accent = the archetype's hue. */
+:root{
+  --h:255;
+  --void:#0C0D11;
+  --rail:#111218;
+  --panel:#17181F;
+  --panel-2:#1D1E27;
+  --ink:#ECEDF2;
+  --mute:#8D90A2;
+  --line:rgba(236,237,242,.09);
+  --accent:hsl(var(--h) 90% 72%);
+  --accent-soft:hsl(var(--h) 90% 65% / .14);
+  --accent-ink:#0C0D11;
+  --good:#3DDC97;
+  --miss:#FF6B6B;
+  --display:'Space Grotesk', system-ui, sans-serif;
+  --body:'Inter', system-ui, -apple-system, sans-serif;
+  --mono:'JetBrains Mono', ui-monospace, Menlo, monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{min-height:100%}
+body{background:var(--void);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+a{color:inherit;text-decoration:none}
+img{display:block;max-width:100%}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+h1,h2,h3{font-family:var(--display);font-weight:700;letter-spacing:-.02em;line-height:1.15;text-wrap:balance}
+.label{font:500 11px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--mute)}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+
+/* mockup chrome */
+.mockbar{background:#ECEDF2;color:#0C0D11;font:600 12px/1.3 var(--body)}
+.mockbar .in{display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center;padding-block:8px;padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+.mockbar nav{display:flex;gap:12px;margin-left:auto;flex-wrap:wrap}
+.mockbar a{text-decoration:underline;text-underline-offset:2px}
+.mockbar a[aria-current]{text-decoration:none;opacity:.5}
+
+/* shell */
+.shell{display:grid;grid-template-columns:240px minmax(0,1fr);min-height:calc(100vh - 34px)}
+.rail{background:var(--rail);border-right:1px solid var(--line);padding:20px 14px;display:flex;flex-direction:column;gap:6px;position:sticky;top:0;height:100vh}
+.logo{display:flex;align-items:center;gap:10px;font:700 16px/1 var(--display);padding:6px 10px 22px}
+.logo i{display:grid;place-items:center;width:32px;height:32px;border-radius:9px;background:var(--accent);color:var(--accent-ink)}
+.logo small{display:block;font:500 11px/1 var(--body);color:var(--mute);margin-top:4px}
+.tab{display:flex;align-items:center;gap:12px;padding:11px 12px;border-radius:10px;color:var(--mute);font-weight:600;text-align:left;width:100%}
+.tab svg{flex:0 0 auto}
+.tab:hover{color:var(--ink);background:var(--panel)}
+.tab[aria-selected="true"]{color:var(--ink);background:var(--accent-soft)}
+.tab[aria-selected="true"] svg{color:var(--accent)}
+.tab small{margin-left:auto;font:500 10px/1 var(--mono);color:var(--mute)}
+.me{margin-top:auto;display:flex;gap:10px;align-items:center;padding:12px;border-radius:12px;background:var(--panel);border:1px solid var(--line)}
+.me img{width:38px;height:38px;border-radius:50%}
+.me b{display:block;font-size:14px}
+.me span{font-size:12px;color:var(--mute)}
+
+.main{min-width:0;padding:22px max(28px, env(safe-area-inset-right, 0px)) 60px 28px}
+.banner{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;padding:12px 16px;border-radius:12px;border:1px dashed var(--line);background:var(--panel);font-size:14px;color:var(--mute);margin-bottom:12px}
+.banner b{color:var(--ink)}
+.banner a{margin-left:auto;color:var(--accent);font-weight:600}
+.banner.move{border-style:solid;border-color:hsl(var(--h) 90% 65% / .35);background:var(--accent-soft)}
+
+.view-head{display:flex;flex-wrap:wrap;gap:16px;align-items:end;justify-content:space-between;margin:26px 0 20px}
+.view-head h1{font-size:clamp(26px, 3.4vw, 36px)}
+.view-head p{color:var(--mute);margin-top:4px}
+.btn{display:inline-flex;align-items:center;gap:8px;font:600 14px/1 var(--body);padding:12px 16px;border-radius:10px;border:1px solid var(--line);background:var(--panel-2)}
+.btn:hover{border-color:var(--mute)}
+.btn-accent{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px}
+.grid{display:grid;gap:14px}
+.g-train{grid-template-columns:minmax(0,1.5fr) minmax(0,1fr)}
+@media (max-width:1050px){.g-train{grid-template-columns:1fr}}
+
+/* rank card */
+.rank{display:grid;grid-template-columns:auto minmax(0,1fr);gap:18px;align-items:center}
+.rank img{width:72px;height:72px;border-radius:18px;border:2px solid var(--accent)}
+.rank h2{font-size:22px;margin-top:6px}
+.bar{height:8px;border-radius:99px;background:var(--panel-2);overflow:hidden;margin-top:12px}
+.bar i{display:block;height:100%;background:var(--accent);border-radius:inherit;width:68%;transition:width .4s ease}
+.bar-meta{display:flex;justify-content:space-between;font-size:12px;color:var(--mute);margin-top:8px}
+
+.stats{display:grid;grid-template-columns:repeat(3, minmax(0,1fr));gap:1px;background:var(--line);border-radius:12px;overflow:hidden;margin-top:18px}
+.stats div{background:var(--panel-2);padding:14px}
+.stats b{display:block;font:700 22px/1 var(--mono);margin-top:8px}
+
+/* today */
+.today-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px}
+.today-head h3{font-size:18px}
+.pill{font:600 12px/1 var(--mono);padding:6px 10px;border-radius:99px;background:var(--panel-2);color:var(--mute)}
+.pill.done{background:hsl(152 70% 55% / .15);color:var(--good)}
+.habit{display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:12px;align-items:center;width:100%;text-align:left;padding:13px 14px;border-radius:12px;border:1px solid var(--line);background:var(--panel-2);margin-top:8px}
+.habit .box{width:22px;height:22px;border-radius:7px;border:2px solid var(--mute);display:grid;place-items:center;transition:all .15s ease}
+.habit .box svg{opacity:0}
+.habit[aria-pressed="true"] .box{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.habit[aria-pressed="true"] .box svg{opacity:1}
+.habit[aria-pressed="true"] .t{color:var(--mute);text-decoration:line-through;text-decoration-color:var(--mute)}
+.habit .k{font:500 10px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--mute);display:block;margin-bottom:4px}
+.habit .proof{font:500 11px/1 var(--mono);color:var(--mute);white-space:nowrap}
+.habit.shadow{border-style:dashed}
+.cleared{margin-top:14px;padding:14px;border-radius:12px;text-align:center;font:700 16px var(--display);background:var(--accent);color:var(--accent-ink)}
+
+/* week */
+.week{display:grid;grid-template-columns:repeat(7, minmax(0,1fr));gap:6px;margin-top:14px}
+.day{text-align:center;font:500 11px/1 var(--mono);color:var(--mute)}
+.day i{display:block;aspect-ratio:1;border-radius:8px;margin-top:6px;background:var(--panel-2);border:1px solid var(--line)}
+.day.c i{background:var(--accent);border-color:var(--accent)}
+.day.m i{background:transparent;border:1.5px dashed var(--miss)}
+.day.t i{border:1.5px solid var(--accent)}
+.legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:12px;font-size:12px;color:var(--mute)}
+.legend span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px;background:var(--accent)}
+.legend span.m::before{background:transparent;border:1.5px dashed var(--miss)}
+
+.season{background:linear-gradient(135deg, hsl(var(--h) 60% 22%), var(--panel) 70%)}
+.season h3{font-size:20px;margin-top:8px}
+.season p{color:var(--mute);margin-top:6px;font-size:14px}
+.season .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+.quote{font:500 18px/1.45 var(--display);letter-spacing:-.01em}
+.quote::before{content:"Quote of the day";display:block;font:500 11px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--mute);margin-bottom:12px}
+
+/* codex / scrolls / guild */
+.g-3{grid-template-columns:repeat(3, minmax(0,1fr))}
+@media (max-width:1000px){.g-3{grid-template-columns:repeat(2, minmax(0,1fr))}}
+@media (max-width:640px){.g-3{grid-template-columns:1fr}}
+.lesson{display:flex;flex-direction:column;gap:10px}
+.lesson .tag{align-self:flex-start;font:500 10px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;padding:6px 8px;border-radius:6px;background:var(--accent-soft);color:var(--accent)}
+.lesson h3{font-size:18px}
+.lesson p{color:var(--mute);font-size:14px}
+.lesson .foot{margin-top:auto;display:flex;justify-content:space-between;font:500 12px/1 var(--mono);color:var(--mute);padding-top:10px;border-top:1px solid var(--line)}
+.product{display:flex;flex-direction:column;gap:10px}
+.product .price{font:700 24px/1 var(--mono)}
+.product ul{list-style:none;display:grid;gap:6px;color:var(--mute);font-size:14px}
+.product ul li::before{content:"→ ";color:var(--accent)}
+.product .btn{margin-top:auto;justify-content:center}
+.board{width:100%;border-collapse:collapse;font-size:14px}
+.board th{text-align:left;font:500 11px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--mute);padding:10px 8px;border-bottom:1px solid var(--line)}
+.board td{padding:12px 8px;border-bottom:1px solid var(--line)}
+.board td.num{text-align:right}
+.board th:last-child{text-align:right}
+.board tr.you td{color:var(--accent);font-weight:600}
+.board .who{display:flex;align-items:center;gap:10px}
+.board .who img{width:26px;height:26px;border-radius:50%}
+.g-guild{grid-template-columns:minmax(0,1.4fr) minmax(0,1fr)}
+@media (max-width:900px){.g-guild{grid-template-columns:1fr}}
+.wait{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.wait input{flex:1 1 200px;min-width:0;background:var(--panel-2);border:1px solid var(--line);color:var(--ink);font:500 14px var(--body);padding:12px 14px;border-radius:10px}
+.wait-note{font-size:13px;color:var(--mute);margin-top:8px;min-height:1.4em}
+
+/* phone: bottom tabs */
+@media (max-width:760px){
+  .shell{grid-template-columns:1fr}
+  .rail{position:fixed;inset:auto 0 0 0;top:auto;height:auto;flex-direction:row;justify-content:space-around;gap:0;padding:6px max(8px, env(safe-area-inset-right, 0px)) calc(6px + env(safe-area-inset-bottom, 0px)) max(8px, env(safe-area-inset-left, 0px));border-right:0;border-top:1px solid var(--line);z-index:5}
+  .rail .logo,.rail .me,.tab small{display:none}
+  .tab{flex-direction:column;gap:4px;font-size:11px;padding:8px 6px;width:auto;flex:1;align-items:center}
+  .main{padding:16px max(16px, env(safe-area-inset-right, 0px)) 110px max(16px, env(safe-area-inset-left, 0px))}
+  .banner a{margin-left:0}
+  .mob-logo{display:flex!important}
+}
+.mob-logo{display:none;align-items:center;gap:10px;font:700 16px/1 var(--display);margin-bottom:14px}
+.mob-logo i{display:grid;place-items:center;width:30px;height:30px;border-radius:9px;background:var(--accent);color:var(--accent-ink)}
+
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<div class="mockbar"><div class="in">
+  <span><b>Mockup</b> · Concept 3 of 3: Dojo HQ · animemindset.com</span>
+  <nav aria-label="Mockups"><a href="index.html">All concepts</a><a href="concept-1-the-arc.html">1 The Arc</a><a href="concept-2-nine-doors.html">2 Nine Doors</a><a href="concept-3-dojo-hq.html" aria-current="page">3 Dojo HQ</a></nav>
+</div></div>
+
+<div class="shell">
+  <nav class="rail" aria-label="Dojo" role="tablist">
+    <div class="logo"><i><svg width="15" height="18" viewBox="0 0 22 26" aria-hidden="true"><path fill="currentColor" d="M13 0 1 15h8l-2 11L21 9h-8l2-9z"/></svg></i><span>Anime Mindset<small>by Kaminari</small></span></div>
+    <button class="tab" role="tab" data-view="train" aria-selected="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg>Train<small>today</small></button>
+    <button class="tab" role="tab" data-view="codex" aria-selected="false"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h10a4 4 0 0 1 4 4v12H8a4 4 0 0 1-4-4z"/><path d="M8 8h6M8 12h6"/></svg>Codex<small>lessons</small></button>
+    <button class="tab" role="tab" data-view="scrolls" aria-selected="false"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3h11v14a4 4 0 0 1-4 4H6a3 3 0 0 1 0-6h8"/><path d="M7 3a3 3 0 0 0 0 6"/></svg>Scrolls<small>shop</small></button>
+    <button class="tab" role="tab" data-view="guild" aria-selected="false"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14a6 6 0 0 1 3.5 6"/></svg>Guild<small>community</small></button>
+    <div class="me"><img src="avatars/strategist.png" alt="" width="38" height="38"><div><b>Demo account</b><span>The Strategist</span></div></div>
+  </nav>
+
+  <main class="main">
+    <div class="mob-logo"><i><svg width="14" height="17" viewBox="0 0 22 26" aria-hidden="true"><path fill="currentColor" d="M13 0 1 15h8l-2 11L21 9h-8l2-9z"/></svg></i>Anime Mindset</div>
+    <div class="banner move"><span><b>The Arc Tracker moved here</b> from joinkaminari.com. Members sign in with the same key.</span><a href="#train">Member sign in →</a></div>
+    <div class="banner"><span><b>You're in the demo dojo.</b> Everything below is example data. Take the quiz to start your own arc.</span><a href="#train">Take the quiz →</a></div>
+
+    <!-- TRAIN -->
+    <section data-panel="train">
+      <div class="view-head">
+        <div><h1>Day 23 of your arc</h1><p>Monday · three habits and one shadow habit on the board</p></div>
+        <a class="btn" href="#train">Weekly review · 5 min</a>
+      </div>
+      <div class="grid g-train">
+        <div class="grid">
+          <div class="card">
+            <div class="today-head"><h3>Today's training</h3><span class="pill" id="count">0 / 3 cleared</span></div>
+            <div id="habits"></div>
+            <div class="cleared" id="cleared" hidden>Day cleared. 18 full-clear days. 7 to Operator.</div>
+          </div>
+          <div class="card">
+            <div class="today-head"><h3>This week</h3><span class="label">Never miss twice</span></div>
+            <div class="week" aria-label="This week's days">
+              <div class="day c">Tu<i></i></div><div class="day c">We<i></i></div><div class="day m">Th<i></i></div><div class="day c">Fr<i></i></div><div class="day c">Sa<i></i></div><div class="day c">Su<i></i></div><div class="day t">Mo<i></i></div>
+            </div>
+            <div class="legend"><span>Full clear</span><span class="m">Missed</span></div>
+          </div>
+        </div>
+        <div class="grid" style="align-content:start">
+          <div class="card">
+            <div class="rank">
+              <img src="avatars/strategist.png" alt="" width="72" height="72">
+              <div>
+                <span class="label">The Strategist · Rank 2 of 5</span>
+                <h2>Analyst</h2>
+              </div>
+            </div>
+            <div class="bar" aria-hidden="true"><i id="bar"></i></div>
+            <div class="bar-meta"><span class="num" id="bar-l">17 / 25 full-clear days</span><span>Next: Operator</span></div>
+            <div class="stats">
+              <div><span class="label">Streak</span><b>3</b></div>
+              <div><span class="label">Level</span><b>7</b></div>
+              <div><span class="label">XP</span><b id="xp">1,840</b></div>
+            </div>
+          </div>
+          <div class="card season">
+            <span class="label">Season 1 · 30 days</span>
+            <h3>Winter Training Arc</h3>
+            <p>Everyone starts on December 1 and runs the same 30-day arc. Finish it and you earn the Season 1 badge.</p>
+            <div class="row"><a class="btn btn-accent" href="#guild" data-go="guild">Join the season</a><a class="btn" href="#guild" data-go="guild">See the board</a></div>
+          </div>
+          <div class="card"><p class="quote" id="quote">Motivation gets you to episode one. Systems get you to the finale.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CODEX -->
+    <section data-panel="codex" hidden>
+      <div class="view-head"><div><h1>Codex</h1><p>Lessons from the stories you love, sorted for your archetype. These are the “Lessons” posts that move over from joinkaminari.com.</p></div></div>
+      <div class="grid g-3">
+        <a class="card lesson" href="#codex"><span class="tag">For you · Strategist</span><h3>Think Like Shikamaru</h3><p>How the laziest genius in Konoha plans five moves ahead, and how to stop overthinking the first one.</p><div class="foot"><span>Lesson</span><span>6 min</span></div></a>
+        <a class="card lesson" href="#codex"><span class="tag">Reborn · Underdog</span><h3>Take the Jump</h3><p>The moment every crew member commits before they feel ready.</p><div class="foot"><span>Lesson</span><span>5 min</span></div></a>
+        <a class="card lesson" href="#codex"><span class="tag">Beacon</span><h3>The Weight Of The Avatar</h3><p>Carrying responsibility without letting it crush the person carrying it.</p><div class="foot"><span>Lesson</span><span>7 min</span></div></a>
+        <a class="card lesson" href="#codex"><span class="tag">Free Spirit</span><h3>Stop Being Hollow and Find the Courage to Feel</h3><p>Why avoiding the hard feelings keeps you stuck in the same episode.</p><div class="foot"><span>Lesson</span><span>6 min</span></div></a>
+        <a class="card lesson" href="#codex"><span class="tag">Relentless</span><h3>A Story On Willpower</h3><p>What willpower is good for, and where a system has to take over.</p><div class="foot"><span>Video</span><span>4 min</span></div></a>
+        <a class="card lesson" href="#codex"><span class="tag">Season 1 prep</span><h3>Your first 30 days</h3><p>A placeholder for the guide that opens each Season.</p><div class="foot"><span>Guide</span><span>Coming</span></div></a>
+      </div>
+    </section>
+
+    <!-- SCROLLS -->
+    <section data-panel="scrolls" hidden>
+      <div class="view-head"><div><h1>Scrolls</h1><p>Tools from the Kaminari team. Checkout still runs through Gumroad.</p></div></div>
+      <div class="grid g-3">
+        <div class="card product"><span class="label">Membership</span><h3>Arc Tracker</h3><ul><li>Three habits, one shadow habit</li><li>Five ranks per archetype</li><li>Photo or video proof on every rep</li></ul><a class="btn btn-accent" href="#scrolls">Coming soon</a></div>
+        <div class="card product"><span class="label">Templates</span><h3>The Anime Mindset System</h3><ul><li>The original planning templates</li><li>Matches all nine archetypes</li><li>Sold on Gumroad today</li></ul><a class="btn" href="#scrolls">View on Gumroad</a></div>
+        <div class="card product"><span class="label">Idea</span><h3>Season Pass</h3><ul><li>Each Season's guide and badge</li><li>Weekly check-in prompts</li><li>Priced later, if at all</li></ul><a class="btn" href="#scrolls">Not built yet</a></div>
+      </div>
+    </section>
+
+    <!-- GUILD -->
+    <section data-panel="guild" hidden>
+      <div class="view-head"><div><h1>Guild</h1><p>Run the same arc as everyone else. Example board for Season 1.</p></div></div>
+      <div class="grid g-guild">
+        <div class="card" style="overflow-x:auto">
+          <table class="board">
+            <thead><tr><th>#</th><th>Player</th><th>Archetype</th><th>Clears</th></tr></thead>
+            <tbody id="board"></tbody>
+          </table>
+        </div>
+        <div class="card">
+          <h3 style="font-size:18px">Discord: join the waitlist</h3>
+          <p style="color:var(--mute);margin-top:6px">The Guild opens with Season 1. Leave your email and we'll send the invite.</p>
+          <form class="wait" id="wait"><input id="wait-email" type="email" placeholder="you@example.com" aria-label="Email" required><button class="btn btn-accent" type="submit">Join</button></form>
+          <p class="wait-note" id="wait-note" aria-live="polite"></p>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script src="archetypes.js"></script>
+<script>
+(() => {
+  const S = (window.ARCH || []).find(a => a.key === 'strategist');
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const tick = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>';
+  const list = S ? [
+    ['Non-Negotiable', S.lightHabits[0], false],
+    ['Daily', S.lightHabits[1], false],
+    ['Mon · Wed · Fri', S.lightHabits[2], false],
+    ['Shadow habit', S.shadowOptions[0], true],
+  ] : [];
+  $('habits').innerHTML = list.map(([k, t, sh], i) => `<button type="button" class="habit${sh ? ' shadow' : ''}" data-i="${i}" aria-pressed="false"><span class="box">${tick}</span><span><span class="k">${esc(k)}</span><span class="t">${esc(t)}</span></span><span class="proof">+ proof</span></button>`).join('');
+
+  $('habits').addEventListener('click', e => {
+    const b = e.target.closest('.habit'); if (!b) return;
+    b.setAttribute('aria-pressed', String(b.getAttribute('aria-pressed') !== 'true'));
+    const main = [...document.querySelectorAll('.habit:not(.shadow)')].filter(x => x.getAttribute('aria-pressed') === 'true').length;
+    const all = document.querySelectorAll('.habit[aria-pressed="true"]').length;
+    $('count').textContent = main + ' / 3 cleared';
+    $('count').classList.toggle('done', main === 3);
+    $('cleared').hidden = main !== 3;
+    $('bar').style.width = (main === 3 ? 72 : 68) + '%';
+    $('bar-l').textContent = (main === 3 ? 18 : 17) + ' / 25 full-clear days';
+    $('xp').textContent = (1840 + all * 20).toLocaleString('en-US');
+  });
+
+  const people = [
+    ['k_moves', 'strategist', 'The Strategist', 9],
+    ['iron_rep', 'demon-grind', 'The Relentless', 9],
+    ['sunbeam', 'beacon', 'The Beacon', 8],
+    ['You (demo)', 'strategist', 'The Strategist', 7],
+    ['lowkey.lux', 'free-spirit', 'The Free Spirit', 7],
+    ['zero2hero', 'underdog', 'The Underdog', 6],
+  ];
+  $('board').innerHTML = people.map((p, i) => `<tr${p[0].startsWith('You') ? ' class="you"' : ''}><td class="num">${i + 1}</td><td><span class="who"><img src="avatars/${p[1]}.png" alt="" width="26" height="26">${esc(p[0])}</span></td><td>${esc(p[2])}</td><td class="num">${p[3]}</td></tr>`).join('');
+
+  const quotes = ["You don't need a bigger villain. You need a longer training arc.", 'Every main character was a background character first. The arc is the only difference.', 'Motivation gets you to episode one. Systems get you to the finale.', "The training arc is boring on purpose. That's how you know it's working.", "You're not behind. You're mid-arc.", "Power-ups aren't sudden. They're a hundred reps nobody saw.", 'Stop waiting for a rival to force your growth. Be your own trial arc.'];
+  $('quote').textContent = quotes[new Date().getDay() % quotes.length];
+
+  const views = ['train', 'codex', 'scrolls', 'guild'];
+  function go(v) {
+    if (!views.includes(v)) v = 'train';
+    document.querySelectorAll('.tab').forEach(t => t.setAttribute('aria-selected', String(t.dataset.view === v)));
+    document.querySelectorAll('[data-panel]').forEach(p => { p.hidden = p.dataset.panel !== v; });
+    if (location.hash.slice(1) !== v) history.replaceState(null, '', '#' + v);
+  }
+  document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => { go(t.dataset.view); scrollTo(0, 0); }));
+  document.querySelectorAll('[data-go]').forEach(a => a.addEventListener('click', e => { e.preventDefault(); go(a.dataset.go); scrollTo(0, 0); }));
+  addEventListener('hashchange', () => go(location.hash.slice(1)));
+  go(location.hash.slice(1));
+
+  $('wait').addEventListener('submit', e => { e.preventDefault(); $('wait-note').textContent = 'Mockup only. On the real site this joins the Discord waitlist.'; });
+})();
+</script>
+</body>
+</html>
