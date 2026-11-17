@@ -7,7 +7,8 @@
 // Each device sends its whole arc; the server merges it with what's stored and sends the result back.
 // Merging works record by record (one log entry per day, one review, one Second Wind) and the newest
 // edit of a record wins, so two phones logging different days never overwrite each other. A reset
-// stamps resetAt and every record older than that is dropped, on every device.
+// (Reset my arc, or Start a new arc) stamps resetAt and every record older than that is dropped, on
+// every device; what the resetting phone sent along is stamped with resetAt so it survives.
 //
 // Stored in the ARC_PUSH KV namespace under "arc:" (the arc) and "lic:" (a recent licence check).
 import { verifyLicense, inviteKeys } from './arc-verify.js';
@@ -87,7 +88,18 @@ export async function handleSync(request, env) {
   const before = await env.ARC_PUSH.get(id);
   const stored = before ? JSON.parse(before) : {};
   const incoming = body.state && typeof body.state === 'object' ? body.state : {};
-  if (body.reset) { incoming.resetAt = Date.now(); await wipePhotos(env, key); }
+  if (body.reset) {
+    // A reset keeps exactly what the resetting phone still holds: nothing for "Reset my arc", and the
+    // name, habits, quests, notes and reminders for "Start a new arc". Those are re-stamped so they
+    // outlive the reset; everything older (the old log, reviews, photos) is dropped on every phone.
+    const at = incoming.resetAt = Date.now();
+    const stamp = r => (r && typeof r === 'object' && !Array.isArray(r)) ? { ...r, t: at } : r;
+    for (const k of Object.keys(incoming)) {
+      if (Array.isArray(incoming[k])) incoming[k] = incoming[k].map(stamp);
+      else if (k === 'profile' || k === 'habits') incoming[k] = stamp(incoming[k]);
+    }
+    await wipePhotos(env, key);
+  }
   const merged = mergeArc(stored, incoming);
   const after = JSON.stringify(merged);
   // KV writes are the limited resource, so nothing is written when nothing changed
