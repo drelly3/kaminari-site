@@ -66,6 +66,15 @@
   }
   .variant-tag b{ color:var(--accent); }
 
+  /* PREVIEW: enrollment closed, every value is a sample placeholder */
+  .preview-notice{ background:#FFC857; color:#14100A; border-bottom:2px solid #0B0B0F; }
+  .preview-notice .wrap{ padding-top:16px; padding-bottom:16px; text-align:center; font-size:15px; line-height:1.5; }
+  .preview-notice strong{ display:block; font-size:17px; font-weight:900; letter-spacing:0.01em; text-transform:uppercase; margin-bottom:4px; }
+  .btn[disabled]{ opacity:0.45; cursor:not-allowed; transform:none; }
+  .btn-primary[disabled]:hover{ opacity:0.45; transform:none; }
+  .preview-cta-note{ font-size:13px; font-weight:700; color:#FFC857; margin-top:12px; }
+  .preview-off{ color:var(--muted); cursor:not-allowed; }
+
   /* NAV — deliberately minimal to reduce exits */
   nav{
     position:sticky; top:0; z-index:60;
@@ -284,6 +293,10 @@
 
 <div class="note-banner">MOCKUP PREVIEW — placeholder values, dates, testimonials &amp; coach bios for review, not a live page</div>
 <div class="variant-tag"><b>VARIANT B</b> — Suby-structured long-form. Test against Variant A (kaminari-landing.html).</div>
+<div class="preview-notice" role="note" id="preview-notice"><div class="wrap">
+  <strong>Preview only — enrollment is not open</strong>
+  All pricing, dates, seat counts, testimonials, coach bios and guarantee terms on this page are sample placeholders, not real offers or results. Nothing here can be purchased.
+</div></div>
 
 <nav>
   <div class="wrap">
@@ -298,7 +311,7 @@
         <a href="newsletter.html">Newsletter</a>
       </div>
       <span class="nav-deadline">Cohort closes <b>[Month DD]</b></span>
-      <a href="#enroll" class="btn btn-primary btn-sm">Claim My Seat</a>
+      <button type="button" class="btn btn-primary btn-sm" disabled aria-disabled="true" aria-describedby="preview-notice" title="Enrollment is not open — preview only">Claim My Seat</button>
       <button class="nav-toggle" aria-label="Menu" aria-controls="nav-tabs" aria-expanded="false">☰</button>
     </div>
   </div>
@@ -315,7 +328,8 @@
       </div>
       <div class="cap">Add your VSL / founder video here</div>
     </div>
-    <a href="#enroll" class="btn btn-primary btn-lg">Claim My Seat In The Next Cohort</a>
+    <button type="button" class="btn btn-primary btn-lg" disabled aria-disabled="true" title="Enrollment is not open — preview only">Claim My Seat In The Next Cohort</button>
+    <p class="preview-cta-note">Preview only — enrollment is not open. No payment is taken.</p>
     <p class="hero-note">[X] of [Y] seats remaining · Cohort closes [Month DD]</p>
   </div>
 </header>
@@ -454,7 +468,8 @@
       <div class="stack-price">
         <div class="k">Your price this cohort</div>
         <div class="p">$997 <small>or 3 × $349</small></div>
-        <a href="#" class="btn btn-primary btn-lg btn-block" style="margin-top:22px;" onclick="alert('Mockup — connect this to your real checkout flow.'); return false;">Claim My Seat In The Next Cohort</a>
+        <button type="button" class="btn btn-primary btn-lg btn-block" style="margin-top:22px;" disabled aria-disabled="true" title="Enrollment is not open — preview only">Claim My Seat In The Next Cohort</button>
+        <p class="preview-cta-note">Preview only — enrollment is not open. No payment is taken.</p>
         <p style="font-size:12.5px; color:var(--muted); margin-top:14px;">Placeholder price — set your real number before launch.</p>
       </div>
     </div>
@@ -640,7 +655,8 @@
   <div class="wrap narrow cta-block">
     <h2>Ninety Days From Now, You'll Have Either Done This Or Not.</h2>
     <p>Same ninety days either way. The only variable is whether anything's different at the end of them.</p>
-    <a href="#enroll" class="btn btn-primary btn-lg">Claim My Seat In The Next Cohort</a>
+    <button type="button" class="btn btn-primary btn-lg" disabled aria-disabled="true" title="Enrollment is not open — preview only">Claim My Seat In The Next Cohort</button>
+    <p class="preview-cta-note">Preview only — enrollment is not open. No payment is taken.</p>
     <p class="cta-sub">[X] of [Y] seats remaining · Enrollment closes [Month DD]</p>
   </div>
 </section>
@@ -667,7 +683,7 @@
       </a>
       <div class="links">
         <a href="index.html">The Anime Mindset Home</a>
-        <a href="#enroll">Enroll</a>
+        <span class="preview-off" title="Enrollment is not open in this preview">Enroll (not open in preview)</span>
       </div>
     </div>
     <p class="fine">Design mockup for internal review. Every bracketed value, date, testimonial, coach bio, and guarantee term is a placeholder and must be replaced with real, verifiable content before publishing. Component values in the stack must reflect what you would genuinely sell each item for on its own — inflated "total value" figures are both a trust risk and, in the US, a potential FTC problem. © The Anime Mindset — Anime Mindset System.</p>

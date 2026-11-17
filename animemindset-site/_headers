@@ -1,0 +1,3 @@
+# Review preview: keep every page out of search engines (pages also carry a robots meta tag)
+/*
+  X-Robots-Tag: noindex, nofollow

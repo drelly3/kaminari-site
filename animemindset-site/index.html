@@ -280,11 +280,11 @@
   <h2 id="waitlist-title">Join the Discord waitlist</h2>
   <p>The Kaminari Discord isn't open yet. Leave your email and you'll be one of the first in when it opens.</p>
   <form class="waitlist-form" novalidate>
-    <input type="text" name="name" placeholder="First name (optional)" autocomplete="given-name" maxlength="80">
-    <input type="email" name="email" placeholder="Your email" autocomplete="email" required maxlength="254">
-    <input type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" class="hp">
-    <button type="submit" class="btn btn-primary">Join the waitlist</button>
-    <p class="waitlist-msg" role="status"></p>
+    <input type="text" name="name" placeholder="First name (optional)" autocomplete="given-name" maxlength="80" disabled>
+    <input type="email" name="email" placeholder="Your email" autocomplete="email" required maxlength="254" disabled>
+    <input type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" class="hp" disabled>
+    <button type="submit" class="btn btn-primary" disabled aria-disabled="true">Unavailable in this preview</button>
+    <p class="waitlist-msg" role="status">The Discord waitlist is unavailable in this preview. Nothing you enter here is sent.</p>
   </form>
 </dialog>
 <script src="assets/main.js" defer></script>
