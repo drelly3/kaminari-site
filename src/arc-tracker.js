@@ -201,7 +201,6 @@ async function syncNow(opts){
   opts = opts || {};
   const key = licenceKey();
   if(!key) return;
-  if(syncBusy){ syncAgain = true; return; }
   // a different key on this device means the local arc is someone else's: start from their backup instead
   if(sync.owner && sync.owner !== key){
     profile=blankProfile(); habits=blankHabits(); log=[]; weekly=[]; secondWinds=[]; proofGone=[]; challenges=[]; notes=[]; noteFolders=[]; myReminders=[]; quests=[];
@@ -211,15 +210,22 @@ async function syncNow(opts){
     if(proofDb) proofTx('readwrite', s=>s.clear()).catch(()=>{});
     sync = {at:0, owner:key, resetAt:0};
   }
+  // a reset is remembered until the backup has taken it, so a busy moment or no signal can't lose it
+  // (otherwise the next ordinary backup would merge the old log straight back in)
+  if(opts.reset){ sync.resetPending = true; try{ localStorage.setItem('arc_sync', JSON.stringify(sync)); }catch(e){} }
+  if(syncBusy){ syncAgain = true; return; }
   syncBusy = true; setSyncStatus('busy');
+  const sentReset = !!sync.resetPending, knownReset = sync.resetAt||0;
   const wasEmpty = !log.length && !profile.archetypeKey;
   const seq = editSeq;
   try{
     const res = await fetch('/api/arc-sync', {method:'POST', headers:{'Content-Type':'application/json'}, keepalive:!!opts.keepalive,
-      body: JSON.stringify({key, reset:!!opts.reset, state:{profile, habits, log, weekly, secondWinds, proofGone, challenges, notes, noteFolders, reminders:myReminders, quests, resetAt:sync.resetAt||0}})});
+      body: JSON.stringify({key, reset:sentReset, state:{profile, habits, log, weekly, secondWinds, proofGone, challenges, notes, noteFolders, reminders:myReminders, quests, resetAt:sync.resetAt||0}})});
     const out = await res.json().catch(()=>({ok:false}));
     if(out.ok && editSeq !== seq){ syncAgain = true; setSyncStatus('busy'); } // changed mid-flight: send again, apply that reply
     else if(out.ok){
+      // another phone started a new arc: this one follows it, without a "rank lost" screen for the old one
+      if(!sentReset && (out.state.resetAt||0) > knownReset){ try{ localStorage.removeItem(RANK_SEEN); }catch(e){} }
       applyBackup(out.state);
       sync = {at:Date.now(), owner:key, resetAt:out.state.resetAt||0};
       try{ localStorage.setItem('arc_sync', JSON.stringify(sync)); }catch(e){}
@@ -1399,7 +1405,8 @@ async function syncPhotos(){
     for(const k of keys) local.set(String(k), await proofTx('readonly', s=>s.get(k)));
     const uploads = [], downloads = [], removes = [];
     local.forEach((rec, id)=>{
-      if(goneAt(id) >= (rec.addedAt||0)){ removes.push(id); return; }
+      // removed, or from before the last new arc or reset (with a minute's grace for a slow clock)
+      if(goneAt(id) >= (rec.addedAt||0) || (rec.addedAt||0) < (sync.resetAt||0) - 60000){ removes.push(id); return; }
       const c = cloud.get(id);
       if(!c || c.t < (rec.addedAt||0)) uploads.push(id);
     });
@@ -2078,6 +2085,7 @@ function renderArchetypes(){
       a.ranks.forEach((r,i)=>{ html += '<tr class="'+(i===held?'current':'')+'"><td>'+r.name+'</td><td>'+r.ms+' full clears</td><td>'+(RANK_HOLD[i]?RANK_HOLD[i]+' in '+HOLD_WINDOW+' days':'\u2014')+'</td></tr>'; });
       html += '</tbody></table>';
       html += '<button class="btn" style="margin-top:12px;" data-pick="'+a.key+'">'+(isCurrent?'This is your archetype':'Choose this archetype')+'</button>';
+      if(isCurrent) html += ' <button class="btn ghost" style="margin-top:12px;" data-newarc>Start a new arc</button>';
     } else {
       html += '<div class="banner info" style="margin-top:10px;">Not a starting archetype \u2014 this is the endgame all nine arcs are headed toward.</div>';
     }
@@ -2086,6 +2094,7 @@ function renderArchetypes(){
   el.innerHTML = html;
   if(!picked) el.insertAdjacentHTML('beforeend', challengeListHtml());
   wireChallenges(el);
+  el.querySelectorAll('[data-newarc]').forEach(b=>b.addEventListener('click', ()=>openNewArc()));
   el.querySelectorAll('[data-pick]').forEach(btn=>{
     btn.addEventListener('click',()=>{
       chooseArchetype(btn.dataset.pick);
@@ -2176,7 +2185,11 @@ function renderSetup(){
   html += '<div class="card" id="syncBox">'+syncBoxHtml()+'</div>';
 
   html += '</div></details>';
-  html += group('more','⚙️','More','Bring over past progress, reset'+(DEMO?', preview animations':''));
+  html += group('newarc','🔁','Start a new arc','Change your archetype or go back to Week 1');
+  html += '<p class="section-sub" style="margin-top:4px;">Want a clean slate, or a different archetype? Start a new arc and you\u2019re back at Week 1. Your streak, XP, rank, log, weekly reports, challenges and proof photos start over. Your name, habits, Main Quests, notes and reminders stay.</p>';
+  html += '<button class="btn" id="newArcBtn">Start a new arc</button>';
+  html += '</div></details>';
+  html += group('more','⚙️','More','Bring over past progress, erase everything'+(DEMO?', preview animations':''));
 
   const demoArche = getArchetype(previewKey) || ((arche && arche.ranks) ? arche : ARCHETYPES[0]);
   if(DEMO){
@@ -2190,8 +2203,8 @@ function renderSetup(){
   html += '<h2 class="section-title" style="font-size:16px;margin-top:22px;">Bring over past progress</h2><p class="section-sub">Coming from another habit tracker? Don\u2019t start from zero. Days you bring over count toward your streak, full clears and rank.</p>';
   html += '<div class="card" id="impBox">'+importBoxHtml()+'</div>';
 
-  html += '<h2 class="section-title" style="font-size:16px;margin-top:22px;">Reset</h2>';
-  html += '<div class="card"><p class="section-sub" style="margin-bottom:12px;">Clears your log, habits, character and proof, here and in your backup.</p><button class="btn danger" id="resetBtn">Reset my arc</button></div>';
+  html += '<h2 class="section-title" style="font-size:16px;margin-top:22px;">Erase everything</h2>';
+  html += '<div class="card"><p class="section-sub" style="margin-bottom:12px;">Clears your log, habits, character, quests, notes and proof, here and in your backup. To keep your habits and just go back to Week 1, use Start a new arc instead.</p><button class="btn danger" id="resetBtn">Reset my arc</button></div>';
   html += '</div></details>';
 
   el.innerHTML = html;
@@ -2370,6 +2383,7 @@ function renderSetup(){
   }
 
   wireImportBox();
+  document.getElementById('newArcBtn').addEventListener('click', ()=>openNewArc());
   document.getElementById('resetBtn').addEventListener('click',()=>{
     if(!confirm('Reset your whole arc? This clears your log, habits, character and proof on this device, and your backup too, so other devices signed in with your key are reset as well. This can\u2019t be undone.')) return;
     if(proofDb){ proofTx('readwrite', s=>s.clear()).catch(()=>{}); }
@@ -2958,11 +2972,71 @@ function closeIntro(el, then){
   setTimeout(()=>{ el.remove(); lockPageForIntro(); if(then) then(); }, 380);
 }
 function chooseArchetype(key){
+  // already on an arc with days logged: ask whether to carry the progress over or start at Week 1
+  if(getArchetype(profile.archetypeKey) && key!==profile.archetypeKey && arcHasProgress()){ openNewArc(key, true); return; }
   profile.archetypeKey = key;
   profile.t = Date.now();
   persist(LS.profile, profile);
   if(pushState==='on') pushSync().catch(()=>{});
   renderAll();
+}
+/* ---------------- Start a new arc ---------------- */
+// Back to Week 1, as the same archetype or a different one. The log (so streak, XP and rank), weekly
+// reviews, Second Winds, challenges and proof photos are cleared here and in the backup, so every
+// phone signed in with the key follows. The name, habits, Main Quests, notes and reminders carry over.
+function arcHasProgress(){ return log.length>0 || weekly.length>0 || challenges.length>0; }
+function startNewArc(key){
+  if(proofDb) proofTx('readwrite', s=>s.clear()).catch(()=>{});
+  Object.keys(dayProof).forEach(k=>URL.revokeObjectURL(dayProof[k].url)); dayProof={}; dayExtras=[]; proofError='';
+  log=[]; weekly=[]; secondWinds=[]; proofGone=[]; challenges=[];
+  if(getArchetype(key)) profile.archetypeKey = key;
+  profile.t = Date.now();
+  persist(LS.profile,profile); persist(LS.log,log); persist(LS.weekly,weekly); persist(LS.secondWinds,secondWinds); persist(LS.proofGone,proofGone); persist(LS.challenges,challenges);
+  try{ localStorage.removeItem(RANK_SEEN); localStorage.removeItem(WEEK_SEEN); }catch(e){}
+  clearTimeout(syncTimer); syncTimer = null;
+  syncNow({reset:true});
+  if(pushState==='on') pushSync().catch(()=>{});
+  viewDay = 'today';
+  renderAll(); showTab('today'); window.scrollTo(0,0);
+  const arche = getArchetype(profile.archetypeKey);
+  showToast('Week 1 starts today'+(arche?' as '+arche.title:'')+'. Let\u2019s go.');
+}
+// the pop-up: pick the archetype for the new arc. switching = opened by choosing a different
+// archetype, so keeping the progress is offered too.
+function openNewArc(key, switching){
+  const root = document.getElementById('modalRoot');
+  const starters = ARCHETYPES.filter(a=>a.ranks);
+  let pick = getArchetype(key) ? key : (profile.archetypeKey || '');
+  const cur = getArchetype(profile.archetypeKey);
+  const draw = ()=>{
+    const a = getArchetype(pick);
+    root.innerHTML = '<div class="newarc-back" id="naBack"><div class="newarc" role="dialog" aria-modal="true" aria-labelledby="naTitle">'+
+      '<h2 id="naTitle">'+(switching && a ? 'Switch to '+escapeHtml(a.title)+'?' : 'Start a new arc')+'</h2>'+
+      (switching
+        ? '<p>You can carry your progress over, or start fresh at Week 1.</p>'
+        : '<p>Go back to Week 1, as '+(cur?escapeHtml(cur.title)+' or a different archetype':'a new archetype')+'.</p>')+
+      (switching ? '' : '<div class="na-label">Your archetype for Week 1</div><div class="na-picker">'+starters.map(x=>
+        '<button type="button" data-na="'+x.key+'" class="'+(x.key===pick?'on':'')+'" aria-pressed="'+(x.key===pick)+'" style="--hue:'+x.hue+';">'+iconSVG(x,34)+'<span>'+escapeHtml(x.title.replace(/^The /,''))+(x.key===profile.archetypeKey?'<small>current</small>':'')+'</span></button>').join('')+'</div>')+
+      '<div class="na-what"><div><b>Starts over</b>Streak, XP, rank, daily log, weekly reports, challenges and proof photos</div>'+
+      '<div><b>Stays</b>Your name, habits, Main Quests, notes and reminders</div></div>'+
+      '<p class="na-note">This clears your old arc on every phone signed in with your key. It can\u2019t be undone.</p>'+
+      '<button class="btn na-go" id="naGo"'+(a?'':' disabled')+'>'+(a?'Start Week 1 as '+escapeHtml(a.title):'Pick an archetype')+'</button>'+
+      (switching ? '<button class="btn ghost" id="naKeep">Switch and keep my progress</button>' : '')+
+      '<button class="btn ghost" id="naCancel">Cancel</button>'+
+      '</div></div>';
+    lockPage();
+    root.querySelectorAll('[data-na]').forEach(b=>b.addEventListener('click', ()=>{ pick = b.dataset.na; draw(); const on = root.querySelector('[data-na].on'); if(on) on.focus(); }));
+    document.getElementById('naGo').addEventListener('click', ()=>{ close(); startNewArc(pick); });
+    const keep = document.getElementById('naKeep');
+    if(keep) keep.addEventListener('click', ()=>{ close(); profile.archetypeKey = pick; profile.t = Date.now(); persist(LS.profile, profile); if(pushState==='on') pushSync().catch(()=>{}); renderAll(); });
+    document.getElementById('naCancel').addEventListener('click', close);
+    document.getElementById('naBack').addEventListener('click', e=>{ if(e.target.id==='naBack') close(); });
+  };
+  const lockPage = ()=>document.documentElement.classList.add('arc-intro-lock');
+  const close = ()=>{ root.innerHTML=''; document.removeEventListener('keydown', onKey); lockPageForIntro(); };
+  const onKey = e=>{ if(e.key==='Escape') close(); };
+  document.addEventListener('keydown', onKey);
+  draw();
 }
 function showWelcomeBack(done, fadeIn){
   const arche = getArchetype(profile.archetypeKey);
