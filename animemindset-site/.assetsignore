@@ -1,6 +1,0 @@
-# Files in this folder that are not part of the website
-wrangler.jsonc
-README.md
-.assetsignore
-.wrangler
-node_modules

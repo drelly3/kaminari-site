@@ -1,0 +1,18 @@
+// Isolated preview Worker for The Anime Mindset: one self-contained script, generated from animemindset-site/.
+// No static-assets binding, no KV/R2/D1/other bindings, no routes, no custom domain. workers.dev only.
+// Separate from the joinkaminari.com production Worker ("kaminari-site", ../../wrangler.jsonc), which this does not touch.
+//
+// From the repo root:
+//   node animemindset-site/deploy/build-worker.mjs
+//   npx wrangler@4.156.2 deploy -c animemindset-site/deploy/wrangler.jsonc
+{
+  "name": "animemindset-preview",
+  "main": "worker.generated.js",
+  "compatibility_date": "2026-10-01",
+  "workers_dev": true,
+  "preview_urls": false,
+  // Images are uploaded as binary Data modules (ArrayBuffer), not base64 text.
+  "rules": [
+    { "type": "Data", "globs": ["**/*.png", "**/*.webp"], "fallthrough": false }
+  ]
+}

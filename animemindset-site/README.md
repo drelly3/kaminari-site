@@ -1,7 +1,8 @@
 # The Anime Mindset (review build)
 
-Static site for The Anime Mindset, intended for animemindset.com. Review only: it is not deployed.
-`vercel.json` and `wrangler.jsonc` serve `dist/` for joinkaminari.com, and nothing here is part of that build.
+Static site for The Anime Mindset, intended for animemindset.com. Review only: published as an isolated
+preview Worker on workers.dev (see Preview deploy below). It is separate from joinkaminari.com: the root
+`vercel.json` and `wrangler.jsonc` serve `dist/` for the `kaminari-site` Worker, and nothing here is part of that build.
 No domain or DNS is set up for it.
 
 | Page | Source | What changed from the source |
@@ -48,6 +49,27 @@ no checkout.
 `assets/styles.css` is a copy of the main site's stylesheet. The blocks at the end are the only additions: the
 longer "The Anime Mindset" wordmark is set a little smaller (26px) and kept on one line, and the newsletter
 signup box's fallback row is styled. The header switches to the phone menu at the original 1120px. The coaching page's header styles live in its own `<style>` block.
+
+## Preview deploy
+
+`deploy/` turns this folder into one self-contained Worker, `animemindset-preview`, served only at
+`https://animemindset-preview.joinkaminari.workers.dev`.
+
+- `deploy/build-worker.mjs` generates `deploy/worker.generated.js` from an allowlist: the three pages plus every
+  file under `assets/`. Pages, CSS, JS and the SVG are embedded as text; PNG/WebP images are uploaded as binary
+  Data modules. Run it again after any site change.
+- The Worker answers GET/HEAD only. `/` serves `index.html`; every other allowlisted path is served with its MIME
+  type, `X-Robots-Tag: noindex, nofollow` and `X-Content-Type-Options: nosniff`. Anything else is a 404 (the README
+  and deploy files are never served); other methods get 405.
+- `deploy/wrangler.jsonc` has no bindings, routes or custom domains, and no static-assets binding.
+
+    node animemindset-site/deploy/build-worker.mjs
+    npx wrangler@4.156.2 deploy -c animemindset-site/deploy/wrangler.jsonc
+
+The whole script has to stay under the Workers free plan's 3 MB (compressed) limit; it's about 2.86 MB. To fit, the
+two largest newsletter animations were re-encoded: `698b6ff7…webp` (568×320 → 480×270, same 16:9 framing) and
+`698b6c67…webp` (same 480×360 size). Both keep every frame, frame timing and loop setting. The originals are
+still in the repo at `public/media/`.
 
 ## Open it
 
