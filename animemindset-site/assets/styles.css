@@ -414,3 +414,20 @@ dialog.waitlist .waitlist-msg{ min-height:1.4em; margin:4px 0 0; font-size:14px;
 .partner-card a{font-weight:600;margin-top:4px;}
 .rich a.partner-btn{color:#0B0B0F;text-decoration:none;}
 .rich a.partner-btn:hover{color:#0B0B0F;}
+
+/* The Anime Mindset: the wordmark is longer than "Kaminari", so keep the header on one line */
+.brand{ white-space:nowrap; }
+.nav-links a{ white-space:nowrap; }
+nav.site-nav .brand{ font-size:26px; gap:10px; }
+nav.site-nav .brand img{ height:30px; }
+.nav-links{ gap:26px; }
+@media (max-width:1240px){
+  .mobile-toggle{ display:block; }
+  .nav-links{
+    display:none; position:absolute; top:76px; left:0; right:0; flex-direction:column; gap:0;
+    background:var(--bg); border-bottom:1px solid var(--line); padding:8px 28px 18px;
+  }
+  .nav-links.open{ display:flex; }
+  .nav-links a{ padding:13px 0; font-size:16px; border-bottom:1px solid var(--line); }
+  .nav-links a:last-child{ border-bottom:none; }
+}
