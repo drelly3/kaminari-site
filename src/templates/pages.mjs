@@ -1,4 +1,4 @@
-import { site, links, team, quotes, archetypes, kinds, authors } from '../../site.config.mjs';
+import { site, links, team, quotes, archetypes, kinds, authors, partners } from '../../site.config.mjs';
 import { discordLink } from './layout.mjs';
 import { esc, abs, subscribe, shock } from './layout.mjs';
 
@@ -17,6 +17,43 @@ const blogTools = (posts, active) => `
       <input class="search" type="search" placeholder="${active ? 'Search ' + esc(kindLabel(active).replace('…', '')).toLowerCase() + '…' : 'Search posts…'}" aria-label="Search posts">
     </div>`;
 const ext = 'target="_blank" rel="noopener"';
+
+/* ---------- PARTNERS (the list lives in site.config.mjs) ---------- */
+const sponsored = 'target="_blank" rel="sponsored noopener"';
+const featuredPartners = () => partners.filter(p => p.featured);
+// the partner to show on a blog post: one that suits its category, else the first featured one
+const partnerFor = kind => partners.find(p => (p.kinds || []).includes(kind)) || featuredPartners()[0] || null;
+const partnerDisclosure = 'Kaminari earns a commission if you sign up through our partner links, at no extra cost to you. We only partner with things we’d recommend anyway.';
+// a card for the Partners page and home page: the sign-up button goes through /go/, which adds our code
+const partnerTile = p => `
+      <div class="partner-tile">
+        <span class="pt-cat">${esc(p.category)}</span>
+        <h3>${esc(p.title)}</h3>
+        <p>${esc(p.blurb)}</p>
+        <span class="pt-name">${esc(p.name)}</span>
+        <div class="pt-actions">
+          <a class="btn btn-primary btn-sm" href="/go/${p.go}" ${sponsored}>${esc(p.cta)} →</a>
+          ${p.page ? `<a class="btn btn-outline btn-sm" href="${p.page}">Learn more</a>` : ''}
+        </div>
+      </div>`;
+// the "coming soon" slot keeps the grid looking full until more partners join
+const partnerSoonTile = () => `
+      <div class="partner-tile soon">
+        <span class="pt-cat">Coming soon</span>
+        <h3>More partners on the way</h3>
+        <p>We’re lining up more tools, courses and shops for anime fans. Want to work with Kaminari?</p>
+        <div class="pt-actions"><a class="btn btn-outline btn-sm" href="mailto:${site.advertiseEmail}">Partner with us</a></div>
+      </div>`;
+// a slim banner for the top of the blog lists
+const partnerStrip = () => {
+  const p = featuredPartners()[0]; if (!p) return '';
+  return `
+    <a class="partner-strip" href="${p.page || '/go/' + p.go}"${p.page ? '' : ' ' + sponsored}>
+      <span class="ps-tag">Partner pick</span>
+      <span class="ps-text"><b>${esc(p.title)}</b> <span>${esc(p.blurb.split('. ').pop())}</span></span>
+      <span class="ps-go">${esc(p.cta)} →</span>
+    </a>`;
+};
 
 export const postCard = p => `
 <a class="post-card" href="/blog/${p.slug}" data-kind="${p.kind}" data-title="${esc(p.title.toLowerCase())}">
@@ -149,7 +186,21 @@ export const home = posts => {
   </div>
 </section>
 
-<section id="blog">
+${featuredPartners().length ? `<section id="partners" class="partner-band">
+  <div class="wrap">
+    <div class="section-head row">
+      <div>
+        <span class="eyebrow">Partner Picks</span>
+        <h2>Level Up Beyond The Screen</h2>
+        <p>Hand-picked partners for anime fans who want to build real skills.</p>
+      </div>
+      <a href="/partners" class="btn btn-outline btn-sm">All partners</a>
+    </div>
+    <div class="partner-grid">${featuredPartners().slice(0, 3).map(partnerTile).join('')}${featuredPartners().length < 3 ? partnerSoonTile() : ''}</div>
+  </div>
+</section>
+
+` : ''}<section id="blog">
   <div class="wrap">
     <div class="section-head row">
       <div>
@@ -377,6 +428,7 @@ export const blogIndex = posts => `
 
 <section class="alt" style="padding:64px 0;">
   <div class="wrap">
+    ${partnerStrip()}
     <div class="section-head"><span class="eyebrow">Editor's Picks</span></div>
     <div class="post-grid">${posts.filter(p => p.featured).slice(0, 6).map(postCard).join('')}</div>
   </div>
@@ -407,6 +459,7 @@ export const blogCategory = (kind, posts) => {
 
 <section>
   <div class="wrap">
+    ${partnerStrip()}
     ${blogTools(posts, kind.id)}
     <div class="post-grid" data-post-grid>${list.map(postCard).join('')}</div>
     <p class="empty" hidden>No posts match that search.</p>
@@ -415,6 +468,26 @@ export const blogCategory = (kind, posts) => {
 
 ${shock()}`;
 };
+
+/* ---------- PARTNERS PAGE ---------- */
+// every partner in site.config.mjs, plus a slot for the ones still to come
+export const partnersPage = () => `
+<header class="page-hero">
+  <div class="wrap">
+    <span class="eyebrow">Kaminari Partners</span>
+    <h1>Partners Worth Your Time</h1>
+    <p class="lede">Courses, tools and shops we’d recommend to any anime fan who wants to turn inspiration into real skills. Hand-picked by the Kaminari team.</p>
+  </div>
+</header>
+
+<section>
+  <div class="wrap">
+    <div class="partner-grid">${partners.map(partnerTile).join('')}${partnerSoonTile()}</div>
+    <p class="partner-disclosure center">${partnerDisclosure}</p>
+  </div>
+</section>
+
+${shock()}`;
 
 /* ---------- PARTNER: ANIME ART ACADEMY ---------- */
 // A feature page for an affiliate partner. It isn't in the main menu: blog posts, the footer and
@@ -506,6 +579,7 @@ export const blogPost = (p, related) => {
   const url = abs(`/blog/${p.slug}`);
   const share = encodeURIComponent(url);
   const text = encodeURIComponent(p.title);
+  const pick = partnerFor(p.kind);
   return `
 <article>
   <header class="post-head">
@@ -525,9 +599,10 @@ export const blogPost = (p, related) => {
   <div class="wrap post-layout">
     <div class="rich">
 ${p.html}
-${p.kind === 'characters' ? `<div class="partner-card"><b>Want to draw your favorite characters?</b><span>Learn from Japanese pro animators and manga artists. Two lessons are free to watch.</span><a href="/anime-art-academy">Learn to draw anime →</a></div>` : ''}
+${pick ? `<div class="partner-card"><small>Partner pick</small><b>${p.kind === 'characters' && pick.go === 'anime-art-academy' ? 'Want to draw your favorite characters?' : esc(pick.title)}</b><span>${esc(pick.blurb)}</span><a href="${pick.page || '/go/' + pick.go}"${pick.page ? '' : ' ' + sponsored}>${esc(pick.cta)} →</a></div>` : ''}
     </div>
     <aside class="post-aside">
+      ${pick ? `<div class="partner-side"><h4>Partner pick</h4><a href="${pick.page || '/go/' + pick.go}"${pick.page ? '' : ' ' + sponsored}><span class="pt-cat">${esc(pick.category)}</span><b>${esc(pick.title)}</b><span class="ps-go">${esc(pick.cta)} →</span></a></div>` : ''}
       ${p.toc.length > 1 ? `<div><h4>On this page</h4><ul class="toc">${p.toc.map(t => `<li><a href="#${t.id}">${esc(t.text)}</a></li>`).join('')}</ul></div>` : ''}
       <div>
         <h4>Share</h4>
