@@ -73,6 +73,32 @@
   .brand{ display:flex; align-items:center; gap:9px; font-weight:800; font-size:18px; letter-spacing:-0.02em; }
   .bolt{ width:18px; height:18px; }
   .nav-right{ display:flex; align-items:center; gap:16px; }
+  .nav-tabs{ display:flex; gap:22px; font-size:13.5px; font-weight:600; color:var(--muted); margin-right:6px; }
+  .nav-tabs a{ white-space:nowrap; transition:color .15s; }
+  .nav-tabs a:hover, .nav-tabs a[aria-current="page"]{ color:var(--ink); }
+  .nav-toggle{ display:none; background:none; border:none; color:var(--ink); font-size:22px; cursor:pointer; padding:6px; }
+  .brand{ white-space:nowrap; }
+  @media (max-width:440px){
+    .brand{ font-size:16px; gap:7px; }
+    .nav-right{ gap:8px; }
+    .nav-right > .btn-sm{ padding:9px 14px; font-size:12.5px; }
+    .nav-toggle{ padding:4px; }
+  }
+  @media (max-width:360px){
+    nav .wrap{ padding:0 16px; }
+    .brand{ font-size:14.5px; gap:6px; }
+    .nav-right > .btn-sm{ padding:8px 11px; font-size:12px; }
+  }
+  @media (max-width:900px){
+    .nav-toggle{ display:block; }
+    .nav-tabs{
+      display:none; position:absolute; top:70px; left:0; right:0; flex-direction:column; gap:0; margin:0;
+      background:var(--bg); border-bottom:1px solid var(--line); padding:8px 28px 18px; font-size:16px;
+    }
+    .nav-tabs.open{ display:flex; }
+    .nav-tabs a{ padding:13px 0; border-bottom:1px solid var(--line); }
+    .nav-tabs a:last-child{ border-bottom:none; }
+  }
   .nav-deadline{ font-size:12.5px; color:var(--muted); }
   .nav-deadline b{ color:var(--ink); }
   @media (max-width:640px){ .nav-deadline{ display:none; } }
@@ -263,8 +289,14 @@
       The Anime Mindset
     </a>
     <div class="nav-right">
+      <div class="nav-tabs" id="nav-tabs">
+        <a href="https://www.joinkaminari.com/arc-tracker/app">Habit Tracker</a>
+        <a href="coaching.html" aria-current="page">Coaching</a>
+        <a href="newsletter.html">Newsletter</a>
+      </div>
       <span class="nav-deadline">Cohort closes <b>[Month DD]</b></span>
       <a href="#enroll" class="btn btn-primary btn-sm">Claim My Seat</a>
+      <button class="nav-toggle" aria-label="Menu" aria-controls="nav-tabs" aria-expanded="false">☰</button>
     </div>
   </div>
 </nav>
@@ -638,6 +670,13 @@
     <p class="fine">Design mockup for internal review. Every bracketed value, date, testimonial, coach bio, and guarantee term is a placeholder and must be replaced with real, verifiable content before publishing. Component values in the stack must reflect what you would genuinely sell each item for on its own — inflated "total value" figures are both a trust risk and, in the US, a potential FTC problem. © The Anime Mindset — Anime Mindset System.</p>
   </div>
 </footer>
+
+<script>
+  document.querySelector('.nav-toggle').addEventListener('click', function () {
+    var open = document.getElementById('nav-tabs').classList.toggle('open');
+    this.setAttribute('aria-expanded', open);
+  });
+</script>
 
 </body>
 </html>

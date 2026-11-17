@@ -421,13 +421,3 @@ dialog.waitlist .waitlist-msg{ min-height:1.4em; margin:4px 0 0; font-size:14px;
 nav.site-nav .brand{ font-size:26px; gap:10px; }
 nav.site-nav .brand img{ height:30px; }
 .nav-links{ gap:26px; }
-@media (max-width:1240px){
-  .mobile-toggle{ display:block; }
-  .nav-links{
-    display:none; position:absolute; top:76px; left:0; right:0; flex-direction:column; gap:0;
-    background:var(--bg); border-bottom:1px solid var(--line); padding:8px 28px 18px;
-  }
-  .nav-links.open{ display:flex; }
-  .nav-links a{ padding:13px 0; font-size:16px; border-bottom:1px solid var(--line); }
-  .nav-links a:last-child{ border-bottom:none; }
-}
