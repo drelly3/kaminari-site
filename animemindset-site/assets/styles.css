@@ -421,3 +421,7 @@ dialog.waitlist .waitlist-msg{ min-height:1.4em; margin:4px 0 0; font-size:14px;
 nav.site-nav .brand{ font-size:26px; gap:10px; }
 nav.site-nav .brand img{ height:30px; }
 .nav-links{ gap:26px; }
+
+/* Newsletter page: a direct Substack link inside the signup box, in case the embedded form is blocked or fails */
+.embed-fallback{ display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:10px 14px; padding:14px 4px 2px; font-size:13.5px; color:var(--muted); }
+.embed-fallback .btn{ white-space:nowrap; }
