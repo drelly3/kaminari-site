@@ -9,6 +9,8 @@ below). It is separate from joinkaminari.com: the root `vercel.json` and `wrangl
 | `index.html` (home) | Started as `mockups/animemindset/starting-point.html`, the copy of joinkaminari.com/anime-mindset | Redesigned (see Homepage below). Same copy and archetype content, reorganised into one story: hero → how it works → what it is → the 9 archetypes → Arc Tracker → coaching → newsletter |
 | `quiz.html` | `src/quiz.html`, the joinkaminari.com/quiz archetype quiz | Questions, scoring, results and lead capture unchanged. Only the site identity changed: title, canonical, favicon, wordmark (links home), and the shareable result card and its link |
 | `coaching.html` | `mockups/coaching/kaminari-landing-b.html` (Variant B) | Owner-approved revision (below); quiz button goes to `quiz.html` |
+| `about.html` | joinkaminari.com/about | Copied in this site's header and footer; team photos converted to WebP (`assets/team/`); the "Start Reading" blog button became "Find Your Archetype" |
+| `privacy-policy.html` | joinkaminari.com/privacy-policy | Copied word for word, except the "Website" definition (now animemindset.com) and the contact email (Contact@joinkaminari.com) |
 | `newsletter.html` | joinkaminari.com/newsletter (built from `src/templates/pages.mjs`) | Rewritten for The Anime Mindset; three featured lessons that link to the live blog; signup box has a direct Substack link (below) |
 
 `robots.txt` and `sitemap.xml` (home, quiz, newsletter) are served too.
@@ -43,7 +45,7 @@ Explore list on the home and newsletter pages:
 | Coaching | `coaching.html` |
 | Newsletter | `newsletter.html` |
 
-The footer Explore list has the three tabs plus About. Footer Contact is Contact@joinkaminari.com. Links that belong
+The footer Explore list has the three tabs plus About; About and Privacy Policy are this site's own copies. Footer Contact is Contact@joinkaminari.com. Links that belong
 only to joinkaminari.com were removed: Blog, Learn to Draw Anime, Discord (and its disabled waitlist form), Advertise
 and RSS, plus a self-link to "Anime Mindset".
 
