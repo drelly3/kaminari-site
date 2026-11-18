@@ -24,7 +24,7 @@ the footer's Explore list on the home and newsletter pages:
 | Coaching | `coaching.html` |
 | Newsletter | `newsletter.html` |
 
-The current page's tab is highlighted. The coaching page keeps its short header (deadline and "Claim My Seat");
+The current page's tab is highlighted. The coaching page keeps its short header ("Ask about coaching" button);
 the tabs sit beside them and fold into a ☰ menu below 900px. The footer Explore list keeps its other links
 (About, Blog, Anime Mindset, Learn to Draw Anime, Discord) under the tabs.
 
@@ -38,11 +38,13 @@ opens `joinkaminari.substack.com/subscribe`. A page can't tell whether an embedd
 failed, so the link is shown every time rather than only on failure. If the embed is blocked, the form area above
 the link stays blank; the link below it still works. The pop-up signup already had the same kind of link.
 
-## Still placeholders on the coaching page
+## Coaching page (owner-approved revision)
 
-Every bracketed value stays as it is: prices, dates, seat counts, testimonials, coach bios and guarantee
-terms. "Claim My Seat" under the price only shows a "connect this to your real checkout flow" message; there is
-no checkout.
+The page keeps the Variant B headline, "Read This First" story, the three-arc 90-day explanation, "This Isn't For
+Everyone", two FAQ answers and the free quiz/newsletter fallback. It has no prices, dates, seat counts,
+testimonials, coach bios, guarantee or refund claims, checkout or waitlist. Every "Ask about coaching" button (header,
+hero, closing section) opens an email to Contact@joinkaminari.com with the subject "Coaching inquiry". The closing
+section uses the approved wording exactly.
 
 ## Styling
 
@@ -81,8 +83,7 @@ Open `index.html` in a browser, or serve the folder:
 
 - These still say Kaminari because they name Kaminari's newsletter, Discord or team rather than the site:
   the newsletter pop-up title, the Discord waitlist text, the newsletter page's body copy (for example "Experience
-  The Kaminari Energy"), the "Welcome to Kaminari" post title, and "Founder, Kaminari" on the coaching page.
+  The Kaminari Energy") and the "Welcome to Kaminari" post title.
 - The footer's Discord waitlist form posts to `/api/waitlist`, which this site doesn't have, so it won't submit here.
-- The coaching page's top banner still mentions Variant A (`kaminari-landing.html`) as text.
 - The mockup folders this was built from (`mockups/animemindset/`, `mockups/coaching/`) are kept unchanged as
   reference.

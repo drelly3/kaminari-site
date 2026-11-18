@@ -91,15 +91,23 @@
   .nav-toggle{ display:none; background:none; border:none; color:var(--ink); font-size:22px; cursor:pointer; padding:6px; }
   .brand{ white-space:nowrap; }
   @media (max-width:440px){
-    .brand{ font-size:16px; gap:7px; }
-    .nav-right{ gap:8px; }
-    .nav-right > .btn-sm{ padding:9px 14px; font-size:12.5px; }
-    .nav-toggle{ padding:4px; }
+    nav .wrap{ padding:0 16px; }
+    .brand{ font-size:15px; gap:6px; }
+    .nav-right{ gap:6px; }
+    .nav-right > .btn-sm{ padding:8px 12px; font-size:12px; }
+    .nav-toggle{ padding:4px; font-size:20px; }
   }
   @media (max-width:360px){
-    nav .wrap{ padding:0 16px; }
-    .brand{ font-size:14.5px; gap:6px; }
-    .nav-right > .btn-sm{ padding:8px 11px; font-size:12px; }
+    .brand{ font-size:13px; gap:5px; }
+    .brand .bolt{ width:15px; height:15px; }
+    .nav-right > .btn-sm{ padding:7px 9px; font-size:11px; }
+  }
+  @media (max-width:340px){
+    nav .wrap{ padding:0 12px; }
+    .brand{ font-size:12.5px; gap:4px; }
+    .nav-right{ gap:4px; }
+    .nav-right > .btn-sm{ padding:7px 8px; }
+    .nav-toggle{ padding:2px; }
   }
   @media (max-width:900px){
     .nav-toggle{ display:block; }
@@ -291,12 +299,6 @@
 </head>
 <body>
 
-<div class="note-banner">MOCKUP PREVIEW — placeholder values, dates, testimonials &amp; coach bios for review, not a live page</div>
-<div class="variant-tag"><b>VARIANT B</b> — Suby-structured long-form. Test against Variant A (kaminari-landing.html).</div>
-<div class="preview-notice" role="note" id="preview-notice"><div class="wrap">
-  <strong>Preview only — enrollment is not open</strong>
-  All pricing, dates, seat counts, testimonials, coach bios and guarantee terms on this page are sample placeholders, not real offers or results. Nothing here can be purchased.
-</div></div>
 
 <nav>
   <div class="wrap">
@@ -310,8 +312,7 @@
         <a href="coaching.html" aria-current="page">Coaching</a>
         <a href="newsletter.html">Newsletter</a>
       </div>
-      <span class="nav-deadline">Cohort closes <b>[Month DD]</b></span>
-      <button type="button" class="btn btn-primary btn-sm" disabled aria-disabled="true" aria-describedby="preview-notice" title="Enrollment is not open — preview only">Claim My Seat</button>
+      <a href="mailto:Contact@joinkaminari.com?subject=Coaching%20inquiry" class="btn btn-primary btn-sm">Ask about coaching</a>
       <button class="nav-toggle" aria-label="Menu" aria-controls="nav-tabs" aria-expanded="false">☰</button>
     </div>
   </div>
@@ -321,16 +322,8 @@
   <div class="wrap">
     <span class="eyebrow">The Anime Mindset System · 90 Days</span>
     <h1>Become <span class="u">Unrecognizable</span> In 90 Days — Without Another Productivity System You'll Abandon By Week Three.</h1>
-    <p class="lede">A coached 90-day program built on the story structure behind every training arc you've ever watched. Archetype-matched templates, a real coach, and a guarantee: finish the work and don't feel unrecognizable, and we refund every dollar.</p>
-    <div class="vsl">
-      <div class="play">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M8 5l12 7-12 7V5z" fill="#0B0B0F"/></svg>
-      </div>
-      <div class="cap">Add your VSL / founder video here</div>
-    </div>
-    <button type="button" class="btn btn-primary btn-lg" disabled aria-disabled="true" title="Enrollment is not open — preview only">Claim My Seat In The Next Cohort</button>
-    <p class="preview-cta-note">Preview only — enrollment is not open. No payment is taken.</p>
-    <p class="hero-note">[X] of [Y] seats remaining · Cohort closes [Month DD]</p>
+    <p class="lede">A coached 90-day program built on the story structure behind every training arc you've ever watched.</p>
+    <a href="mailto:Contact@joinkaminari.com?subject=Coaching%20inquiry" class="btn btn-primary btn-lg">Ask about coaching</a>
   </div>
 </header>
 
@@ -387,208 +380,6 @@
   </div>
 </section>
 
-<section class="alt" id="enroll">
-  <div class="wrap narrow">
-    <div class="section-head center">
-      <span class="eyebrow">Everything You Get</span>
-      <h2>What's Included</h2>
-      <p>Replace every bracketed value below with what you'd genuinely charge for that component on its own.</p>
-    </div>
-    <div class="stack">
-      <div class="stack-row">
-        <div class="what">
-          <h4>The 90-Day Anime Mindset System</h4>
-          <p>Three sequenced arcs, 12 weekly episode modules with workbooks.</p>
-        </div>
-        <div class="val">$[X]</div>
-      </div>
-      <div class="stack-row">
-        <div class="what">
-          <h4>1:1 Coaching — 12 Weekly Check-Ins</h4>
-          <p>One dedicated coach for all 90 days. Not a rotating support queue.</p>
-        </div>
-        <div class="val">$[X]</div>
-      </div>
-      <div class="stack-row">
-        <div class="what">
-          <h4>Archetype-Matched Habit Templates</h4>
-          <p>Your quiz result determines which system you run, so the plan fits how you're wired.</p>
-        </div>
-        <div class="val">$[X]</div>
-      </div>
-      <div class="stack-row">
-        <div class="what">
-          <h4>Daily Quest Sheets &amp; Power Stat Tracker</h4>
-          <p>The daily scaffolding plus a dashboard scoring focus, discipline, and momentum weekly.</p>
-        </div>
-        <div class="val">$[X]</div>
-      </div>
-      <div class="stack-row">
-        <div class="what">
-          <h4>Boss Battle Challenge System</h4>
-          <p>Two structured real-world checkpoints. Proof you cleared it, not notes saying you tried.</p>
-        </div>
-        <div class="val">$[X]</div>
-      </div>
-      <div class="stack-row">
-        <div class="what">
-          <h4>The Guild — Private Discord Access</h4>
-          <p>Daily check-in channels, accountability pods, and founder drop-ins.</p>
-        </div>
-        <div class="val">$[X]</div>
-      </div>
-      <div class="stack-row bonus">
-        <div class="what">
-          <span class="tag">Bonus 1</span>
-          <h4>The First Seven Days Kit</h4>
-          <p>A short start-fast guide so week one produces a visible win before motivation fades.</p>
-        </div>
-        <div class="val">$[X]</div>
-      </div>
-      <div class="stack-row bonus">
-        <div class="what">
-          <span class="tag">Bonus 2</span>
-          <h4>Monthly Founder Office Hours</h4>
-          <p>Live group sessions with the founders for the full 90 days.</p>
-        </div>
-        <div class="val">$[X]</div>
-      </div>
-      <div class="stack-row bonus">
-        <div class="what">
-          <span class="tag">Bonus 3</span>
-          <h4>Alumni Access After Day 90</h4>
-          <p>Keep your Guild access and check-ins after the program ends.</p>
-        </div>
-        <div class="val">$[X]</div>
-      </div>
-      <div class="stack-total">
-        <span>Total value if bought separately</span>
-        <span class="n strike">$[X,XXX]</span>
-      </div>
-      <div class="stack-price">
-        <div class="k">Your price this cohort</div>
-        <div class="p">$997 <small>or 3 × $349</small></div>
-        <button type="button" class="btn btn-primary btn-lg btn-block" style="margin-top:22px;" disabled aria-disabled="true" title="Enrollment is not open — preview only">Claim My Seat In The Next Cohort</button>
-        <p class="preview-cta-note">Preview only — enrollment is not open. No payment is taken.</p>
-        <p style="font-size:12.5px; color:var(--muted); margin-top:14px;">Placeholder price — set your real number before launch.</p>
-      </div>
-    </div>
-
-    <div class="prose" style="margin-top:40px;">
-      <h3 style="font-size:20px; margin-bottom:12px;">Why it's this price and not more</h3>
-      <p>[Placeholder — write the honest reason. Something like: we cap each cohort at [Y] so every member gets a real coach, and we'd rather fill it with people who'll finish than charge triple and coach strangers. Suby calls this the "reason why," and it works precisely because it's true. Don't invent one.]</p>
-    </div>
-  </div>
-</section>
-
-<section>
-  <div class="wrap narrow">
-    <div class="deadline">
-      <div>
-        <div class="k">Enrollment Closes</div>
-        <div class="v">[Month DD, YYYY]</div>
-        <div class="sub">Next cohort starts [Month DD] · Doors don't reopen until [Month]</div>
-      </div>
-      <div class="seats">
-        <div class="bar"><span></span></div>
-        <div class="label">[X] of [Y] seats claimed</div>
-      </div>
-    </div>
-    <p style="font-size:12.5px; color:var(--muted); margin-top:14px; text-align:center;">Use a real, fixed date here. A countdown that resets for every visitor is the fastest way to lose the trust this page spends 2,000 words building.</p>
-  </div>
-</section>
-
-<section class="alt">
-  <div class="wrap">
-    <div class="section-head center">
-      <span class="eyebrow">Proof</span>
-      <h2>Members Who Finished Their Arc</h2>
-      <p>Sample layout only — replace with real, verifiable member results before this page goes live.</p>
-    </div>
-    <div class="testi-grid">
-      <div class="testi-card">
-        <span class="ph">Sample — Replace</span>
-        <div class="stars">★★★★★</div>
-        <p class="quote">"[Real quote about the specific change they made in the first 30 days.]"</p>
-        <div class="who">— Placeholder Name, Cohort 1</div>
-      </div>
-      <div class="testi-card">
-        <span class="ph">Sample — Replace</span>
-        <div class="stars">★★★★★</div>
-        <p class="quote">"[Real quote about a Boss Battle they were nervous about and cleared anyway.]"</p>
-        <div class="who">— Placeholder Name, Cohort 1</div>
-      </div>
-      <div class="testi-card">
-        <span class="ph">Sample — Replace</span>
-        <div class="stars">★★★★★</div>
-        <p class="quote">"[Real quote about what 'unrecognizable' actually looked like by Day 90.]"</p>
-        <div class="who">— Placeholder Name, Cohort 1</div>
-      </div>
-      <div class="testi-card">
-        <span class="ph">Sample — Replace</span>
-        <div class="stars">★★★★★</div>
-        <p class="quote">"[Real quote about a habit that survived after the program ended.]"</p>
-        <div class="who">— Placeholder Name, Cohort 2</div>
-      </div>
-      <div class="testi-card">
-        <span class="ph">Sample — Replace</span>
-        <div class="stars">★★★★★</div>
-        <p class="quote">"[Real quote about the coach relationship and what made check-ins useful.]"</p>
-        <div class="who">— Placeholder Name, Cohort 2</div>
-      </div>
-      <div class="testi-card">
-        <span class="ph">Sample — Replace</span>
-        <div class="stars">★★★★★</div>
-        <p class="quote">"[Real quote from someone who was skeptical of the anime framing and joined anyway.]"</p>
-        <div class="who">— Placeholder Name, Cohort 2</div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<section>
-  <div class="wrap">
-    <div class="section-head center">
-      <span class="eyebrow">Who's Coaching You</span>
-      <h2>Your Coaches</h2>
-      <p>Placeholder bios — swap in real photos, credentials, and track records.</p>
-    </div>
-    <div class="coach-grid">
-      <div class="coach-card">
-        <div class="coach-photo">Add<br>Photo</div>
-        <h3>[Coach Name]</h3>
-        <div class="role">Lead Coach</div>
-        <p>[Background and why they run the Training Arc — real credentials, not filler.]</p>
-      </div>
-      <div class="coach-card">
-        <div class="coach-photo">Add<br>Photo</div>
-        <h3>[Coach Name]</h3>
-        <div class="role">Trial Arc Coach</div>
-        <p>[Background and what they've helped members push through.]</p>
-      </div>
-      <div class="coach-card">
-        <div class="coach-photo">Add<br>Photo</div>
-        <h3>[Founder Name]</h3>
-        <div class="role">Founder, Kaminari</div>
-        <p>[Why this system exists and what it's built on.]</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<section class="alt">
-  <div class="wrap narrow">
-    <div class="guarantee">
-      <div class="seal">
-        <svg width="30" height="30" viewBox="0 0 24 24" fill="none"><path d="M13 2L4 14h6l-1 8 9-12h-6l1-8z" fill="#0B0B0F"/></svg>
-      </div>
-      <h2>Finish The Work Or Pay Nothing</h2>
-      <p>Complete the Training and Trial Arcs — submit your quest sheets and both Boss Battle check-ins — and if you don't feel unrecognizable by Day 90, we refund every dollar. You keep the templates either way.</p>
-      <p class="terms">Placeholder terms — replace with your final policy. Suggested structure: refund eligibility requires documented completion of assigned quest sheets and both Boss Battle checkpoints, requested within 14 days of Day 90. Set thresholds you're genuinely willing to honor, and make sure support can enforce them consistently.</p>
-    </div>
-  </div>
-</section>
-
 <section>
   <div class="wrap narrow">
     <div class="section-head center">
@@ -629,22 +420,6 @@
       <div class="faq-a"><p>No. The anime framing is the language that makes the structure stick, not a prerequisite. The underlying system is habit science plus coaching.</p></div>
     </div>
     <div class="faq-item">
-      <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">How much time does this take each week? <span class="plus">+</span></div>
-      <div class="faq-a"><p>[Placeholder — state the real number, e.g. "3–5 hours: one episode module, daily quest sheets, one coach touchpoint." Vagueness here costs you sales.]</p></div>
-    </div>
-    <div class="faq-item">
-      <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">What if I fall behind mid-cohort? <span class="plus">+</span></div>
-      <div class="faq-a"><p>[Placeholder — describe your actual catch-up policy. This is the objection most likely to stop a serious buyer.]</p></div>
-    </div>
-    <div class="faq-item">
-      <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">What exactly triggers the refund? <span class="plus">+</span></div>
-      <div class="faq-a"><p>See the guarantee above. Finalize exact completion requirements before launch so support enforces them the same way every time.</p></div>
-    </div>
-    <div class="faq-item">
-      <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">Is there a payment plan? <span class="plus">+</span></div>
-      <div class="faq-a"><p>Yes — three payments, shown above. Placeholder numbers, adjust to your real pricing.</p></div>
-    </div>
-    <div class="faq-item">
       <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">How is this different from the free newsletter? <span class="plus">+</span></div>
       <div class="faq-a"><p>The newsletter gives you the ideas. This gives you a sequenced arc, a coach who tracks whether you did it, and checkpoints you have to clear. Reading is free. Finishing is what you're paying for.</p></div>
     </div>
@@ -653,11 +428,9 @@
 
 <section>
   <div class="wrap narrow cta-block">
-    <h2>Ninety Days From Now, You'll Have Either Done This Or Not.</h2>
-    <p>Same ninety days either way. The only variable is whether anything's different at the end of them.</p>
-    <button type="button" class="btn btn-primary btn-lg" disabled aria-disabled="true" title="Enrollment is not open — preview only">Claim My Seat In The Next Cohort</button>
-    <p class="preview-cta-note">Preview only — enrollment is not open. No payment is taken.</p>
-    <p class="cta-sub">[X] of [Y] seats remaining · Enrollment closes [Month DD]</p>
+    <h2>Interested in coaching?</h2>
+    <p>Email <a href="mailto:Contact@joinkaminari.com?subject=Coaching%20inquiry">Contact@joinkaminari.com</a> with what you're working toward and where you could use support. We'll discuss the details and see whether coaching is a good fit for you.</p>
+    <a href="mailto:Contact@joinkaminari.com?subject=Coaching%20inquiry" class="btn btn-primary btn-lg">Ask about coaching</a>
   </div>
 </section>
 
@@ -683,10 +456,9 @@
       </a>
       <div class="links">
         <a href="index.html">The Anime Mindset Home</a>
-        <span class="preview-off" title="Enrollment is not open in this preview">Enroll (not open in preview)</span>
       </div>
     </div>
-    <p class="fine">Design mockup for internal review. Every bracketed value, date, testimonial, coach bio, and guarantee term is a placeholder and must be replaced with real, verifiable content before publishing. Component values in the stack must reflect what you would genuinely sell each item for on its own — inflated "total value" figures are both a trust risk and, in the US, a potential FTC problem. © The Anime Mindset — Anime Mindset System.</p>
+    <p class="fine">© The Anime Mindset — Anime Mindset System.</p>
   </div>
 </footer>
 
