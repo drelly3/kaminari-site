@@ -9,9 +9,9 @@ below). It is separate from joinkaminari.com: the root `vercel.json` and `wrangl
 | `index.html` (home) | Started as `mockups/animemindset/starting-point.html`, the copy of joinkaminari.com/anime-mindset | Redesigned (see Homepage below). Same copy and archetype content, reorganised into one story: hero → how it works → what it is → the 9 archetypes → Arc Tracker → coaching → newsletter |
 | `quiz.html` | `src/quiz.html`, the joinkaminari.com/quiz archetype quiz | Questions, scoring, results and lead capture unchanged. Only the site identity changed: title, canonical, favicon, wordmark (links home), and the shareable result card and its link |
 | `coaching.html` | `mockups/coaching/kaminari-landing-b.html` (Variant B) | Owner-approved revision (below); quiz button goes to `quiz.html` |
-| `about.html` | joinkaminari.com/about | Copied in this site's header and footer; team photos converted to WebP (`assets/team/`); the "Start Reading" blog button became "Find Your Archetype" |
+| `about.html` | Started as joinkaminari.com/about | Rewritten for The Anime Mindset (hero, "What We're Building", closing section); the team section (photos as WebP in `assets/team/`, roles, socials, top 5) is unchanged |
 | `privacy-policy.html` | joinkaminari.com/privacy-policy | Copied word for word, except the "Website" definition (now animemindset.com) and the contact email (Contact@joinkaminari.com) |
-| `newsletter.html` | joinkaminari.com/newsletter (built from `src/templates/pages.mjs`) | Rewritten for The Anime Mindset; three featured lessons that link to the live blog; signup box has a direct Substack link (below) |
+| `newsletter.html` | joinkaminari.com/newsletter (built from `src/templates/pages.mjs`) | Rewritten for The Anime Mindset; no blog section (past issues via "Read on Substack"); signup box has a direct Substack link (below) |
 
 `robots.txt` and `sitemap.xml` (home, quiz, newsletter) are served too.
 
@@ -21,7 +21,7 @@ On animemindset.com the home, quiz and newsletter pages are indexable. `coaching
 (meta tag and response header), as the owner asked. Everything served on the `workers.dev` address gets
 `X-Robots-Tag: noindex, nofollow`, so search engines list animemindset.com rather than the duplicate. Each page has a
 description, a canonical URL (except coaching), Open Graph/Twitter tags and the share image `assets/og-image.png`
-(1200×630). Favicons: `assets/icon.svg`, `assets/favicon-32.png`, `assets/apple-touch-icon.png`.
+(1200×630). Favicons (`assets/icon.svg`, `assets/favicon-32.png`, `assets/apple-touch-icon.png`) and the share image show the blue bolt from `assets/kaminari-bolt.png`.
 
 ## Homepage
 
@@ -97,8 +97,8 @@ and quiz pages keep their own `<style>` blocks.
     npx wrangler@4.156.2 deploy -c animemindset-site/deploy/wrangler.jsonc
 
 The script has to stay under the Workers free plan's 3 MB (compressed) limit; it's about 0.9 MB. The newsletter page
-features three lessons; the heavier animated thumbnails it no longer uses were removed from `assets/media/` (the
-originals are still in the repo at `public/media/`).
+the newsletter page no longer shows blog posts, so its thumbnails were removed from `assets/media/` (the originals are
+still in the repo at `public/media/`).
 
 ## Open it
 
