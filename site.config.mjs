@@ -34,7 +34,6 @@ export const links = {
 export const nav = [
   { label: 'About', href: '/about' },
   { label: 'Blog', href: '/blog' },
-  { label: 'Newsletter', href: '/newsletter' },
   { label: 'Community', href: '/#community' },
   { label: 'Anime Mindset', href: '/anime-mindset' },
 ];
