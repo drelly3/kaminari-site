@@ -19,11 +19,15 @@ const TYPES = {
   '.svg': 'image/svg+xml',
   '.png': 'image/png',
   '.webp': 'image/webp',
+  '.txt': 'text/plain; charset=utf-8',
+  '.xml': 'application/xml; charset=utf-8',
 };
 const BINARY = new Set(['.png', '.webp']);
 
-// The allowlist: the three pages, plus every file under assets/. Nothing else in the folder is served.
-const PAGES = ['index.html', 'coaching.html', 'newsletter.html'];
+// The allowlist: the pages, robots.txt and sitemap.xml, plus every file under assets/. Nothing else in the folder is served.
+const PAGES = ['index.html', 'coaching.html', 'newsletter.html', 'quiz.html', 'robots.txt', 'sitemap.xml'];
+// Pages kept out of search engines on every host (the owner asked for coaching to stay noindex).
+const NOINDEX = ['/coaching.html'];
 const walk = dir => fs.readdirSync(dir, { withFileTypes: true }).flatMap(e =>
   e.isDirectory() ? walk(path.join(dir, e.name)) : [path.join(dir, e.name)]);
 const files = [...PAGES.map(p => path.join(SITE, p)), ...walk(path.join(SITE, 'assets'))]
@@ -54,15 +58,19 @@ ${entries.join('\n')}
 
 const ALIASES = new Map([['/', '/index.html']]);
 
+const NOINDEX = new Set(${JSON.stringify(NOINDEX)});
+
 const BASE_HEADERS = {
-  'X-Robots-Tag': 'noindex, nofollow',
   'X-Content-Type-Options': 'nosniff',
   'Referrer-Policy': 'strict-origin-when-cross-origin',
 };
 
+// The workers.dev address is a duplicate of animemindset.com, so it is always kept out of search engines.
+const robots = (host, path) => host.endsWith('.workers.dev') || NOINDEX.has(path) ? { 'X-Robots-Tag': 'noindex, nofollow' } : {};
+
 const plain = (status, text, extra = {}) => new Response(text, {
   status,
-  headers: { ...BASE_HEADERS, 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store', ...extra },
+  headers: { ...BASE_HEADERS, 'X-Robots-Tag': 'noindex, nofollow', 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store', ...extra },
 });
 
 export default {
@@ -70,11 +78,13 @@ export default {
     if (request.method !== 'GET' && request.method !== 'HEAD') {
       return plain(405, 'Method Not Allowed', { Allow: 'GET, HEAD' });
     }
-    const { pathname } = new URL(request.url);
-    const file = FILES.get(ALIASES.get(pathname) || pathname);
+    const { pathname, hostname } = new URL(request.url);
+    const path = ALIASES.get(pathname) || pathname;
+    const file = FILES.get(path);
     if (!file) return plain(404, 'Not found');
     const headers = {
       ...BASE_HEADERS,
+      ...robots(hostname, path),
       'Content-Type': file.type,
       'Cache-Control': file.type.startsWith('text/html') ? 'no-cache' : 'public, max-age=3600',
     };

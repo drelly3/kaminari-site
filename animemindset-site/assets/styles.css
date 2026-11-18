@@ -437,3 +437,6 @@ nav.site-nav .brand img{ height:1.13em; }
 /* Newsletter page: a direct Substack link inside the signup box, in case the embedded form is blocked or fails */
 .embed-fallback{ display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:10px 14px; padding:14px 4px 2px; font-size:13.5px; color:var(--muted); }
 .embed-fallback .btn{ white-space:nowrap; }
+
+/* The Anime Mindset logo: the cyan bolt, sized with the name it sits beside */
+.brand .bolt{ width:1em; height:1em; flex:none; }

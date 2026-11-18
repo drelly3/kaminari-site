@@ -1,42 +1,56 @@
-# The Anime Mindset (review build)
+# The Anime Mindset
 
-Static site for The Anime Mindset, intended for animemindset.com. Review only: published as an isolated
-preview Worker on workers.dev (see Preview deploy below). It is separate from joinkaminari.com: the root
-`vercel.json` and `wrangler.jsonc` serve `dist/` for the `kaminari-site` Worker, and nothing here is part of that build.
-No domain or DNS is set up for it.
+Static site for The Anime Mindset at animemindset.com, served by the `animemindset-preview` Worker (see Deploy
+below). It is separate from joinkaminari.com: the root `vercel.json` and `wrangler.jsonc` serve `dist/` for the
+`kaminari-site` Worker, and nothing here is part of that build.
 
 | Page | Source | What changed from the source |
 | --- | --- | --- |
-| `index.html` (home) | `mockups/animemindset/starting-point.html`, the copy of joinkaminari.com/anime-mindset | Mockup bar removed, title and wordmark say The Anime Mindset, asset paths moved to `assets/`, nav replaced with the site tabs (below), wordmark/logo and footer "Anime Mindset" link point here |
-| `coaching.html` | `mockups/coaching/kaminari-landing-b.html` (Variant B) | Title and wordmark say The Anime Mindset, logo and "The Anime Mindset Home" go to `index.html`, quiz and newsletter buttons go to the live quiz and Substack, "Variant A" footer link removed, site tabs added to its header with a phone menu, large CTA buttons wrap on phones narrower than 480px |
-| `newsletter.html` | joinkaminari.com/newsletter (built from `src/templates/pages.mjs`) | Same content and look, wrapped in this site's header and footer, wordmark/logo point to `index.html`. Post cards and "Start Reading" link to the live blog; thumbnails copied to `assets/media/`. Signup box has a direct Substack link (below) |
+| `index.html` (home) | `mockups/animemindset/starting-point.html`, the copy of joinkaminari.com/anime-mindset | Title and wordmark say The Anime Mindset, bolt logo, site tabs (below), quiz buttons go to this site's `quiz.html`, Arc Tracker buttons say "Get Notified" (newsletter signup) with a "Sign in" link for key holders |
+| `quiz.html` | `src/quiz.html`, the joinkaminari.com/quiz archetype quiz | Questions, scoring, results and lead capture unchanged. Only the site identity changed: title, canonical, favicon, wordmark (links home), and the shareable result card and its link |
+| `coaching.html` | `mockups/coaching/kaminari-landing-b.html` (Variant B) | Owner-approved revision (below); quiz button goes to `quiz.html` |
+| `newsletter.html` | joinkaminari.com/newsletter (built from `src/templates/pages.mjs`) | Rewritten for The Anime Mindset; three featured lessons that link to the live blog; signup box has a direct Substack link (below) |
 
-All three pages carry `noindex, nofollow`.
+`robots.txt` and `sitemap.xml` (home, quiz, newsletter) are served too.
+
+## Search engines
+
+On animemindset.com the home, quiz and newsletter pages are indexable. `coaching.html` stays `noindex, nofollow`
+(meta tag and response header), as the owner asked. Everything served on the `workers.dev` address gets
+`X-Robots-Tag: noindex, nofollow`, so search engines list animemindset.com rather than the duplicate. Each page has a
+description, a canonical URL (except coaching), Open Graph/Twitter tags and the share image `assets/og-image.png`
+(1200×630). Favicons: `assets/icon.svg`, `assets/favicon-32.png`, `assets/apple-touch-icon.png`.
 
 ## Navigation
 
-The site has three tabs, in this order, in the header on every page (desktop row and phone menu) and at the top of
-the footer's Explore list on the home and newsletter pages:
+Three tabs, in this order, in the header on every page (desktop row and phone menu) and at the top of the footer's
+Explore list on the home and newsletter pages:
 
 | Tab | Goes to |
 | --- | --- |
-| Habit Tracker | `https://www.joinkaminari.com/arc-tracker/app`, the live Arc Tracker, same as the "Have A Key? Sign In" buttons. No tracker page or data lives on this site. |
+| Habit Tracker | `https://www.joinkaminari.com/arc-tracker/app`, the live Arc Tracker, so existing users sign in as before. No tracker page or data lives on this site. |
 | Coaching | `coaching.html` |
 | Newsletter | `newsletter.html` |
 
-The current page's tab is highlighted. The coaching page keeps its short header ("Ask about coaching" button);
-the tabs sit beside them and fold into a ☰ menu below 900px. The footer Explore list keeps its other links
-(About, Blog, Anime Mindset, Learn to Draw Anime, Discord) under the tabs.
+The footer Explore list keeps About, Blog, Anime Mindset and Learn to Draw Anime under the tabs. The Discord link,
+the disabled Discord waitlist form, and the Advertise and RSS links (they belong to the ad-supported joinkaminari.com)
+were removed.
+
+## The quiz and the Arc Tracker
+
+The Arc Tracker's own sign-up flow is untouched: it has its own archetype picker, and its "Don't know? Take the
+archetype quiz" link still opens joinkaminari.com/quiz, which is unchanged. The quiz copy here hands nothing to the
+tracker.
+
+`quiz.html` saves leads to the same Supabase `quiz_submissions` table as the joinkaminari.com quiz (first name,
+email and the optional fields, then the result). Its newsletter and Discord checkboxes still name the Kaminari
+newsletter and Kaminari Discord, because that's where those sign-ups go.
 
 ## Signups
 
-The newsletter signup is Substack's own embedded form (`joinkaminari.substack.com/embed`), so signups go
-straight to your live Substack. Nothing on this site posts newsletter signups anywhere else.
-
-Under the embed, inside the same box, there's always a "Form not loading? Subscribe on Substack →" button that
-opens `joinkaminari.substack.com/subscribe`. A page can't tell whether an embedded form from another site loaded or
-failed, so the link is shown every time rather than only on failure. If the embed is blocked, the form area above
-the link stays blank; the link below it still works. The pop-up signup already had the same kind of link.
+The newsletter signup is Substack's own embedded form (`joinkaminari.substack.com/embed`), so signups go straight to
+the Kaminari Substack. Under the embed there's always a "Form not loading? Subscribe on Substack →" button, because a
+page can't tell whether an embedded form from another site loaded. The pop-up signup has the same kind of link.
 
 ## Coaching page (owner-approved revision)
 
@@ -48,32 +62,29 @@ section uses the approved wording exactly.
 
 ## Styling
 
-`assets/styles.css` is a copy of the main site's stylesheet. The blocks at the end are the only additions: the
-header is laid out as name | tabs | button with the three tabs centred in the bar on desktop; the name is
-30px and the tabs 16.5px. Below 700px the newsletter button hides and the name sizes to the screen (up to 30px)
-so it never runs into the menu icon. The newsletter signup box's fallback row is styled too. The header switches
-to the phone menu at the original 1120px. The coaching page's header styles live in its own `<style>` block.
+`assets/styles.css` is a copy of the main site's stylesheet. The blocks at the end are the only additions: the header
+is laid out as name | tabs | button with the tabs centred on desktop (name 30px, tabs 16.5px); below 700px the
+newsletter button hides and the name sizes to the screen; the bolt logo sizes with the name; and the newsletter
+signup box's fallback row is styled. The coaching and quiz pages keep their own `<style>` blocks.
 
-## Preview deploy
+## Deploy
 
-`deploy/` turns this folder into one self-contained Worker, `animemindset-preview`, served only at
-`https://animemindset-preview.joinkaminari.workers.dev`.
+`deploy/` turns this folder into one self-contained Worker, `animemindset-preview`.
 
-- `deploy/build-worker.mjs` generates `deploy/worker.generated.js` from an allowlist: the three pages plus every
-  file under `assets/`. Pages, CSS, JS and the SVG are embedded as text; PNG/WebP images are uploaded as binary
-  Data modules. Run it again after any site change.
-- The Worker answers GET/HEAD only. `/` serves `index.html`; every other allowlisted path is served with its MIME
-  type, `X-Robots-Tag: noindex, nofollow` and `X-Content-Type-Options: nosniff`. Anything else is a 404 (the README
-  and deploy files are never served); other methods get 405.
+- `deploy/build-worker.mjs` generates `deploy/worker.generated.js` from an allowlist: the four pages, `robots.txt`,
+  `sitemap.xml` and every file under `assets/`. Text files are embedded; PNG/WebP images are binary Data modules.
+  Run it again after any site change.
+- The Worker answers GET/HEAD only. `/` serves `index.html`; every other allowlisted path is served with its MIME type
+  and `X-Content-Type-Options: nosniff`, plus the search-engine rules above. Anything else is a 404 (the README and
+  deploy files are never served); other methods get 405.
 - `deploy/wrangler.jsonc` has no bindings, routes or custom domains, and no static-assets binding.
 
     node animemindset-site/deploy/build-worker.mjs
     npx wrangler@4.156.2 deploy -c animemindset-site/deploy/wrangler.jsonc
 
-The whole script has to stay under the Workers free plan's 3 MB (compressed) limit; it's about 2.86 MB. To fit, the
-two largest newsletter animations were re-encoded: `698b6ff7…webp` (568×320 → 480×270, same 16:9 framing) and
-`698b6c67…webp` (same 480×360 size). Both keep every frame, frame timing and loop setting. The originals are
-still in the repo at `public/media/`.
+The script has to stay under the Workers free plan's 3 MB (compressed) limit; it's about 0.9 MB. The newsletter page
+features three lessons; the heavier animated thumbnails it no longer uses were removed from `assets/media/` (the
+originals are still in the repo at `public/media/`).
 
 ## Open it
 
@@ -83,9 +94,8 @@ Open `index.html` in a browser, or serve the folder:
 
 ## Known gaps
 
-- These still say Kaminari because they name Kaminari's newsletter, Discord or team rather than the site:
-  the newsletter pop-up title, the Discord waitlist text, the newsletter page's body copy (for example "Experience
-  The Kaminari Energy") and the "Welcome to Kaminari" post title.
-- The footer's Discord waitlist form posts to `/api/waitlist`, which this site doesn't have, so it won't submit here.
+- Still Kaminari by design: the newsletter itself (the Substack and its embed), the quiz's newsletter and Discord
+  checkboxes, the newsletter page's line saying it goes out through the Kaminari newsletter, the footer contact
+  email and LinkedIn, and the About/Blog/Learn to Draw Anime footer links.
 - The mockup folders this was built from (`mockups/animemindset/`, `mockups/coaching/`) are kept unchanged as
   reference.
