@@ -120,6 +120,12 @@ write('/arc-tracker/app', {
 });
 write('/404', { title: 'Page Not Found | Kaminari', body: pages.notFound() });
 
+// structured episode data for filler guides (src/content/guides/<slug>.json): adds the quick answer,
+// episode strip and episode table on top of that guide's article
+const GUIDES = 'src/content/guides';
+const guides = Object.fromEntries((fs.existsSync(GUIDES) ? fs.readdirSync(GUIDES) : []).filter(f => f.endsWith('.json'))
+  .map(f => [f.slice(0, -5), JSON.parse(fs.readFileSync(path.join(GUIDES, f), 'utf8'))]));
+
 for (const p of posts) {
   // related: the next posts of the same kind (wrapping around), topped up with the latest posts
   const same = posts.filter(o => o.kind === p.kind);
@@ -141,7 +147,7 @@ for (const p of posts) {
       author: { '@type': 'Person', name: author?.name || site.name },
       publisher: org,
     },
-    body: pages.blogPost(p, pick),
+    body: pages.blogPost(p, pick, guides[p.slug], (guides[p.slug]?.related || []).map(s => posts.find(o => o.slug === s)).filter(Boolean)),
   });
 }
 

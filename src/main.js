@@ -110,3 +110,37 @@ if (tocLinks.length && 'IntersectionObserver' in window) {
   }, { rootMargin: '-100px 0px -70% 0px' });
   Object.keys(byId).forEach(id => { const h = document.getElementById(id); if (h) io.observe(h); });
 }
+
+// Filler guides: copy the skip list, filter the episode table, jump to an episode
+document.querySelectorAll('[data-guide]').forEach(g => {
+  const list = g.querySelector('[data-skip-list]'), keepBox = g.querySelector('[data-skip-keep]');
+  const compact = nums => { const out = []; for (let i = 0; i < nums.length; i++) { let j = i; while (j + 1 < nums.length && nums[j + 1] === nums[j] + 1) j++; out.push(j > i ? nums[i] + '–' + nums[j] : '' + nums[i]); i = j; } return out.join(', '); };
+  const skipNums = () => {
+    const nums = list.dataset.skip.split(',').filter(Boolean).map(Number);
+    if (keepBox?.checked) nums.push(...list.dataset.keep.split(',').filter(Boolean).map(Number));
+    return nums.sort((a, b) => a - b);
+  };
+  keepBox?.addEventListener('change', () => { list.textContent = compact(skipNums()); });
+  g.querySelector('[data-copy-skip]')?.addEventListener('click', async e => {
+    const text = 'Skip: ' + compact(skipNums());
+    try { await navigator.clipboard.writeText(text); } catch {}
+    const b = e.currentTarget, was = b.textContent; b.textContent = 'Copied!'; setTimeout(() => { b.textContent = was; }, 1600);
+  });
+  const rows = [...g.querySelectorAll('tbody tr')], found = g.querySelector('[data-ep-found]'), search = g.querySelector('[data-ep-search]');
+  const chips = [...g.querySelectorAll('[data-filter]')];
+  const setFilter = f => { chips.forEach(c => c.classList.toggle('active', c.dataset.filter === f)); rows.forEach(r => { r.hidden = f !== 'all' && r.dataset.type !== f; }); };
+  chips.forEach(c => c.addEventListener('click', () => setFilter(c.dataset.filter)));
+  const jump = (n, scroll) => {
+    rows.forEach(r => r.classList.remove('hit'));
+    const row = rows.find(r => n >= +r.dataset.from && n <= +r.dataset.to);
+    if (!row) { found.hidden = false; found.textContent = 'This show has ' + rows[rows.length - 1].dataset.to + ' episodes.'; return; }
+    setFilter('all'); row.classList.add('hit');
+    const tag = row.querySelector('.guide-tag').textContent, what = row.querySelector('td b')?.textContent || '';
+    const verdict = { filler: 'Skip it.', keep: 'Filler, but worth watching.', anime: 'Watch it. Not in the manga, but part of the story.', canon: 'Watch it.' }[row.dataset.type];
+    found.hidden = false; found.textContent = 'Episode ' + n + ': ' + tag + (what && row.dataset.type !== 'canon' ? ' (' + what + ')' : '') + '. ' + verdict;
+    if (scroll) row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  };
+  search?.addEventListener('input', () => { const n = parseInt(search.value, 10); if (n > 0) jump(n, false); else { found.hidden = true; rows.forEach(r => r.classList.remove('hit')); } });
+  search?.addEventListener('keydown', e => { if (e.key === 'Enter') { const n = parseInt(search.value, 10); if (n > 0) jump(n, true); } });
+  g.querySelectorAll('[data-jump]').forEach(a => a.addEventListener('click', e => { e.preventDefault(); const n = +a.dataset.jump; if (search) search.value = n; jump(n, true); }));
+});

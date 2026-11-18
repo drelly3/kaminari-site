@@ -501,29 +501,142 @@ ${shock()}`;
 };
 
 /* ---------- BLOG POST ---------- */
-export const blogPost = (p, related) => {
+
+/* ---------- FILLER GUIDE: the quick answer, episode strip and episode table on top of a filler list ---------- */
+// Built from src/content/guides/<slug>.json. Search visitors spend ~15s on these pages, so the answer
+// (what to skip) comes first and the full article follows underneath.
+const GUIDE_TYPES = ['canon', 'anime', 'filler', 'keep'];
+const epRange = r => r[0] === r[1] ? `${r[0]}` : `${r[0]}–${r[1]}`;
+// every episode's type, with gaps in the data counted as manga canon
+const guideEpisodes = g => {
+  const out = Array.from({ length: g.total }, (_, i) => ({ n: i + 1, type: 'canon' }));
+  for (const b of g.episodes) for (let n = b.range[0]; n <= b.range[1]; n++) out[n - 1] = { n, type: b.type, label: b.label, why: b.why };
+  return out;
+};
+// table rows: the data's blocks, with the canon stretches between them filled in
+const guideRows = g => {
+  const rows = []; let next = 1;
+  for (const b of [...g.episodes].sort((a, c) => a.range[0] - c.range[0])) {
+    if (b.range[0] > next) rows.push({ range: [next, b.range[0] - 1], type: 'canon', label: 'Story canon' });
+    rows.push(b); next = b.range[1] + 1;
+  }
+  if (next <= g.total) rows.push({ range: [next, g.total], type: 'canon', label: 'Story canon' });
+  return rows;
+};
+// "29, 66, 82, 123–125" from a list of episode numbers
+const compactList = nums => {
+  const out = [];
+  for (let i = 0; i < nums.length; i++) {
+    let j = i; while (j + 1 < nums.length && nums[j + 1] === nums[j] + 1) j++;
+    out.push(j > i ? `${nums[i]}–${nums[j]}` : `${nums[i]}`); i = j;
+  }
+  return out.join(', ');
+};
+const guideTool = (p, g, related) => {
+  const eps = guideEpisodes(g);
+  const count = t => eps.filter(e => e.type === t).length;
+  const skip = eps.filter(e => e.type === 'filler').map(e => e.n);
+  const keep = eps.filter(e => e.type === 'keep').map(e => e.n);
+  const fillerTotal = skip.length + keep.length;
+  const pct = Math.round(fillerTotal / g.total * 100);
+  const hours = Math.round(skip.length * (g.minutesPerEpisode || 23) / 60 * 10) / 10;
+  const label = t => g.labels[t];
+  return `
+<section class="guide" data-guide>
+  <div class="wrap">
+    <div class="guide-answer">
+      <p class="guide-verdict">${esc(g.verdict)}</p>
+      <div class="guide-stats">
+        <div><b>${g.total}</b><span>episodes</span></div>
+        <div><b>${fillerTotal}</b><span>filler</span></div>
+        <div><b>${pct}%</b><span>filler rate</span></div>
+        <div><b>~${hours}h</b><span>you save</span></div>
+      </div>
+      <div class="guide-skip">
+        <div class="guide-skip-head"><span class="guide-tag t-filler">Skip</span><span>${skip.length} episodes</span></div>
+        <p class="guide-skip-list" data-skip-list data-skip="${skip.join(',')}" data-keep="${keep.join(',')}">${compactList(skip)}</p>
+        <div class="guide-skip-actions">
+          <button type="button" class="btn btn-primary btn-sm" data-copy-skip>Copy skip list</button>
+          <label class="guide-switch"><input type="checkbox" data-skip-keep> Skip the ${keep.length} fan favourites too</label>
+        </div>
+        ${keep.length ? `<p class="guide-keep"><span class="guide-tag t-keep">Worth watching</span> <span>Filler, but keep <span class="nums">${keep.map(n => `<a href="#ep-${n}" data-jump="${n}">${n}</a>`).join(', ')}</span></span></p>` : ''}
+      </div>
+    </div>
+
+    <div class="guide-strip-wrap">
+      <div class="guide-legend">${GUIDE_TYPES.map(t => `<span><i class="t-${t}"></i>${esc(label(t))} <em>${count(t)}</em></span>`).join('')}</div>
+      <div class="guide-strip" style="--n:${g.total}" role="img" aria-label="All ${g.total} episodes, coloured by type: ${GUIDE_TYPES.map(t => `${count(t)} ${label(t).toLowerCase()}`).join(', ')}">${eps.map(e => `<a href="#ep-${e.n}" data-jump="${e.n}" class="t-${e.type}" title="Episode ${e.n}: ${esc(label(e.type))}${e.label && e.type !== 'canon' ? ' · ' + esc(e.label) : ''}"></a>`).join('')}</div>
+      <div class="guide-strip-scale"><span>Ep 1</span><span>Tap any square to jump to it</span><span>Ep ${g.total}</span></div>
+    </div>
+
+    <div class="guide-grid">
+      <div class="guide-table-card">
+        <div class="guide-table-head">
+          <h2 id="episode-guide">Every episode, at a glance</h2>
+          <input type="search" inputmode="numeric" class="guide-search" placeholder="Jump to episode, e.g. 131" aria-label="Find an episode by number" data-ep-search>
+        </div>
+        <div class="guide-filters" role="group" aria-label="Show episodes">
+          <button type="button" class="chip active" data-filter="all">All</button>
+          ${GUIDE_TYPES.map(t => `<button type="button" class="chip" data-filter="${t}"><i class="t-${t}"></i>${esc(label(t))}</button>`).join('')}
+        </div>
+        <p class="guide-found" data-ep-found hidden></p>
+        <div class="guide-table-scroll">
+          <table class="guide-table">
+            <thead><tr><th>Episodes</th><th>Type</th><th>What it is</th></tr></thead>
+            <tbody>
+              ${guideRows(g).map(r => `<tr class="row-${r.type}" data-type="${r.type}" data-from="${r.range[0]}" data-to="${r.range[1]}" id="ep-${r.range[0]}"><td class="eps">${epRange(r.range)}</td><td><span class="guide-tag t-${r.type}">${esc(label(r.type))}</span></td><td><b>${esc(r.label || '')}</b>${r.why ? `<span>${esc(r.why)}</span>` : ''}</td></tr>`).join('\n              ')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <aside class="guide-side">
+        ${g.watchOrder ? `<div class="guide-box">
+          <h3>Watch order</h3>
+          <ol class="guide-order">${g.watchOrder.map(w => `<li${w.movie ? ' class="movie"' : ''}><b>${esc(w.label)}</b><span>${esc(w.detail)}</span></li>`).join('')}</ol>
+        </div>` : ''}
+        ${g.whereToWatch ? `<div class="guide-box">
+          <h3>Where to watch ${esc(g.show)}</h3>
+          <div class="guide-watch">${g.whereToWatch.map(w => `<a href="${w.url}" target="_blank" rel="noopener sponsored">${esc(w.name)} <span aria-hidden="true">↗</span></a>`).join('')}</div>
+          <p class="guide-fine">Availability depends on your country.</p>
+        </div>` : ''}
+        ${related.length ? `<div class="guide-box">
+          <h3>More filler guides</h3>
+          <ul class="guide-related">${related.map(r => `<li><a href="/blog/${r.slug}">${esc(r.title.split(':')[0])}</a></li>`).join('')}</ul>
+          <a class="guide-all" href="/blog/anime-filler-list">All filler lists →</a>
+        </div>` : ''}
+      </aside>
+    </div>
+  </div>
+</section>`;
+};
+
+export const blogPost = (p, related, guide, guideRelated = []) => {
   const author = authors[p.author] || { name: 'Kaminari' };
   const url = abs(`/blog/${p.slug}`);
   const share = encodeURIComponent(url);
   const text = encodeURIComponent(p.title);
   return `
 <article>
-  <header class="post-head">
+  <header class="post-head${guide ? ' post-head-guide' : ''}">
     <div class="wrap">
       <div class="crumb"><a href="/blog">Blog</a><span>/</span><a href="${kindPath(p.kind)}">${kindLabel(p.kind)}</a></div>
       <h1>${esc(p.title)}</h1>
-      <p class="summary">${esc(p.summary)}</p>
+      ${guide ? '' : `<p class="summary">${esc(p.summary)}</p>`}
       <div class="byline">
         ${author.photo ? `<img src="${author.photo}" alt="">` : ''}
         <strong>${esc(author.name)}</strong><span>•</span>
         <time datetime="${p.publishDate.slice(0, 10)}">${fmtDate(p.publishDate)}</time><span>•</span>
-        <span>${p.readingTime} min read</span>
+        <span>${guide ? `Updated ${fmtDate(p.updatedDate || p.publishDate)}` : `${p.readingTime} min read`}</span>
       </div>
-      ${p.thumbnail ? `<div class="post-cover"><img src="${p.thumbnail}" alt="${esc(p.title)}" fetchpriority="high"></div>` : ''}
+      ${p.thumbnail && !guide ? `<div class="post-cover"><img src="${p.thumbnail}" alt="${esc(p.title)}" fetchpriority="high"></div>` : ''}
     </div>
   </header>
+  ${guide ? guideTool(p, guide, guideRelated) + `
+  <div class="wrap"><h2 class="guide-more" id="full-breakdown">The full breakdown</h2></div>` : ''}
   <div class="wrap post-layout">
     <div class="rich">
+${guide && p.thumbnail ? `<figure class="guide-cover"><img src="${p.thumbnail}" alt="${esc(p.title)}" loading="lazy"></figure>` : ''}
 ${p.html}
 ${p.kind === 'characters' ? `<div class="partner-card"><b>Want to draw your favorite characters?</b><span>Learn from Japanese pro animators and manga artists. Two lessons are free to watch.</span><a href="/anime-art-academy">Learn to draw anime →</a></div>` : ''}
     </div>
