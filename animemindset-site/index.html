@@ -22,20 +22,21 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/styles.css">
+<link rel="stylesheet" href="assets/home.css">
 
 
 </head>
-<body>
+<body class="home">
 <nav class="site-nav">
   <div class="wrap">
     <a href="index.html" class="brand" aria-label="The Anime Mindset home"><svg class="bolt" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M13 2L4 14h6l-1 8 9-12h-6l1-8z" fill="#00C0F9"/></svg>The Anime Mindset</a>
     <div class="nav-links" id="nav-links">
-      <a href="https://www.joinkaminari.com/arc-tracker/app">Habit Tracker</a>
+      <a href="https://www.joinkaminari.com/arc-tracker/app">Arc Tracker</a>
       <a href="coaching.html">Coaching</a>
       <a href="newsletter.html">Newsletter</a>
     </div>
     <div class="nav-cta">
-      <a href="https://joinkaminari.substack.com/subscribe" data-subscribe class="btn btn-primary btn-sm">Join Our Free Weekly Newsletter</a>
+      <a href="quiz.html" class="btn btn-primary btn-sm">Find Your Archetype</a>
       <button class="mobile-toggle" aria-label="Menu" aria-controls="nav-links" aria-expanded="false">☰</button>
     </div>
   </div>
@@ -43,172 +44,159 @@
 
 <main>
 
-<header class="page-hero center">
+<header class="am-hero">
+  <div class="am-hero-art"><img src="assets/art/hero-rooftop.webp" alt="" width="1344" height="768" fetchpriority="high"></div>
   <div class="wrap">
-    <span class="eyebrow">The Anime Mindset</span>
-    <h1>Stop Watching Growth And Start Living It</h1>
-    <p class="lede">You've felt the surge after a great arc — "I need to get my life together." Then a few days pass and nothing changes. Not because you don't care. Because you don't have a system. The Anime Mindset is that system.</p>
-    <div class="hero-actions">
-      <a href="quiz.html" class="btn btn-primary">Find Your Archetype</a>
-      <a href="https://joinkaminari.substack.com/subscribe" data-subscribe class="btn btn-soon">Arc Tracker: Get Notified</a>
+    <div class="am-hero-copy">
+      <span class="am-chip">The Anime Mindset</span>
+      <h1>Stop Watching Growth And <span class="am-accent">Start Living It</span></h1>
+      <p class="lede">You've felt the surge after a great arc — "I need to get my life together." Then a few days pass and nothing changes. Not because you don't care. Because you don't have a system. The Anime Mindset is that system.</p>
+      <div class="am-actions">
+        <a href="quiz.html" class="btn btn-primary btn-lg btn-glow">Find Your Archetype</a>
+        <a href="#how-it-works" class="btn btn-ghost btn-lg">How it works ↓</a>
+      </div>
+      <div class="am-faces"><div class="am-faces-row" aria-hidden="true"><img src="assets/avatars/free-spirit.png" alt="" width="200" height="200" style="--hue:300"><img src="assets/avatars/underdog.png" alt="" width="200" height="200" style="--hue:132"><img src="assets/avatars/believer.png" alt="" width="200" height="200" style="--hue:50"><img src="assets/avatars/social-commander.png" alt="" width="200" height="200" style="--hue:340"><img src="assets/avatars/beacon.png" alt="" width="200" height="200" style="--hue:42"><img src="assets/avatars/reborn.png" alt="" width="200" height="200" style="--hue:24"><img src="assets/avatars/prodigy.png" alt="" width="200" height="200" style="--hue:45"><img src="assets/avatars/demon-grind.png" alt="" width="200" height="200" style="--hue:14"><img src="assets/avatars/strategist.png" alt="" width="200" height="200" style="--hue:255"></div><span><b>9 archetypes.</b> Free quiz · 12 questions · under 5 minutes</span></div>
     </div>
-    <p class="hero-note">Already have an Arc Tracker key? <a href="https://www.joinkaminari.com/arc-tracker/app" style="color:var(--accent);">Sign in</a></p>
   </div>
 </header>
 
-<section class="alt">
+<section class="am-section" id="how-it-works">
   <div class="wrap">
-    <div class="section-head center">
-      <h2>What Is The Anime Mindset?</h2>
-      <p>You've seen the moments. The speeches. The fights. The characters who refuse to quit when everything is stacked against them. The Anime Mindset takes the exact principles behind those arcs (discipline, identity, refusing your ceiling) and turns them into how you actually live. Not motivation. Action.</p>
+    <div class="am-head">
+      <span class="am-chip">How it works</span>
+      <h2>From watching the arc to <span class="am-accent">living it</span></h2>
+      <p>Three steps. Find out who you are, name what holds you back, then build the daily system that moves you forward.</p>
     </div>
-    <div class="branch-grid">
-      <div class="branch-card">
-        <div class="idea-emblem" style="--hue:192"><svg viewBox="0 0 48 48" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><ellipse cx="24" cy="19" rx="10.5" ry="12.5" fill="currentColor" fill-opacity=".16"/><path d="M24 31.5V43M19.5 43h9"/><path d="M18.5 15c1.2-3 3.6-4.6 6.5-4.6" stroke-opacity=".6"/><path d="M20 24l7-9M24.5 25.5l4-5" stroke-opacity=".45"/></svg></div>
+    <div class="am-steps">
+      <div class="am-step">
+        <div class="am-step-top"><span class="am-step-n">01</span><div class="idea-emblem" style="--hue:192"><svg viewBox="0 0 48 48" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><ellipse cx="24" cy="19" rx="10.5" ry="12.5" fill="currentColor" fill-opacity=".16"/><path d="M24 31.5V43M19.5 43h9"/><path d="M18.5 15c1.2-3 3.6-4.6 6.5-4.6" stroke-opacity=".6"/><path d="M20 24l7-9M24.5 25.5l4-5" stroke-opacity=".45"/></svg></div></div>
+        <span class="label">Find your archetype</span>
         <h3>A mirror, not a test</h3>
         <p>Every great character runs on a core identity. Find yours and you stop guessing who you're becoming. You build on purpose.</p>
+        <a class="am-link" href="quiz.html">Take the quiz →</a>
       </div>
-      <div class="branch-card">
-        <div class="idea-emblem" style="--hue:350"><svg viewBox="0 0 48 48" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 22c0 11 5 19 10 21 5-2 10-10 10-21-3-5-7-7-10-7s-7 2-10 7z" fill="currentColor" fill-opacity=".16"/><path d="M15 20C10.500 15 9.500 9.500 11.500 5c1.800 4.500 4.500 7.500 8.500 9.800M33 20c4.500-5 5.500-10.500 3.500-15-1.800 4.500-4.500 7.500-8.500 9.800"/><path d="M18 26l4.500 2.200M30 26l-4.500 2.200"/><path d="M19.500 35l4.500 2.500 4.500-2.500"/></svg></div>
+      <div class="am-step">
+        <div class="am-step-top"><span class="am-step-n">02</span><div class="idea-emblem" style="--hue:350"><svg viewBox="0 0 48 48" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 22c0 11 5 19 10 21 5-2 10-10 10-21-3-5-7-7-10-7s-7 2-10 7z" fill="currentColor" fill-opacity=".16"/><path d="M15 20C10.500 15 9.500 9.500 11.500 5c1.800 4.500 4.500 7.500 8.500 9.800M33 20c4.500-5 5.500-10.500 3.500-15-1.800 4.500-4.500 7.500-8.500 9.800"/><path d="M18 26l4.500 2.200M30 26l-4.500 2.200"/><path d="M19.500 35l4.500 2.500 4.500-2.500"/></svg></div></div>
+        <span class="label">Name your shadow</span>
         <h3>Every hero has a weakness</h3>
         <p>Burnout, doubt, ego, avoidance. Your archetype's greatest strength has a shadow side. Name it, then train until it stops running you.</p>
+        <a class="am-link" href="#archetypes">See the 9 weaknesses →</a>
       </div>
-      <div class="branch-card">
-        <div class="idea-emblem" style="--hue:45"><svg viewBox="0 0 48 48" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="24" cy="24" r="12" fill="currentColor" fill-opacity=".16"/><circle cx="24" cy="24" r="5"/><path d="M24 6v6M24 36v6M6 24h6M36 24h6M11.300 11.300l4.200 4.200M32.500 32.500l4.200 4.200M11.300 36.700l4.200-4.200M32.500 15.500l4.200-4.200"/></svg></div>
+      <div class="am-step">
+        <div class="am-step-top"><span class="am-step-n">03</span><div class="idea-emblem" style="--hue:45"><svg viewBox="0 0 48 48" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="24" cy="24" r="12" fill="currentColor" fill-opacity=".16"/><circle cx="24" cy="24" r="5"/><path d="M24 6v6M24 36v6M6 24h6M36 24h6M11.300 11.300l4.200 4.200M32.500 32.500l4.200 4.200M11.300 36.700l4.200-4.200M32.500 15.500l4.200-4.200"/></svg></div></div>
+        <span class="label">Build your arc</span>
         <h3>Systems over willpower</h3>
         <p>Inspiration fades by Thursday. The Anime Mindset replaces white-knuckle motivation with a daily system that compounds.</p>
+        <a class="am-link" href="#arc-tracker">Meet the Arc Tracker →</a>
       </div>
     </div>
   </div>
 </section>
 
-<section>
-  <div class="wrap">
-    <p class="pull">"This isn't about being perfect. It's about proving to yourself that you can move in every situation."</p>
-  </div>
-</section>
-
-<section class="alt">
-  <div class="wrap">
-    <div class="section-head center">
-      <h2>Which Of The 9 Are You?</h2>
-      <p>Twelve quick questions. No wrong answers, just honest ones. Under five minutes, and your archetype is waiting at the end.</p>
-      <p style="margin-top:26px;"><a href="quiz.html" class="btn btn-primary">Take The Archetype Quiz</a></p>
+<section class="am-section alt">
+  <div class="wrap am-statement">
+    <div class="copy">
+      <span class="am-chip">What is the Anime Mindset?</span>
+      <h2>Not motivation. <span class="am-accent">Action.</span></h2>
+      <p>You've seen the moments. The speeches. The fights. The characters who refuse to quit when everything is stacked against them. The Anime Mindset takes the exact principles behind those arcs (discipline, identity, refusing your ceiling) and turns them into how you actually live. Not motivation. Action.</p>
+    </div>
+    <div class="am-quote">
+      <div class="mark">“</div>
+      <p id="quote-text" data-quotes='[&quot;This isn&#x27;t about being perfect. It&#x27;s about proving to yourself that you can move in every situation.&quot;, &quot;You don&#x27;t need a bigger villain. You need a longer training arc.&quot;, &quot;Every main character was a background character first. The arc is the only difference.&quot;, &quot;Motivation gets you to episode one. Systems get you to the finale.&quot;, &quot;The training arc is boring on purpose. That&#x27;s how you know it&#x27;s working.&quot;, &quot;You&#x27;re not behind. You&#x27;re mid-arc.&quot;, &quot;Power-ups aren&#x27;t sudden. They&#x27;re a hundred reps nobody saw.&quot;, &quot;Stop waiting for a rival to force your growth. Be your own trial arc.&quot;]'>This isn't about being perfect. It's about proving to yourself that you can move in every situation.</p>
+      <div class="quote-dots" id="quote-dots"></div>
     </div>
   </div>
 </section>
 
-<section>
+<section class="am-section" id="archetypes">
   <div class="wrap">
-    <div class="section-head center">
-      <h2>The 9 Archetypes</h2>
+    <div class="am-head">
+      <span class="am-chip">The 9 archetypes</span>
+      <h2>Which one <span class="am-accent">are you?</span></h2>
       <p>Nine ways of moving through the world, each grounded in a Jungian root, and each with a weakness to overcome.</p>
     </div>
-    <div class="arch-table">
-      <div class="arch-row head"><div>Archetype</div><div>Root</div><div>What drives them</div><div>Their weakness</div></div>
-      <div class="arch-row">
-        <div class="who"><img class="arc-face" style="--hue:300" src="assets/avatars/free-spirit.png" alt="" width="200" height="200" loading="lazy"><div><div class="name">The Free Spirit</div><div class="q">"You refuse to let the weight steal the joy."</div></div></div>
-        <div class="root">Jester</div>
-        <div class="drive">Moves through life light. Humor and presence as real resilience that outlasts the heaviness.</div>
-        <div class="demon">Avoidance</div>
-      </div>
-      <div class="arch-row">
-        <div class="who"><img class="arc-face" style="--hue:132" src="assets/avatars/underdog.png" alt="" width="200" height="200" loading="lazy"><div><div class="name">The Underdog</div><div class="q">"You started with nothing special. That's why you'll prove it."</div></div></div>
-        <div class="root">Everyman</div>
-        <div class="drive">No head start, no shortcuts, just grit. Rises from behind and makes people root for them.</div>
-        <div class="demon">Victim mentality</div>
-      </div>
-      <div class="arch-row">
-        <div class="who"><img class="arc-face" style="--hue:50" src="assets/avatars/believer.png" alt="" width="200" height="200" loading="lazy"><div><div class="name">The Believer</div><div class="q">"Hope isn't naive. It's the engine."</div></div></div>
-        <div class="root">Innocent</div>
-        <div class="drive">Keeps the faith most people lost. Optimism that's contagious and pulls people forward.</div>
-        <div class="demon">Naivety</div>
-      </div>
-      <div class="arch-row">
-        <div class="who"><img class="arc-face" style="--hue:340" src="assets/avatars/social-commander.png" alt="" width="200" height="200" loading="lazy"><div><div class="name">The Social Commander</div><div class="q">"People follow conviction, not titles."</div></div></div>
-        <div class="root">Ruler</div>
-        <div class="drive">Sets the standard in any room. Presence, charisma, and decisiveness that makes people move.</div>
-        <div class="demon">Control &amp; ego</div>
-      </div>
-      <div class="arch-row">
-        <div class="who"><img class="arc-face" style="--hue:42" src="assets/avatars/beacon.png" alt="" width="200" height="200" loading="lazy"><div><div class="name">The Beacon</div><div class="q">"You don't just rise. You bring people with you."</div></div></div>
-        <div class="root">Caregiver</div>
-        <div class="drive">Leads by example and builds rooms for others. The kind of strength that multiplies.</div>
-        <div class="demon">Martyrdom</div>
-      </div>
-      <div class="arch-row">
-        <div class="who"><img class="arc-face" style="--hue:24" src="assets/avatars/reborn.png" alt="" width="200" height="200" loading="lazy"><div><div class="name">The Reborn</div><div class="q">"You shed a version of yourself that no longer served you."</div></div></div>
-        <div class="root">Outlaw / Rebel</div>
-        <div class="drive">Becoming someone new on purpose. The past is proof, not a prison.</div>
-        <div class="demon">Stuck in rebellion</div>
-      </div>
-      <div class="arch-row">
-        <div class="who"><img class="arc-face" style="--hue:45" src="assets/avatars/prodigy.png" alt="" width="200" height="200" loading="lazy"><div><div class="name">The Prodigy</div><div class="q">"Mastery belongs to the obsessed."</div></div></div>
-        <div class="root">Explorer</div>
-        <div class="drive">Obsessed with improvement. Competing with who they were yesterday, refusing every ceiling.</div>
-        <div class="demon">Never enough</div>
-      </div>
-      <div class="arch-row">
-        <div class="who"><img class="arc-face" style="--hue:14" src="assets/avatars/demon-grind.png" alt="" width="200" height="200" loading="lazy"><div><div class="name">The Relentless</div><div class="q">"This isn't balance. This is a season of war."</div></div></div>
-        <div class="root">Hero</div>
-        <div class="drive">Chooses intensity over comfort, on purpose. Disciplined and all-in, for a season, not forever.</div>
-        <div class="demon">Burnout</div>
-      </div>
-      <div class="arch-row">
-        <div class="who"><img class="arc-face" style="--hue:255" src="assets/avatars/strategist.png" alt="" width="200" height="200" loading="lazy"><div><div class="name">The Strategist</div><div class="q">"Most people react to life. You position ahead of it."</div></div></div>
-        <div class="root">Magician</div>
-        <div class="drive">Thinks ahead: patterns, timing, leverage. Moves on the decisions that actually shift the board.</div>
-        <div class="demon">Analysis paralysis</div>
-      </div>
+    <div class="am-arch-grid">
+      <article class="am-arch" style="--hue:300">
+        <div class="am-arch-top"><img src="assets/avatars/free-spirit.png" alt="" width="200" height="200" loading="lazy"><div><h3>The Free Spirit</h3><div class="root">Jungian root · Jester</div></div></div>
+        <p class="q">"You refuse to let the weight steal the joy."</p>
+        <p class="drive">Moves through life light. Humor and presence as real resilience that outlasts the heaviness.</p>
+        <span class="weak">Weakness: Avoidance</span>
+      </article>
+      <article class="am-arch" style="--hue:132">
+        <div class="am-arch-top"><img src="assets/avatars/underdog.png" alt="" width="200" height="200" loading="lazy"><div><h3>The Underdog</h3><div class="root">Jungian root · Everyman</div></div></div>
+        <p class="q">"You started with nothing special. That's why you'll prove it."</p>
+        <p class="drive">No head start, no shortcuts, just grit. Rises from behind and makes people root for them.</p>
+        <span class="weak">Weakness: Victim mentality</span>
+      </article>
+      <article class="am-arch" style="--hue:50">
+        <div class="am-arch-top"><img src="assets/avatars/believer.png" alt="" width="200" height="200" loading="lazy"><div><h3>The Believer</h3><div class="root">Jungian root · Innocent</div></div></div>
+        <p class="q">"Hope isn't naive. It's the engine."</p>
+        <p class="drive">Keeps the faith most people lost. Optimism that's contagious and pulls people forward.</p>
+        <span class="weak">Weakness: Naivety</span>
+      </article>
+      <article class="am-arch" style="--hue:340">
+        <div class="am-arch-top"><img src="assets/avatars/social-commander.png" alt="" width="200" height="200" loading="lazy"><div><h3>The Social Commander</h3><div class="root">Jungian root · Ruler</div></div></div>
+        <p class="q">"People follow conviction, not titles."</p>
+        <p class="drive">Sets the standard in any room. Presence, charisma, and decisiveness that makes people move.</p>
+        <span class="weak">Weakness: Control &amp; ego</span>
+      </article>
+      <article class="am-arch" style="--hue:42">
+        <div class="am-arch-top"><img src="assets/avatars/beacon.png" alt="" width="200" height="200" loading="lazy"><div><h3>The Beacon</h3><div class="root">Jungian root · Caregiver</div></div></div>
+        <p class="q">"You don't just rise. You bring people with you."</p>
+        <p class="drive">Leads by example and builds rooms for others. The kind of strength that multiplies.</p>
+        <span class="weak">Weakness: Martyrdom</span>
+      </article>
+      <article class="am-arch" style="--hue:24">
+        <div class="am-arch-top"><img src="assets/avatars/reborn.png" alt="" width="200" height="200" loading="lazy"><div><h3>The Reborn</h3><div class="root">Jungian root · Outlaw / Rebel</div></div></div>
+        <p class="q">"You shed a version of yourself that no longer served you."</p>
+        <p class="drive">Becoming someone new on purpose. The past is proof, not a prison.</p>
+        <span class="weak">Weakness: Stuck in rebellion</span>
+      </article>
+      <article class="am-arch" style="--hue:45">
+        <div class="am-arch-top"><img src="assets/avatars/prodigy.png" alt="" width="200" height="200" loading="lazy"><div><h3>The Prodigy</h3><div class="root">Jungian root · Explorer</div></div></div>
+        <p class="q">"Mastery belongs to the obsessed."</p>
+        <p class="drive">Obsessed with improvement. Competing with who they were yesterday, refusing every ceiling.</p>
+        <span class="weak">Weakness: Never enough</span>
+      </article>
+      <article class="am-arch" style="--hue:14">
+        <div class="am-arch-top"><img src="assets/avatars/demon-grind.png" alt="" width="200" height="200" loading="lazy"><div><h3>The Relentless</h3><div class="root">Jungian root · Hero</div></div></div>
+        <p class="q">"This isn't balance. This is a season of war."</p>
+        <p class="drive">Chooses intensity over comfort, on purpose. Disciplined and all-in, for a season, not forever.</p>
+        <span class="weak">Weakness: Burnout</span>
+      </article>
+      <article class="am-arch" style="--hue:255">
+        <div class="am-arch-top"><img src="assets/avatars/strategist.png" alt="" width="200" height="200" loading="lazy"><div><h3>The Strategist</h3><div class="root">Jungian root · Magician</div></div></div>
+        <p class="q">"Most people react to life. You position ahead of it."</p>
+        <p class="drive">Thinks ahead: patterns, timing, leverage. Moves on the decisions that actually shift the board.</p>
+        <span class="weak">Weakness: Analysis paralysis</span>
+      </article>
+    </div>
+    <p class="am-swipe">Swipe to see all nine →</p>
+    <div class="am-arch-cta">
+      <a href="quiz.html" class="btn btn-primary btn-lg btn-glow">Take The Archetype Quiz</a>
+      <p class="am-note">Twelve quick questions. No wrong answers, just honest ones. Under five minutes, and your archetype is waiting at the end.</p>
     </div>
   </div>
 </section>
 
-<section class="alt" id="arc-tracker">
-  <div class="wrap">
-    <div class="section-head center">
-      <span class="eyebrow">The Arc Tracker</span>
-      <h2>Three Habits. One Shadow. <span class="accent">One Arc.</span></h2>
-      <p>The habit tracker built on the Anime Mindset. Pick your archetype, commit to three habits, and earn your rank one full-clear day at a time.</p>
-    </div>
-    <div class="branch-grid">
-      <div class="branch-card">
-        <div class="k">Habits</div>
-        <h3>Habits on your schedule</h3>
-        <p>One daily Non-Negotiable, then habits that run every day, a few times a week, or on set days. Skip a gym day you didn't plan and your streak doesn't care.</p>
-      </div>
-      <div class="branch-card">
-        <div class="k">Weakness</div>
-        <h3>Face your weakness</h3>
-        <p>Every archetype has a weak spot. Pick one small habit that fights yours. It's tracked on its own, with badges at 10, 25 and 50 check-ins.</p>
-      </div>
-      <div class="branch-card">
-        <div class="k">Proof</div>
-        <h3>Show your work</h3>
-        <p>A habit only counts once you upload a photo or video of it. Clear all three and the day celebrates itself.</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<section>
-  <div class="wrap split">
+<section class="am-section alt" id="arc-tracker">
+  <div class="wrap am-tracker">
     <div>
-      <span class="eyebrow">The Rank Ladder</span>
-      <h2 class="h">Ranks You Can't Fake</h2>
-      <p class="sub">Five ranks per archetype, unlocked at 0, 10, 25, 50 and 100 full-clear days. Miss a day and you keep what you've earned, but the only way up is another clear.</p>
-      <ul class="archetype-list">
-        <li>Streaks, with a "Never Miss Twice" nudge after a missed day</li>
-        <li>XP and levels from every real check-in</li>
-        <li>A five-minute weekly review to adjust your habits</li>
-        <li>Day Cleared and Rank Up celebrations in your archetype's colours</li>
-      </ul>
-      <div class="hero-actions">
-        <a href="https://joinkaminari.substack.com/subscribe" data-subscribe class="btn btn-primary">Get Notified When It Opens</a>
+      <span class="am-chip">The Arc Tracker</span>
+      <h2>Three Habits. One Shadow. <span class="accent">One Arc.</span></h2>
+      <p class="intro">The habit tracker built on the Anime Mindset. Pick your archetype, commit to three habits, and earn your rank one full-clear day at a time.</p>
+      <div class="am-features">
+        <div class="am-feature"><span class="k">Habits</span><div><h3>Habits on your schedule</h3><p>One daily Non-Negotiable, then habits that run every day, a few times a week, or on set days. Skip a gym day you didn't plan and your streak doesn't care.</p></div></div>
+        <div class="am-feature"><span class="k">Weakness</span><div><h3>Face your weakness</h3><p>Every archetype has a weak spot. Pick one small habit that fights yours. It's tracked on its own, with badges at 10, 25 and 50 check-ins.</p></div></div>
+        <div class="am-feature"><span class="k">Proof</span><div><h3>Show your work</h3><p>A habit only counts once you upload a photo or video of it. Clear all three and the day celebrates itself.</p></div></div>
       </div>
-      <p class="hero-note">Not on sale yet. Already have a key? <a href="https://www.joinkaminari.com/arc-tracker/app" style="color:var(--accent);">Sign in</a></p>
+      <div class="am-actions">
+        <a href="https://joinkaminari.substack.com/subscribe" data-subscribe class="btn btn-primary btn-lg">Get Notified When It Opens</a>
+      </div>
+      <p class="am-note" style="margin-top:14px">Not on sale yet. Already have a key? <a href="https://www.joinkaminari.com/arc-tracker/app">Sign in</a></p>
     </div>
-    <div class="arc-ladder" style="--hue:255">
+    <div class="am-ladder-card">
+      <div class="arc-ladder" style="--hue:255">
       <div class="arc-ladder-head"><img class="arc-face" src="assets/avatars/strategist.png" alt="" width="200" height="200" loading="lazy"><div><b>The Strategist</b><span>Example ladder</span></div></div>
       <div class="arc-step" style="--lvl:0"><span class="n">1</span><b>Reactor</b><span class="ms">0 full-clear days</span></div>
       <div class="arc-step" style="--lvl:1"><span class="n">2</span><b>Analyst</b><span class="ms">10 full-clear days</span></div>
@@ -216,19 +204,50 @@
       <div class="arc-step" style="--lvl:3"><span class="n">4</span><b>Tactician</b><span class="ms">50 full-clear days</span></div>
       <div class="arc-step" style="--lvl:4"><span class="n">5</span><b>Grandmaster</b><span class="ms">100 full-clear days</span></div>
     </div>
+      <h3>Ranks You Can't Fake</h3>
+      <p class="sub">Five ranks per archetype, unlocked at 0, 10, 25, 50 and 100 full-clear days. Miss a day and you keep what you've earned, but the only way up is another clear.</p>
+      <ul class="archetype-list">
+        <li>Streaks, with a "Never Miss Twice" nudge after a missed day</li>
+        <li>XP and levels from every real check-in</li>
+        <li>A five-minute weekly review to adjust your habits</li>
+        <li>Day Cleared and Rank Up celebrations in your archetype's colours</li>
+      </ul>
+    </div>
   </div>
 </section>
 
-<div class="shock">
+<section class="am-section">
   <div class="wrap">
-    <h2>We're Here To Shock Your System.</h2>
-    <p>Good energy, heavy laughs, and anime truths that hit harder than a final form.</p>
-    <div class="shock-actions">
-      <a href="https://joinkaminari.substack.com/subscribe" data-subscribe class="btn btn-primary">Join Our Free Weekly Newsletter</a>
-      <a href="quiz.html" class="btn btn-outline">Find Your Archetype</a>
+    <div class="am-coach">
+      <div class="copy">
+        <span class="am-chip">Coaching</span>
+        <h2>Want a coach for <span class="am-accent">your arc?</span></h2>
+        <p>A coached 90-day program built on the story structure behind every training arc you've ever watched.</p>
+        <a href="coaching.html" class="btn btn-primary btn-lg">See Coaching</a>
+      </div>
+      <ol class="am-arcs">
+        <li><span class="days">Days 1–30</span><div><b>The Training Arc</b><span>Find your archetype and rebuild your foundations.</span></div></li>
+        <li><span class="days">Days 31–60</span><div><b>The Trial Arc</b><span>Your new habits meet real pressure, with weekly check-ins.</span></div></li>
+        <li><span class="days">Days 61–90</span><div><b>The Power-Up Arc</b><span>Integration, and a system that keeps running after day 90.</span></div></li>
+      </ol>
     </div>
   </div>
-</div>
+</section>
+
+<section class="am-close">
+  <div class="am-close-art"><img src="assets/art/storm-city.webp" alt="" width="1536" height="1024" loading="lazy"></div>
+  <div class="wrap">
+    <div class="inner">
+      <span class="am-chip">The weekly newsletter</span>
+      <h2>One anime lesson. <span class="am-accent">Every Wednesday.</span></h2>
+      <p>Discipline, identity and habits from the stories you love, turned into something you can use this week. Free, through the Kaminari newsletter on Substack.</p>
+      <div class="am-actions center">
+        <a href="https://joinkaminari.substack.com/subscribe" data-subscribe class="btn btn-primary btn-lg btn-glow">Subscribe Free</a>
+        <a href="newsletter.html" class="btn btn-ghost btn-lg">See the Newsletter</a>
+      </div>
+    </div>
+  </div>
+</section>
 </main>
 
 <footer id="newsletter">
@@ -242,7 +261,7 @@
       <div class="footer-col">
         <h4>Explore</h4>
         <ul>
-          <li><a href="https://www.joinkaminari.com/arc-tracker/app">Habit Tracker</a></li>
+          <li><a href="https://www.joinkaminari.com/arc-tracker/app">Arc Tracker</a></li>
           <li><a href="coaching.html">Coaching</a></li>
           <li><a href="newsletter.html">Newsletter</a></li>
           <li><a href="https://www.joinkaminari.com/about">About</a></li>

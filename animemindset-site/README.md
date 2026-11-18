@@ -6,7 +6,7 @@ below). It is separate from joinkaminari.com: the root `vercel.json` and `wrangl
 
 | Page | Source | What changed from the source |
 | --- | --- | --- |
-| `index.html` (home) | `mockups/animemindset/starting-point.html`, the copy of joinkaminari.com/anime-mindset | Title and wordmark say The Anime Mindset, bolt logo, site tabs (below), quiz buttons go to this site's `quiz.html`, Arc Tracker buttons say "Get Notified" (newsletter signup) with a "Sign in" link for key holders |
+| `index.html` (home) | Started as `mockups/animemindset/starting-point.html`, the copy of joinkaminari.com/anime-mindset | Redesigned (see Homepage below). Same copy and archetype content, reorganised into one story: hero → how it works → what it is → the 9 archetypes → Arc Tracker → coaching → newsletter |
 | `quiz.html` | `src/quiz.html`, the joinkaminari.com/quiz archetype quiz | Questions, scoring, results and lead capture unchanged. Only the site identity changed: title, canonical, favicon, wordmark (links home), and the shareable result card and its link |
 | `coaching.html` | `mockups/coaching/kaminari-landing-b.html` (Variant B) | Owner-approved revision (below); quiz button goes to `quiz.html` |
 | `newsletter.html` | joinkaminari.com/newsletter (built from `src/templates/pages.mjs`) | Rewritten for The Anime Mindset; three featured lessons that link to the live blog; signup box has a direct Substack link (below) |
@@ -21,6 +21,17 @@ On animemindset.com the home, quiz and newsletter pages are indexable. `coaching
 description, a canonical URL (except coaching), Open Graph/Twitter tags and the share image `assets/og-image.png`
 (1200×630). Favicons: `assets/icon.svg`, `assets/favicon-32.png`, `assets/apple-touch-icon.png`.
 
+## Homepage
+
+Sections, in order: a full-bleed hero over `assets/art/hero-rooftop.webp` with one main action (Find Your Archetype);
+How it works (three numbered steps that reuse the "mirror / weakness / systems" cards); What is the Anime Mindset
+(statement plus the rotating quotes from `main.js`); the 9 archetypes as cards (swipeable on phones) leading to the
+quiz; the Arc Tracker (features, Get Notified, Sign in, rank ladder); a coaching teaser linking to `coaching.html`; and
+a newsletter close over `assets/art/storm-city.webp`. Styles are in `assets/home.css`, loaded only by `index.html`.
+
+The two artworks are the owner's ChatGPT-generated cityscapes, recoloured to the brand cyan: the rooftop scene had its
+warm tones moved to cyan (and was mirrored so the figure faces the headline); the storm city had its hue rotated.
+
 ## Navigation
 
 Three tabs, in this order, in the header on every page (desktop row and phone menu) and at the top of the footer's
@@ -28,7 +39,7 @@ Explore list on the home and newsletter pages:
 
 | Tab | Goes to |
 | --- | --- |
-| Habit Tracker | `https://www.joinkaminari.com/arc-tracker/app`, the live Arc Tracker, so existing users sign in as before. No tracker page or data lives on this site. |
+| Arc Tracker | `https://www.joinkaminari.com/arc-tracker/app`, the live Arc Tracker, so existing users sign in as before. No tracker page or data lives on this site. |
 | Coaching | `coaching.html` |
 | Newsletter | `newsletter.html` |
 
@@ -62,10 +73,11 @@ section uses the approved wording exactly.
 
 ## Styling
 
-`assets/styles.css` is a copy of the main site's stylesheet. The blocks at the end are the only additions: the header
+`assets/home.css` holds the homepage redesign only. `assets/styles.css` is a copy of the main site's stylesheet. The blocks at the end are the only additions: the header
 is laid out as name | tabs | button with the tabs centred on desktop (name 30px, tabs 16.5px); below 700px the
 newsletter button hides and the name sizes to the screen; the bolt logo sizes with the name; and the newsletter
-signup box's fallback row is styled. The coaching and quiz pages keep their own `<style>` blocks.
+signup box's fallback row is styled. The header button on the home and newsletter pages is "Find Your Archetype". The coaching
+and quiz pages keep their own `<style>` blocks.
 
 ## Deploy
 

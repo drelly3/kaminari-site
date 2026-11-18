@@ -1,0 +1,203 @@
+/* The Anime Mindset: homepage redesign (loaded only by index.html).
+   Built on the brand tokens in styles.css (:root): --bg #0B0B0F, --bg-alt #131317, --card #161619,
+   --ink #F5F5F7, --body #D9D9E0, --muted #9A9AA8, --accent #00C0F9, --accent-soft, --line, --r.
+   Nothing in styles.css is changed or removed; the other pages are unaffected. */
+
+body.home{
+  --glass: rgba(22,22,25,0.62);
+  --glass-strong: rgba(22,22,25,0.82);
+  --glow: 0 0 0 1px rgba(0,192,249,0.28), 0 18px 60px -24px rgba(0,192,249,0.45);
+  --display: clamp(42px, 7.2vw, 88px);
+}
+
+/* ---------- Header: glass bar that floats over the hero ---------- */
+body.home nav.site-nav{
+  background: rgba(11,11,15,0.45);
+  border-bottom-color: rgba(245,245,247,0.06);
+  backdrop-filter: blur(18px) saturate(140%);
+}
+
+/* ---------- Shared section furniture ---------- */
+.am-section{ padding: clamp(80px, 11vw, 140px) 0; position: relative; }
+.am-section.alt{ background: var(--bg-alt); }
+.am-chip{
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: 11.5px; font-weight: 700; letter-spacing: 1.8px; text-transform: uppercase;
+  color: var(--accent); padding: 7px 14px; border-radius: 999px;
+  background: rgba(0,192,249,0.08); border: 1px solid rgba(0,192,249,0.30);
+}
+.am-chip::before{ content:""; width:6px; height:6px; border-radius:50%; background:var(--accent); box-shadow:0 0 10px var(--accent); }
+.am-head{ max-width: 760px; margin: 0 auto 56px; text-align: center; display: grid; gap: 18px; justify-items: center; }
+.am-head h2{ font-size: clamp(32px, 4.6vw, 54px); font-weight: 900; letter-spacing: -0.035em; line-height: 1.04; text-wrap: balance; }
+.am-head p{ color: var(--muted); font-size: 17.5px; max-width: 640px; }
+.am-accent{ color: var(--accent); text-shadow: 0 0 28px rgba(0,192,249,0.45); }
+.am-link{ color: var(--accent); font-weight: 700; font-size: 14.5px; display: inline-flex; gap: 6px; align-items: center; }
+.am-link:hover{ text-decoration: underline; text-underline-offset: 4px; }
+.am-actions{ display: flex; flex-wrap: wrap; gap: 14px 22px; align-items: center; }
+.am-actions.center{ justify-content: center; }
+.am-note{ font-size: 13px; color: var(--muted); }
+.am-note a{ color: var(--accent); }
+.btn.btn-lg{ padding: 17px 30px; font-size: 16px; }
+.btn-primary.btn-glow{ box-shadow: 0 10px 40px -8px rgba(0,192,249,0.65); }
+.btn-ghost{ border: 1.5px solid var(--line-strong); color: var(--ink); background: rgba(11,11,15,0.35); backdrop-filter: blur(8px); }
+.btn-ghost:hover{ border-color: var(--ink); }
+
+/* ---------- 1. Hero ---------- */
+.am-hero{
+  position: relative; overflow: hidden; isolation: isolate;
+  margin-top: -76px;                       /* sit under the floating header */
+  min-height: clamp(640px, 94vh, 900px);
+  display: flex; align-items: center;
+  padding: 140px 0 72px;
+}
+.am-hero-art{ position: absolute; inset: 0; z-index: -2; }
+.am-hero-art img{ width: 100%; height: 100%; object-fit: cover; object-position: 72% 40%; }
+.am-hero::before{                          /* legibility: dark on the left and bottom, art shows on the right */
+  content: ""; position: absolute; inset: 0; z-index: -1;
+  background:
+    linear-gradient(90deg, rgba(11,11,15,0.96) 0%, rgba(11,11,15,0.86) 34%, rgba(11,11,15,0.35) 62%, rgba(11,11,15,0.10) 100%),
+    linear-gradient(180deg, rgba(11,11,15,0.55) 0%, rgba(11,11,15,0) 22%, rgba(11,11,15,0) 70%, var(--bg) 100%);
+}
+.am-hero .wrap{ width: 100%; }
+.am-hero-copy{ max-width: 660px; display: grid; gap: 24px; justify-items: start; }
+.am-hero h1{ font-size: var(--display); font-weight: 900; letter-spacing: -0.045em; line-height: 0.98; text-wrap: balance; }
+.am-hero .lede{ font-size: clamp(17px, 1.6vw, 19.5px); color: var(--body); max-width: 560px; line-height: 1.65; }
+.am-faces{ display: flex; align-items: center; gap: 14px; margin-top: 18px; flex-wrap: wrap; }
+.am-faces-row{ display: flex; }
+.am-faces-row img{
+  width: 44px; height: 44px; border-radius: 50%; object-fit: cover; margin-left: -10px;
+  border: 2px solid hsl(var(--hue) 80% 55%); background: var(--card);
+  box-shadow: 0 0 16px -2px hsl(var(--hue) 85% 55% / .55);
+}
+.am-faces-row img:first-child{ margin-left: 0; }
+.am-faces span{ font-size: 13.5px; color: var(--muted); font-weight: 600; }
+.am-faces span b{ color: var(--ink); }
+@media (prefers-reduced-motion: no-preference){
+  .am-hero-copy > *{ animation: am-rise .9s cubic-bezier(.2,.7,.2,1) both; }
+  .am-hero-copy > *:nth-child(2){ animation-delay: .06s; }
+  .am-hero-copy > *:nth-child(3){ animation-delay: .12s; }
+  .am-hero-copy > *:nth-child(4){ animation-delay: .18s; }
+  .am-hero-copy > *:nth-child(5){ animation-delay: .24s; }
+  @keyframes am-rise{ from{ transform: translateY(14px); } to{ transform: none; } }
+}
+@media (max-width: 760px){
+  .am-hero{ align-items: flex-end; min-height: 0; padding: 300px 0 52px; }
+  .am-hero-art{ bottom: auto; height: 470px; }
+  .am-hero-art img{ object-position: 76% 30%; }
+  .am-hero .am-chip{ background: rgba(11,11,15,0.82); }
+  .am-hero::before{
+    background: linear-gradient(180deg, rgba(11,11,15,0.25) 0%, rgba(11,11,15,0) 22%, rgba(11,11,15,0.55) 38%, rgba(11,11,15,0.92) 52%, var(--bg) 62%);
+  }
+}
+
+/* ---------- 2. How it works ---------- */
+.am-steps{ display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 20px; counter-reset: step; }
+.am-step{
+  position: relative; padding: 30px 28px 32px; border-radius: 20px;
+  background: linear-gradient(180deg, rgba(0,192,249,0.06), rgba(22,22,25,0) 40%), var(--card);
+  border: 1px solid var(--line); display: grid; gap: 14px; align-content: start;
+  transition: border-color .2s ease, box-shadow .25s ease, transform .2s ease;
+}
+.am-step:hover{ border-color: rgba(0,192,249,0.35); box-shadow: var(--glow); transform: translateY(-2px); }
+.am-step-top{ display: flex; align-items: center; justify-content: space-between; }
+.am-step-n{ font-size: 44px; font-weight: 900; letter-spacing: -0.04em; line-height: 1; color: transparent; -webkit-text-stroke: 1.3px rgba(0,192,249,0.55); }
+.am-step .idea-emblem{ margin: 0; }
+.am-step .label{ font-size: 12px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--accent); }
+.am-step h3{ font-size: 22px; font-weight: 800; letter-spacing: -0.02em; }
+.am-step p{ color: var(--muted); font-size: 15.5px; }
+.am-step .am-link{ margin-top: 4px; }
+@media (max-width: 900px){ .am-steps{ grid-template-columns: 1fr; } }
+
+/* ---------- 3. What is the Anime Mindset ---------- */
+.am-statement{ display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); gap: clamp(36px, 6vw, 80px); align-items: center; }
+.am-statement h2{ font-size: clamp(36px, 5.4vw, 66px); font-weight: 900; letter-spacing: -0.04em; line-height: 1; margin-top: 18px; text-wrap: balance; }
+.am-statement .copy p{ color: var(--body); font-size: 17.5px; margin-top: 22px; max-width: 560px; }
+.am-quote{
+  position: relative; padding: 40px 36px 34px; border-radius: 22px; overflow: hidden;
+  background: radial-gradient(120% 90% at 100% 0%, rgba(0,192,249,0.16), transparent 55%), var(--card);
+  border: 1px solid rgba(0,192,249,0.22); box-shadow: var(--glow);
+}
+.am-quote .mark{ font-size: 64px; line-height: .6; color: var(--accent); font-weight: 900; }
+.am-quote p{ font-size: clamp(21px, 2.4vw, 28px); font-weight: 800; letter-spacing: -0.02em; line-height: 1.3; margin-top: 18px; min-height: 3.9em; }
+.am-quote .quote-dots{ justify-content: flex-start; margin-top: 22px; }
+@media (max-width: 900px){ .am-statement{ grid-template-columns: 1fr; } }
+
+/* ---------- 4. The 9 archetypes ---------- */
+.am-arch-grid{ display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 18px; }
+.am-arch{
+  position: relative; padding: 24px 24px 26px; border-radius: 20px; overflow: hidden;
+  background: radial-gradient(120% 80% at 0% 0%, hsl(var(--hue) 85% 55% / .13), transparent 55%), var(--card);
+  border: 1px solid var(--line); display: grid; gap: 12px; align-content: start;
+  transition: border-color .2s ease, box-shadow .25s ease, transform .2s ease;
+}
+.am-arch:hover{ border-color: hsl(var(--hue) 80% 60% / .55); box-shadow: 0 18px 60px -28px hsl(var(--hue) 85% 55% / .8); transform: translateY(-2px); }
+.am-arch-top{ display: flex; gap: 14px; align-items: center; }
+.am-arch-top img{
+  width: 62px; height: 62px; border-radius: 16px; object-fit: cover; flex: none;
+  border: 2px solid hsl(var(--hue) 80% 58%); box-shadow: 0 0 22px -4px hsl(var(--hue) 85% 55% / .7);
+}
+.am-arch h3{ font-size: 19px; font-weight: 800; letter-spacing: -0.015em; }
+.am-arch .root{ font-size: 11.5px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: hsl(var(--hue) 85% 68%); margin-top: 3px; }
+.am-arch .q{ font-size: 15px; font-weight: 600; font-style: italic; color: var(--ink); }
+.am-arch .drive{ font-size: 14.5px; color: var(--muted); }
+.am-arch .weak{ justify-self: start; margin-top: 4px; font-size: 12.5px; font-weight: 700; padding: 6px 11px; border-radius: 999px;
+  color: #FF9E9E; background: rgba(255,107,107,0.10); border: 1px solid rgba(255,107,107,0.28); }
+.am-arch-cta{ margin-top: 48px; display: grid; gap: 14px; justify-items: center; text-align: center; }
+@media (max-width: 1000px){ .am-arch-grid{ grid-template-columns: repeat(2, minmax(0,1fr)); } }
+@media (max-width: 640px){
+  .am-arch-grid{ display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 14px; padding-bottom: 14px;
+    margin: 0 -28px; padding-left: 28px; padding-right: 28px; scrollbar-width: thin; }
+  .am-arch{ flex: 0 0 84%; scroll-snap-align: center; }
+  .am-swipe{ display: block !important; }
+}
+.am-swipe{ display: none; text-align: center; font-size: 12.5px; color: var(--muted); margin-top: 6px; }
+
+/* ---------- 5. Arc Tracker ---------- */
+.am-tracker{ display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr); gap: clamp(36px, 6vw, 72px); align-items: start; }
+.am-tracker h2{ font-size: clamp(32px, 4.4vw, 52px); font-weight: 900; letter-spacing: -0.035em; line-height: 1.04; margin-top: 18px; text-wrap: balance; }
+.am-tracker .intro{ color: var(--body); font-size: 17.5px; margin-top: 18px; max-width: 560px; }
+.am-features{ display: grid; gap: 12px; margin: 30px 0 30px; }
+.am-feature{ display: grid; grid-template-columns: 96px minmax(0,1fr); gap: 16px; padding: 18px 20px; border-radius: 16px; background: var(--card); border: 1px solid var(--line); }
+.am-feature .k{ font-size: 11.5px; font-weight: 800; letter-spacing: 1.4px; text-transform: uppercase; color: var(--accent); padding-top: 3px; }
+.am-feature h3{ font-size: 17px; font-weight: 800; margin-bottom: 4px; }
+.am-feature p{ color: var(--muted); font-size: 14.5px; }
+.am-ladder-card{ padding: 26px; border-radius: 22px; background: radial-gradient(110% 70% at 100% 0%, rgba(0,192,249,0.12), transparent 60%), var(--card); border: 1px solid rgba(0,192,249,0.22); box-shadow: var(--glow); }
+.am-ladder-card .arc-ladder{ background: transparent; border: none; padding: 0; box-shadow: none; }
+.am-ladder-card h3{ font-size: 22px; font-weight: 900; letter-spacing: -0.02em; margin-top: 24px; }
+.am-ladder-card .sub{ color: var(--muted); font-size: 14.5px; margin-top: 8px; }
+.am-ladder-card .archetype-list{ margin-top: 14px; }
+@media (max-width: 960px){ .am-tracker{ grid-template-columns: 1fr; } }
+@media (max-width: 480px){ .am-feature{ grid-template-columns: 1fr; gap: 6px; } }
+
+/* ---------- 6. Coaching teaser ---------- */
+.am-coach{
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: clamp(32px, 5vw, 64px); align-items: center;
+  padding: clamp(32px, 5vw, 56px); border-radius: 28px;
+  background: radial-gradient(90% 120% at 0% 100%, rgba(0,192,249,0.14), transparent 55%), var(--card);
+  border: 1px solid rgba(0,192,249,0.22); box-shadow: var(--glow);
+}
+.am-coach h2{ font-size: clamp(30px, 4vw, 46px); font-weight: 900; letter-spacing: -0.035em; line-height: 1.05; margin-top: 16px; text-wrap: balance; }
+.am-coach .copy > p{ color: var(--body); font-size: 17px; margin: 16px 0 26px; max-width: 480px; }
+.am-arcs{ display: grid; gap: 12px; }
+.am-arcs li{ list-style: none; display: grid; grid-template-columns: 104px minmax(0,1fr); gap: 16px; padding: 16px 18px; border-radius: 14px; background: rgba(11,11,15,0.55); border: 1px solid var(--line); }
+.am-arcs .days{ font-size: 12.5px; font-weight: 800; color: var(--accent); letter-spacing: .5px; padding-top: 2px; }
+.am-arcs b{ display: block; font-size: 16.5px; }
+.am-arcs span{ color: var(--muted); font-size: 14px; }
+@media (max-width: 900px){ .am-coach{ grid-template-columns: 1fr; } }
+@media (max-width: 480px){ .am-arcs li{ grid-template-columns: 1fr; gap: 4px; } }
+
+/* ---------- 7. Newsletter close ---------- */
+.am-close{ position: relative; overflow: hidden; isolation: isolate; padding: clamp(110px, 14vw, 170px) 0; text-align: center; }
+.am-close-art{ position: absolute; inset: 0; z-index: -2; }
+.am-close-art img{ width: 100%; height: 100%; object-fit: cover; object-position: 50% 30%; }
+.am-close::before{ content: ""; position: absolute; inset: 0; z-index: -1;
+  background: linear-gradient(180deg, var(--bg) 0%, rgba(11,11,15,0.30) 28%, rgba(11,11,15,0.30) 55%, rgba(11,11,15,0.70) 82%, var(--bg) 100%),
+    radial-gradient(60% 55% at 50% 52%, rgba(11,11,15,0.55), transparent 75%); }
+.am-close .inner{ max-width: 680px; margin: 0 auto; display: grid; gap: 20px; justify-items: center; }
+.am-close h2{ font-size: clamp(36px, 5.6vw, 64px); font-weight: 900; letter-spacing: -0.04em; line-height: 1.02; text-wrap: balance; }
+.am-close p{ color: var(--body); font-size: 17.5px; }
+
+@media (max-width: 360px){
+  .am-hero{ padding-top: 230px; }
+  .am-hero-art{ height: 400px; }
+}
