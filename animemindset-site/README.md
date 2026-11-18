@@ -10,7 +10,7 @@ below). It is separate from joinkaminari.com: the root `vercel.json` and `wrangl
 | `quiz.html` | `src/quiz.html`, the joinkaminari.com/quiz archetype quiz | Questions, scoring, results and lead capture unchanged. Only the site identity changed: title, canonical, favicon, wordmark (links home), and the shareable result card and its link |
 | `coaching.html` | `mockups/coaching/kaminari-landing-b.html` (Variant B) | Owner-approved revision (below); quiz button goes to `quiz.html` |
 | `about.html` | Started as joinkaminari.com/about | Rewritten for The Anime Mindset (hero, "What We're Building", closing section); the team section (photos as WebP in `assets/team/`, roles, socials, top 5) is unchanged |
-| `privacy-policy.html` | joinkaminari.com/privacy-policy | Copied word for word, except the "Website" definition (now animemindset.com) and the contact email (Contact@joinkaminari.com) |
+| `privacy-policy.html` | joinkaminari.com/privacy-policy | Refers to this website: "Website" is The Anime Mindset at animemindset.com, "Company" is Kaminari as the company that operates it, contact Contact@joinkaminari.com. Adds "Information You Give Us on This Website" (quiz, newsletter, emails). Last updated November 18, 2026 |
 | `newsletter.html` | joinkaminari.com/newsletter (built from `src/templates/pages.mjs`) | Rewritten for The Anime Mindset; no blog section (past issues via "Read on Substack"); signup box has a direct Substack link (below) |
 
 `robots.txt` and `sitemap.xml` (home, quiz, newsletter) are served too.
