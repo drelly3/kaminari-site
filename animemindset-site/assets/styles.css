@@ -439,4 +439,4 @@ nav.site-nav .brand img{ height:1.13em; }
 .embed-fallback .btn{ white-space:nowrap; }
 
 /* The Anime Mindset logo: the cyan bolt, sized with the name it sits beside */
-.brand .bolt{ width:1em; height:1em; flex:none; }
+.brand .bolt{ height:1.1em; width:auto; flex:none; }

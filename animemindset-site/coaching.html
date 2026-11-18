@@ -96,7 +96,7 @@
   }
   nav .wrap{ display:flex; align-items:center; justify-content:space-between; height:70px; }
   .brand{ display:flex; align-items:center; gap:10px; font-weight:800; font-size:22px; letter-spacing:-0.02em; }
-  .bolt{ width:22px; height:22px; }
+  .bolt{ height:22px; width:auto; flex:none; }
   .nav-right{ display:flex; align-items:center; gap:16px; }
   .nav-tabs{ display:flex; gap:28px; font-size:16px; font-weight:600; color:var(--muted); margin-right:6px; }
   /* Desktop: tabs sit in the exact middle of the header bar */
@@ -110,20 +110,21 @@
   .brand{ white-space:nowrap; }
   @media (max-width:440px){
     nav .wrap{ padding:0 16px; }
-    .brand{ font-size:clamp(13px, calc((100vw - 225px) / 10.2), 17px); gap:6px; }
-    .bolt{ width:1.05em; height:1.05em; }
+    .brand{ font-size:clamp(13px, calc((100vw - 226px) / 10.46), 17px); gap:6px; }
+    .bolt{ height:1.05em; width:auto; }
     .nav-right{ gap:6px; }
     .nav-right > .btn-sm{ padding:8px 12px; font-size:12px; }
     .nav-toggle{ padding:4px; font-size:20px; }
   }
   @media (max-width:360px){
-    .brand{ font-size:clamp(12.5px, calc((100vw - 222px) / 9.15), 15px); gap:5px; }
-    .brand .bolt{ width:15px; height:15px; }
+    .brand{ font-size:clamp(12.5px, calc((100vw - 228px) / 9.15), 15px); gap:5px; }
+    .brand .bolt{ height:15px; width:auto; }
     .nav-right > .btn-sm{ padding:7px 9px; font-size:11px; }
   }
   @media (max-width:340px){
     nav .wrap{ padding:0 12px; }
-    .brand{ font-size:clamp(12.5px, calc((100vw - 206px) / 9.15), 14.5px); gap:4px; }
+    .brand{ font-size:clamp(12px, calc((100vw - 211px) / 9.15), 14.5px); gap:4px; }
+    .brand .bolt{ height:13px; }
     .nav-right{ gap:4px; }
     .nav-right > .btn-sm{ padding:7px 8px; }
     .nav-toggle{ padding:2px; }
@@ -322,7 +323,7 @@
 <nav>
   <div class="wrap">
     <a href="index.html" class="brand">
-      <svg class="bolt" viewBox="0 0 24 24" fill="none"><path d="M13 2L4 14h6l-1 8 9-12h-6l1-8z" fill="#00C0F9"/></svg>
+      <img class="bolt" src="assets/kaminari-mark.svg" alt="" width="35" height="28">
       The Anime Mindset
     </a>
     <div class="nav-right">
@@ -470,7 +471,7 @@
   <div class="wrap">
     <div class="footer-grid">
       <a href="index.html" class="brand">
-        <svg class="bolt" viewBox="0 0 24 24" fill="none"><path d="M13 2L4 14h6l-1 8 9-12h-6l1-8z" fill="#00C0F9"/></svg>
+        <img class="bolt" src="assets/kaminari-mark.svg" alt="" width="35" height="28">
         The Anime Mindset
       </a>
       <div class="links">

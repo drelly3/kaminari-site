@@ -43,9 +43,9 @@ Explore list on the home and newsletter pages:
 | Coaching | `coaching.html` |
 | Newsletter | `newsletter.html` |
 
-The footer Explore list keeps About, Blog, Anime Mindset and Learn to Draw Anime under the tabs. The Discord link,
-the disabled Discord waitlist form, and the Advertise and RSS links (they belong to the ad-supported joinkaminari.com)
-were removed.
+The footer Explore list has the three tabs plus About. Footer Contact is Contact@joinkaminari.com. Links that belong
+only to joinkaminari.com were removed: Blog, Learn to Draw Anime, Discord (and its disabled waitlist form), Advertise
+and RSS, plus a self-link to "Anime Mindset".
 
 ## The quiz and the Arc Tracker
 
@@ -75,7 +75,7 @@ section uses the approved wording exactly.
 
 `assets/home.css` holds the homepage redesign only. `assets/styles.css` is a copy of the main site's stylesheet. The blocks at the end are the only additions: the header
 is laid out as name | tabs | button with the tabs centred on desktop (name 30px, tabs 16.5px); below 700px the
-newsletter button hides and the name sizes to the screen; the bolt logo sizes with the name; and the newsletter
+newsletter button hides and the name sizes to the screen; the logo mark (`assets/kaminari-mark.svg`, the same lightning "K" as joinkaminari.com) sizes with the name; and the newsletter
 signup box's fallback row is styled. The header button on the home and newsletter pages is "Find Your Archetype". The coaching
 and quiz pages keep their own `<style>` blocks.
 
@@ -107,7 +107,7 @@ Open `index.html` in a browser, or serve the folder:
 ## Known gaps
 
 - Still Kaminari by design: the newsletter itself (the Substack and its embed), the quiz's newsletter and Discord
-  checkboxes, the newsletter page's line saying it goes out through the Kaminari newsletter, the footer contact
-  email and LinkedIn, and the About/Blog/Learn to Draw Anime footer links.
+  checkboxes, the newsletter page's line saying it goes out through the Kaminari newsletter, the logo mark, the footer
+  LinkedIn and the About link.
 - The mockup folders this was built from (`mockups/animemindset/`, `mockups/coaching/`) are kept unchanged as
   reference.
