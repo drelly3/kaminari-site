@@ -49,8 +49,10 @@ section uses the approved wording exactly.
 ## Styling
 
 `assets/styles.css` is a copy of the main site's stylesheet. The blocks at the end are the only additions: the
-longer "The Anime Mindset" wordmark is set a little smaller (26px) and kept on one line, and the newsletter
-signup box's fallback row is styled. The header switches to the phone menu at the original 1120px. The coaching page's header styles live in its own `<style>` block.
+header is laid out as name | tabs | button with the three tabs centred in the bar on desktop; the name is
+30px and the tabs 16.5px. Below 700px the newsletter button hides and the name sizes to the screen (up to 30px)
+so it never runs into the menu icon. The newsletter signup box's fallback row is styled too. The header switches
+to the phone menu at the original 1120px. The coaching page's header styles live in its own `<style>` block.
 
 ## Preview deploy
 

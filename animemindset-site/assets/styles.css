@@ -418,9 +418,21 @@ dialog.waitlist .waitlist-msg{ min-height:1.4em; margin:4px 0 0; font-size:14px;
 /* The Anime Mindset: the wordmark is longer than "Kaminari", so keep the header on one line */
 .brand{ white-space:nowrap; }
 .nav-links a{ white-space:nowrap; }
-nav.site-nav .brand{ font-size:26px; gap:10px; }
-nav.site-nav .brand img{ height:30px; }
-.nav-links{ gap:26px; }
+nav.site-nav .brand{ font-size:30px; gap:12px; }
+nav.site-nav .brand img{ height:1.13em; }
+.nav-links{ gap:34px; font-size:16.5px; }
+.nav-links.open a{ font-size:17px; }
+/* Desktop: name left, tabs in the exact middle of the bar, newsletter button right */
+@media (min-width:1121px){
+  nav.site-nav .wrap{ display:grid; grid-template-columns:1fr auto 1fr; align-items:center; }
+  nav.site-nav .brand{ justify-self:start; }
+  nav.site-nav .nav-cta{ justify-self:end; }
+}
+/* Phones and small tablets: the newsletter button hides, and the name is as large as fits (up to 30px) */
+@media (max-width:700px){
+  .nav-cta .btn{ display:none; }
+  nav.site-nav .brand{ font-size:clamp(18px, calc((100vw - 113px) / 10.4), 30px); gap:8px; }
+}
 
 /* Newsletter page: a direct Substack link inside the signup box, in case the embedded form is blocked or fails */
 .embed-fallback{ display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:10px 14px; padding:14px 4px 2px; font-size:13.5px; color:var(--muted); }

@@ -82,29 +82,35 @@
     border-bottom:1px solid var(--line);
   }
   nav .wrap{ display:flex; align-items:center; justify-content:space-between; height:70px; }
-  .brand{ display:flex; align-items:center; gap:9px; font-weight:800; font-size:18px; letter-spacing:-0.02em; }
-  .bolt{ width:18px; height:18px; }
+  .brand{ display:flex; align-items:center; gap:10px; font-weight:800; font-size:22px; letter-spacing:-0.02em; }
+  .bolt{ width:22px; height:22px; }
   .nav-right{ display:flex; align-items:center; gap:16px; }
-  .nav-tabs{ display:flex; gap:22px; font-size:13.5px; font-weight:600; color:var(--muted); margin-right:6px; }
+  .nav-tabs{ display:flex; gap:28px; font-size:16px; font-weight:600; color:var(--muted); margin-right:6px; }
+  /* Desktop: tabs sit in the exact middle of the header bar */
+  @media (min-width:901px){
+    nav .wrap{ position:relative; }
+    .nav-tabs{ position:absolute; left:50%; transform:translateX(-50%); margin-right:0; }
+  }
   .nav-tabs a{ white-space:nowrap; transition:color .15s; }
   .nav-tabs a:hover, .nav-tabs a[aria-current="page"]{ color:var(--ink); }
   .nav-toggle{ display:none; background:none; border:none; color:var(--ink); font-size:22px; cursor:pointer; padding:6px; }
   .brand{ white-space:nowrap; }
   @media (max-width:440px){
     nav .wrap{ padding:0 16px; }
-    .brand{ font-size:15px; gap:6px; }
+    .brand{ font-size:clamp(13px, calc((100vw - 225px) / 10.2), 17px); gap:6px; }
+    .bolt{ width:1.05em; height:1.05em; }
     .nav-right{ gap:6px; }
     .nav-right > .btn-sm{ padding:8px 12px; font-size:12px; }
     .nav-toggle{ padding:4px; font-size:20px; }
   }
   @media (max-width:360px){
-    .brand{ font-size:13px; gap:5px; }
+    .brand{ font-size:clamp(12.5px, calc((100vw - 222px) / 9.15), 15px); gap:5px; }
     .brand .bolt{ width:15px; height:15px; }
     .nav-right > .btn-sm{ padding:7px 9px; font-size:11px; }
   }
   @media (max-width:340px){
     nav .wrap{ padding:0 12px; }
-    .brand{ font-size:12.5px; gap:4px; }
+    .brand{ font-size:clamp(12.5px, calc((100vw - 206px) / 9.15), 14.5px); gap:4px; }
     .nav-right{ gap:4px; }
     .nav-right > .btn-sm{ padding:7px 8px; }
     .nav-toggle{ padding:2px; }
