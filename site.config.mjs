@@ -7,6 +7,8 @@ export const site = {
     'Stay ahead of the anime curve with Kaminari. Get the latest news, reviews, and exclusive content delivered straight to your inbox every week.',
   googleSiteVerification: 'Ey0CAWBSEi4WMjgZLYF4ixwntx00lI0Qd1rEQinoJQ4',
   ga4Id: 'G-G0ZNGK9CCS',
+  // Google tag (Tag Manager container). Loads next to the GA4 tag above on every tracked page.
+  gtmId: 'GTM-KDNNC7KC',
   clarityId: 'vfa1cvf7bd',
   ogImage: '/assets/og-image.jpg',
   // false = invite-only test run: no menu link, no public Arc Tracker page, no buy button.
