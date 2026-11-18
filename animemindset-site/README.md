@@ -75,7 +75,7 @@ section uses the approved wording exactly.
 
 `assets/home.css` holds the homepage redesign only. `assets/styles.css` is a copy of the main site's stylesheet. The blocks at the end are the only additions: the header
 is laid out as name | tabs | button with the tabs centred on desktop (name 30px, tabs 16.5px); below 700px the
-newsletter button hides and the name sizes to the screen; the logo mark (`assets/kaminari-mark.svg`, the same lightning "K" as joinkaminari.com) sizes with the name; and the newsletter
+newsletter button hides and the name sizes to the screen; the logo (`assets/kaminari-bolt.png`, the blue lightning bolt from the joinkaminari.com logo) sizes with the name; and the newsletter
 signup box's fallback row is styled. The header button on the home and newsletter pages is "Find Your Archetype". The coaching
 and quiz pages keep their own `<style>` blocks.
 
@@ -107,7 +107,7 @@ Open `index.html` in a browser, or serve the folder:
 ## Known gaps
 
 - Still Kaminari by design: the newsletter itself (the Substack and its embed), the quiz's newsletter and Discord
-  checkboxes, the newsletter page's line saying it goes out through the Kaminari newsletter, the logo mark, the footer
+  checkboxes, the newsletter page's line saying it goes out through the Kaminari newsletter, the logo bolt, the footer
   LinkedIn and the About link.
 - The mockup folders this was built from (`mockups/animemindset/`, `mockups/coaching/`) are kept unchanged as
   reference.
