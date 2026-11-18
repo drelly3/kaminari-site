@@ -96,8 +96,8 @@ and quiz pages keep their own `<style>` blocks.
     node animemindset-site/deploy/build-worker.mjs
     npx wrangler@4.156.2 deploy -c animemindset-site/deploy/wrangler.jsonc
 
-The script has to stay under the Workers free plan's 3 MB (compressed) limit; it's about 0.9 MB. The newsletter page
-the newsletter page no longer shows blog posts, so its thumbnails were removed from `assets/media/` (the originals are
+The script has to stay under the Workers free plan's 3 MB (compressed) limit; it's about 1.2 MB. The newsletter page
+no longer shows blog posts, so its thumbnails were removed from `assets/media/` (the originals are
 still in the repo at `public/media/`).
 
 ## Open it
