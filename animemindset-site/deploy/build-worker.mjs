@@ -25,7 +25,7 @@ const TYPES = {
 const BINARY = new Set(['.png', '.webp']);
 
 // The allowlist: the pages, robots.txt and sitemap.xml, plus every file under assets/. Nothing else in the folder is served.
-const PAGES = ['index.html', 'coaching.html', 'newsletter.html', 'quiz.html', 'robots.txt', 'sitemap.xml'];
+const PAGES = ['index.html', 'about.html', 'coaching.html', 'newsletter.html', 'privacy-policy.html', 'quiz.html', 'robots.txt', 'sitemap.xml'];
 // Pages kept out of search engines on every host (the owner asked for coaching to stay noindex).
 const NOINDEX = ['/coaching.html'];
 const walk = dir => fs.readdirSync(dir, { withFileTypes: true }).flatMap(e =>
