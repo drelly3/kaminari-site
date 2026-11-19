@@ -97,31 +97,40 @@ and quiz pages keep their own `<style>` blocks.
     node animemindset-site/deploy/build-worker.mjs
     npx wrangler@4.156.2 deploy -c animemindset-site/deploy/wrangler.jsonc
 
-## Arc Tracker on animemindset.com (built and tested locally, not live)
+## Arc Tracker on animemindset.com (stage 1 built and tested locally, not live)
 
-`deploy/tracker-proxy.mjs` can serve the existing Arc Tracker at animemindset.com/arc-tracker/app by passing an exact
-list of paths to the production `kaminari-site` Worker through a service binding named `TRACKER`. The tracker's
-storage (KV, R2) and secrets stay on that Worker, members keep their progress and photos, and nothing is copied.
+`deploy/tracker-proxy.mjs` serves the existing Arc Tracker at https://animemindset.com/arc-tracker/app by passing an
+exact list of paths to the production `kaminari-site` Worker through a service binding named `TRACKER`. The tracker's
+records (KV, R2), secrets and reminder cron stay on that Worker, so both addresses read and write the same records.
+Nothing is copied.
 
-- Paths: `/arc-tracker/app` (GET/HEAD), `/arc-tracker/arc-sw.js` (the tracker's service worker, inside its
-  `/arc-tracker/` scope), `/arc-tracker/k/<file>` (the tracker's CSS, JS, icons and avatars, namespaced so they never
-  shadow this site's `assets/styles.css`, avatars or quiz), and the tracker API by exact path and method:
+- **One sign-in address.** Only `animemindset.com` serves the tracker. On `www.animemindset.com`, workers.dev or any
+  other host the tracker page redirects to the apex, and tracker files and the API answer 404 there.
+- **Paths on the apex:** `/arc-tracker/app` (GET/HEAD), `/arc-tracker/arc-sw.js` (the tracker's service worker, inside
+  its `/arc-tracker/` scope), `/arc-tracker/k/<file>` (the tracker's CSS, JS, icons and avatars, namespaced so they
+  never shadow this site's `assets/styles.css`, avatars or quiz), and the tracker API by exact path and method:
   `POST /api/arc-verify`, `POST /api/arc-sync`, `GET /api/arc-photos`, `GET|PUT /api/arc-photos/<id>/(full|thumb)`,
   `DELETE /api/arc-photos/<id>`, `GET /api/arc-push/key`, `POST /api/arc-push/(subscribe|unsubscribe|cleared|test|next)`.
   Anything else under `/api/arc-*` is 404 and a wrong method is 405, without reaching production. `/api/waitlist`,
   `/go/*` and every other production path are never forwarded. Only `content-type`, `accept` and the tracker's
   `x-arc-*` headers are passed on (no cookies, no query strings).
-- The tracker's files are rewritten with exact, counted replacements, including `isLive = true` in the gate so its
-  built-in sample key never opens the tracker here. The "take the archetype quiz" link keeps opening
-  joinkaminari.com/quiz. If production's files change so any replacement stops matching, `/arc-tracker/app` redirects
-  to the original app on joinkaminari.com instead of serving a half-rewritten page.
-- **Without the binding** (the current `deploy/wrangler.jsonc`), `/arc-tracker/app` redirects to the original app and
-  the tracker API answers 503. Turning it on is the one config change below, which is not made yet:
-
-      "services": [ { "binding": "TRACKER", "service": "kaminari-site" } ]
-
-- Members sign in again on the new address with the same key (browser storage is per site), and turn notifications
-  on again there. Anything logged offline and not yet backed up stays in the old site's browser until it syncs there.
+- **Rewrites** (exact and counted): this site's title, canonical, share image, site name and icons; no joinkaminari.com
+  verification tag or blog feed; "← Back to The Anime Mindset" goes to `/`; the "take the archetype quiz" link opens
+  `/quiz.html` (same questions and scoring, and neither quiz hands data to the tracker, which has its own picker);
+  the gate's `isLive` is `true` and its preview-only sample-key text and value are not served. If production's files
+  change so any rewrite stops matching, `/arc-tracker/app` redirects to the original app on joinkaminari.com.
+- **Push:** the current backend's push key and cron are used, so reminders keep coming from the one cron; a
+  notification opens the address it was turned on at.
+- **Deploy configs:** `wrangler.jsonc` (no binding: the tracker page redirects to the original app, the API answers
+  503) and `wrangler.tracker.jsonc` (the same plus the `TRACKER` binding). Before either deploy, run
+  `deploy/stage-check.mjs` (read-only): it fails if any remote branch has newer `animemindset-site` commits, if the
+  generated Worker doesn't match the source, or (with `--expect-live <id>`) if the live version changed since review.
+  Rollback is a fresh-source deploy with `wrangler.jsonc`, never an old version, so newer site changes are kept.
+- **Not switched yet:** the site's Arc Tracker buttons still open joinkaminari.com. Switching them, with the privacy
+  sentence for the tracker, is a separate final change.
+- Members sign in again on the new address with the same key (browser storage is per address), and turn
+  notifications on again there. Anything logged offline and not yet backed up stays in the old address's browser
+  until it syncs there.
 - Tests: `node animemindset-site/deploy/tracker-proxy.test.mjs <built kaminari-site dist/>`.
 
 The script has to stay under the Workers free plan's 3 MB (compressed) limit; it's about 1.2 MB. The newsletter page

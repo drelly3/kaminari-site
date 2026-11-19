@@ -1,0 +1,22 @@
+// Stage 1 deploy config for The Anime Mindset Worker: identical to wrangler.jsonc plus the TRACKER service binding,
+// which lets deploy/tracker-proxy.mjs pass the allowlisted Arc Tracker paths to the production tracker Worker
+// ("kaminari-site"). The binding grants no access to that Worker's KV, R2 or secrets; requests run its own code,
+// against the same records. The reminder cron stays on kaminari-site only: this Worker has no triggers.
+//
+//   deploy:   node animemindset-site/deploy/stage-check.mjs && node animemindset-site/deploy/build-worker.mjs
+//             npx wrangler@4.156.2 deploy -c animemindset-site/deploy/wrangler.tracker.jsonc
+//   rollback: the same two first commands, then deploy with wrangler.jsonc (same fresh source, no binding:
+//             /arc-tracker/app then redirects to the original app and the tracker API answers 503)
+{
+  "name": "animemindset-preview",
+  "main": "worker.generated.js",
+  "compatibility_date": "2026-10-01",
+  "workers_dev": true,
+  "preview_urls": false,
+  "rules": [
+    { "type": "Data", "globs": ["**/*.png", "**/*.webp"], "fallthrough": false }
+  ],
+  "services": [
+    { "binding": "TRACKER", "service": "kaminari-site" }
+  ]
+}

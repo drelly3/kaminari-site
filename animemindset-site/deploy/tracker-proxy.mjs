@@ -1,10 +1,14 @@
 // Arc Tracker on animemindset.com: an allowlisted pass-through to the existing tracker Worker.
 //
-// The tracker app, its storage (KV + R2) and its secrets stay on the production Worker ("kaminari-site").
-// This module only forwards an exact list of tracker paths to it through the TRACKER service binding.
-// Nothing here reads or writes member data itself, and no secret is needed or copied.
+// The tracker app, its records (KV + R2), its secrets and its reminder cron stay on the production Worker
+// ("kaminari-site"). This module only forwards an exact list of tracker paths to it through the TRACKER service
+// binding, so both addresses read and write the same records. Nothing here reads or writes member data itself.
 //
-// Paths on this site (nothing outside /arc-tracker and /api/arc-* is touched, so the marketing pages,
+// Served only on https://animemindset.com (one sign-in address: browser storage is per address).
+//   www.animemindset.com and any other host (e.g. workers.dev): the tracker page redirects to the apex address;
+//   tracker files and the API answer 404 there and are never forwarded.
+//
+// Paths on animemindset.com (nothing outside /arc-tracker and /api/arc-* is touched, so the marketing pages,
 // /assets/styles.css, the site's own avatars and /quiz.html are never shadowed):
 //   /arc-tracker, /arc-tracker/            -> redirect to /arc-tracker/app
 //   /arc-tracker/app                       -> the tracker page (GET/HEAD)
@@ -12,12 +16,14 @@
 //   /arc-tracker/k/<file>                  -> the tracker's own CSS, JS, icons and avatars, namespaced (GET/HEAD)
 //   /api/arc-verify, /api/arc-sync, /api/arc-photos..., /api/arc-push/...  -> exact paths and methods below
 //
-// The tracker's HTML/JS/manifest use root paths (/styles.css, /arc-tracker.js, /assets/avatars/...). They
-// are rewritten to the /arc-tracker/k/ namespace with exact, counted replacements. If production's files
-// change so that any replacement no longer matches exactly, the tracker page is not served half-rewritten:
-// /arc-tracker/app redirects to the original, working app on joinkaminari.com instead.
+// The tracker's HTML/JS/manifest use root paths and joinkaminari.com metadata. They are rewritten with exact,
+// counted replacements. If production's files change so that any replacement no longer matches exactly, the
+// tracker page is not served half-rewritten: /arc-tracker/app redirects to the original app on joinkaminari.com.
+// Without the TRACKER binding the same redirect happens and the API answers 503.
 
 export const ORIGINAL_APP = 'https://www.joinkaminari.com/arc-tracker/app';
+export const LIVE_HOST = 'animemindset.com';
+const SITE = 'https://' + LIVE_HOST;
 const UPSTREAM = 'https://www.joinkaminari.com';      // URL host for the service-binding request (routing is by path)
 const NS = '/arc-tracker/k/';
 
@@ -28,8 +34,6 @@ const STATIC = new Map([
   ['arc-gate.js', 'text/javascript'],
   ['arc-tracker.js', 'text/javascript'],
   ['arc-tracker.webmanifest', 'application/manifest+json'],
-  ['favicon.jpg', 'image/jpeg'],
-  ['apple-touch-icon.jpg', 'image/jpeg'],
   ['assets/kaminari-bolt.png', 'image/png'],
   ['assets/arc-icon-192.png', 'image/png'],
   ['assets/arc-icon-512.png', 'image/png'],
@@ -51,32 +55,46 @@ const API = [
 // request headers the tracker actually uses; everything else (cookies included) is dropped
 const PASS_HEADERS = ['content-type', 'accept', 'x-arc-key', 'x-arc-t', 'x-arc-kind'];
 
-// Exact text rewrites per upstream file: [find, replace, expected count]. A mismatch fails closed.
+// Exact rewrites per upstream file: [find (string, or a global RegExp), replace, expected count]. A mismatch fails closed.
 const R = (find, replace, count) => ({ find, replace, count });
 export const REWRITES = {
   '/arc-tracker/app': [
+    // truthful metadata for this address (the page stays noindex)
+    R('<title>Arc Tracker | Kaminari</title>', '<title>Arc Tracker | The Anime Mindset</title>', 1),
+    R('content="Arc Tracker | Kaminari"', 'content="Arc Tracker | The Anime Mindset"', 2),
+    R('<link rel="canonical" href="https://www.joinkaminari.com/arc-tracker/app">', `<link rel="canonical" href="${SITE}/arc-tracker/app">`, 1),
+    R('content="https://www.joinkaminari.com/arc-tracker/app"', `content="${SITE}/arc-tracker/app"`, 1),
+    R('content="https://www.joinkaminari.com/assets/og-image.jpg"', `content="${SITE}/assets/og-image.png"`, 2),
+    R('<meta property="og:site_name" content="Kaminari">', '<meta property="og:site_name" content="The Anime Mindset">', 1),
+    R(/<meta name="google-site-verification" content="[^"]*">\n?/g, '', 1),                // joinkaminari.com's ownership tag
+    R('<link rel="alternate" type="application/rss+xml" title="Kaminari Blog" href="/rss.xml">\n', '', 1), // this site has no blog feed
+    // this site's own icons
+    R('<link rel="icon" href="/favicon.jpg" type="image/jpeg">', '<link rel="icon" href="/assets/favicon-32.png" type="image/png" sizes="32x32">', 1),
+    R('<link rel="apple-touch-icon" href="/apple-touch-icon.jpg">', '<link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">', 1),
+    // the tracker's own files, namespaced
     R('href="/styles.css"', `href="${NS}styles.css"`, 1),
     R('href="/arc-tracker.css"', `href="${NS}arc-tracker.css"`, 1),
     R('href="/arc-tracker.webmanifest"', `href="${NS}arc-tracker.webmanifest"`, 1),
-    R('href="/favicon.jpg"', `href="${NS}favicon.jpg"`, 1),
-    R('href="/apple-touch-icon.jpg"', `href="${NS}apple-touch-icon.jpg"`, 1),
     R('src="/assets/kaminari-bolt.png"', `src="${NS}assets/kaminari-bolt.png"`, 2),
     R('src="/arc-gate.js"', `src="${NS}arc-gate.js"`, 1),
-    // links that leave the tracker keep their original destinations on joinkaminari.com
-    R('href="/rss.xml"', `href="${UPSTREAM}/rss.xml"`, 1),
-    R('href="/anime-mindset"', `href="${UPSTREAM}/anime-mindset"`, 1),
+    // the gate's way out goes to this site's homepage
+    R('<a href="/anime-mindset">← Back to Kaminari</a>', '<a href="/">← Back to The Anime Mindset</a>', 1),
+    // the preview-only "skip the key" note never appears here (kept as empty hidden elements the gate script expects)
+    R(/<div id="arc-preview-note" hidden>[\s\S]*?<\/div>/g, '<div id="arc-preview-note" hidden><button type="button" id="arc-preview-open" hidden></button></div>', 1),
   ],
   'arc-gate.js': [
     R("s.src = '/arc-tracker.js'", `s.src = '${NS}arc-tracker.js'`, 1),
-    // the built-in sample key must never open the tracker on this site, on any host
+    // the built-in sample key never opens the tracker here, on any host, and is not served here at all
     R('const isLive = /(^|\\.)joinkaminari\\.com$/.test(location.hostname);', 'const isLive = true;', 1),
+    R(/const SAMPLE_KEY = '[^']*';/g, "const SAMPLE_KEY = '';", 1),
   ],
   'arc-tracker.js': [
     R("'/assets/avatars/'", `'${NS}assets/avatars/'`, 1),
     R('src="/assets/kaminari-bolt.png"', `src="${NS}assets/kaminari-bolt.png"`, 2),
     R("navigator.serviceWorker.register('/arc-sw.js',{scope:'/arc-tracker/'})", "navigator.serviceWorker.register('/arc-tracker/arc-sw.js',{scope:'/arc-tracker/'})", 1),
-    // "Don't know? Take the archetype quiz" keeps opening the original quiz
-    R('href="/quiz"', `href="${UPSTREAM}/quiz"`, 1),
+    // "Don't know? Take the archetype quiz" opens this site's quiz (same questions and scoring; it hands no data
+    // to the tracker, which has its own archetype picker)
+    R('href="/quiz"', 'href="/quiz.html"', 1),
   ],
   'arc-sw.js': [
     R("'/assets/arc-icon-192.png'", `'${NS}assets/arc-icon-192.png'`, 2),
@@ -89,9 +107,9 @@ export const REWRITES = {
 
 export function applyRewrites(name, text) {
   for (const { find, replace, count } of REWRITES[name] || []) {
-    const n = text.split(find).length - 1;
-    if (n !== count) throw new Error(`tracker rewrite mismatch in ${name}: expected ${count} of ${JSON.stringify(find)}, found ${n}`);
-    text = text.split(find).join(replace);
+    const n = typeof find === 'string' ? text.split(find).length - 1 : [...text.matchAll(find)].length;
+    if (n !== count) throw new Error(`tracker rewrite mismatch in ${name}: expected ${count} of ${String(find).slice(0, 80)}, found ${n}`);
+    text = typeof find === 'string' ? text.split(find).join(replace) : text.replace(find, () => replace);
   }
   return text;
 }
@@ -148,12 +166,21 @@ export const _resetVerification = () => { verified = 0; };
 
 // Returns a Response for tracker paths, or null for everything else (the marketing site handles those).
 export async function handleTracker(request, env) {
-  const { pathname } = new URL(request.url);
+  const url = new URL(request.url);
+  const { pathname } = url;
   const isTracker = pathname === '/arc-tracker' || pathname.startsWith('/arc-tracker/');
   const isApi = pathname.startsWith('/api/arc-');
   if (!isTracker && !isApi) return null;
 
   const method = request.method;
+  const isPage = pathname === '/arc-tracker' || pathname === '/arc-tracker/' || pathname === '/arc-tracker/app';
+
+  // one sign-in address: only the apex serves the tracker
+  if (url.hostname !== LIVE_HOST) {
+    if (isPage && (method === 'GET' || method === 'HEAD')) return Response.redirect(`${url.protocol}//${LIVE_HOST}/arc-tracker/app`, 302);
+    return json(404, { ok: false, reason: 'not_on_this_host' });
+  }
+
   const toOriginal = () => Response.redirect(ORIGINAL_APP, 302);
 
   if (isApi) {
