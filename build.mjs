@@ -60,11 +60,16 @@ const arcArchetypes = Function(arcSrc.slice(arcStart, arcEnd) + '; return ARCHET
 
 const org = { '@type': 'Organization', '@id': site.url + '/#organization', name: site.name, url: site.url, logo: abs('/assets/kaminari-logo-white.svg') };
 
+// numbers for the homepage's featured Black Clover card (src/content/guides/black-clover-filler-list.json)
+const GUIDES = 'src/content/guides';
+const guides = Object.fromEntries((fs.existsSync(GUIDES) ? fs.readdirSync(GUIDES) : []).filter(f => f.endsWith('.json'))
+  .map(f => [f.slice(0, -5), JSON.parse(fs.readFileSync(path.join(GUIDES, f), 'utf8'))]));
 write('/', {
-  title: 'Kaminari — Turn The Anime You Love Into Habits That Actually Stick',
-  description: 'Weekly anime lessons, archetype-matched habit templates, coaching, and a community of others doing the same. Join the free Kaminari newsletter.',
-  jsonLd: { '@context': 'https://schema.org', '@graph': [{ '@type': 'WebSite', '@id': site.url + '/#website', url: site.url, name: site.name, publisher: { '@id': org['@id'] } }, org] },
-  body: pages.home(posts),
+  title: 'Kaminari — Anime Filler Lists, Watch Orders & What to Watch Next',
+  description: 'Anime filler lists, watch order guides and what-to-watch-next picks. Find which episodes to skip, the right order for every series, and your next favorite show.',
+  jsonLd: { '@context': 'https://schema.org', '@graph': [{ '@type': 'WebSite', '@id': site.url + '/#website', url: site.url, name: site.name, publisher: { '@id': org['@id'] },
+    potentialAction: { '@type': 'SearchAction', target: site.url + '/blog?q={search_term_string}', 'query-input': 'required name=search_term_string' } }, org] },
+  body: pages.home(posts, guides),
 });
 write('/about', {
   title: 'About | Kaminari Newsletter',
