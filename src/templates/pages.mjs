@@ -466,9 +466,8 @@ export const animeArtAcademy = () => {
       <h1>Learn to Draw Anime &amp; Manga from Japanese Pros</h1>
       <p class="summary">Anime Art Academy teaches you to draw anime and manga online with English video lessons from Japanese pro animators and manga artists, who send your drawings back with personal corrections. Two lessons are free to watch.</p>
       <div class="partner-actions">${cta('Watch a free lesson')}<span class="partner-note">No account needed. Opens Anime Art Academy.</span></div>
-      <div class="post-cover partner-hero" role="img" aria-label="Free anime and manga course, taught by Japanese pros">
-        <div class="ph-inner"><span class="ph-kicker">Anime Art Academy × Kaminari</span><span class="ph-big">Learn Anime &amp; Manga Drawing</span><span class="ph-sub">With personal corrections from Japanese pros</span></div>
-      </div>
+      <p class="partner-sale">Black Friday: 25% off everything through December 1 (Pacific time). Enter code BF2026 at checkout for subscriptions and lesson packs. Bundles are already marked down 25%, no code needed. Kaminari earns a commission if you buy through our link, at no extra cost to you.</p>
+      <a class="partner-banner" href="${go}" ${sponsored}><img src="/assets/partners/bf-1200x675.png" alt="Anime Art Academy Black Friday sale: 25% off everything. Sale ends December 1st." width="1200" height="675" fetchpriority="high"></a>
     </div>
   </header>
   <div class="wrap post-layout">

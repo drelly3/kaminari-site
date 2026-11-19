@@ -546,3 +546,9 @@ a.beyond-card:hover{ border-color:var(--line-strong); }
   .about-hero .home-hero-bg img{ opacity:.9; filter:brightness(1.35) saturate(1.2); }
   .about-hero .home-hero-bg::after{ background:linear-gradient(90deg, rgba(11,11,15,.9) 0%, rgba(11,11,15,.72) 60%, rgba(11,11,15,.45) 100%), linear-gradient(0deg, var(--bg) 0%, rgba(11,11,15,0) 30%); }
 }
+
+/* Anime Art Academy: Black Friday banner (shown whole, never cropped) and the sale line under the buttons */
+.partner-sale{ font-size:15px; color:var(--body); max-width:760px; margin:-10px 0 22px; padding:12px 16px; background:var(--accent-soft); border:1px solid rgba(0,192,249,.3); border-radius:12px; }
+.partner-banner{ display:block; margin-top:8px; border:1px solid var(--line); background:var(--card); line-height:0; }
+.partner-banner img{ display:block; width:100%; height:auto; max-width:100%; }
+.partner-banner:hover{ border-color:var(--accent); }
