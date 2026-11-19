@@ -110,3 +110,42 @@ if (tocLinks.length && 'IntersectionObserver' in window) {
   }, { rootMargin: '-100px 0px -70% 0px' });
   Object.keys(byId).forEach(id => { const h = document.getElementById(id); if (h) io.observe(h); });
 }
+
+// Blog index: a search term in the address (/blog?q=naruto) fills the search box, e.g. from the homepage
+{
+  const q = new URLSearchParams(location.search).get('q');
+  const box = document.querySelector('[data-post-grid]') && document.querySelector('.search');
+  if (q && box) { box.value = q; box.dispatchEvent(new Event('input')); }
+}
+
+// Homepage search: suggests matching Kaminari guides as you type (titles only, all in the browser)
+document.querySelectorAll('[data-home-search]').forEach(form => {
+  const input = form.querySelector('input'), list = form.querySelector('.home-results');
+  let index = [];
+  try { index = JSON.parse(document.getElementById('home-index').textContent); } catch {}
+  let active = -1;
+  const norm = s => s.toLowerCase().normalize('NFKD').replace(/[^a-z0-9 ]/g, ' ');
+  const render = () => {
+    const q = norm(input.value).trim();
+    active = -1;
+    if (!q) { list.hidden = true; return; }
+    const words = q.split(/\s+/);
+    const hits = index.filter(([, t]) => { const n = norm(t); return words.every(w => n.includes(w)); }).slice(0, 7);
+    const all = `<a class="all" href="/blog?q=${encodeURIComponent(input.value.trim())}">See all results on the blog →</a>`;
+    list.innerHTML = hits.length
+      ? hits.map(([slug, title, kind]) => `<a role="option" href="/blog/${slug}">${title.replace(/[<&]/g, c => c === '<' ? '&lt;' : '&amp;')}<span>${kind}</span></a>`).join('') + all
+      : `<div class="none">No guide for that yet. Try a series name, like Naruto or One Piece.</div>`;
+    list.hidden = false;
+  };
+  input.addEventListener('input', render);
+  input.addEventListener('keydown', e => {
+    const opts = [...list.querySelectorAll('a')];
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault(); if (!opts.length) return;
+      active = (active + (e.key === 'ArrowDown' ? 1 : -1) + opts.length) % opts.length;
+      opts.forEach((o, i) => o.setAttribute('aria-selected', i === active));
+    } else if (e.key === 'Enter' && active >= 0 && opts[active]) { e.preventDefault(); location.href = opts[active].href; }
+    else if (e.key === 'Escape') list.hidden = true;
+  });
+  document.addEventListener('click', e => { if (!form.contains(e.target)) list.hidden = true; });
+});

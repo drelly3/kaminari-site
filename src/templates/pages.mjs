@@ -29,141 +29,139 @@ export const postCard = p => `
 </a>`;
 
 /* ---------- HOME ---------- */
-export const home = posts => {
-  const tiles = ['The Relentless', 'The Strategist', 'The Prodigy', 'The Underdog'].map(n => archetypes.find(a => a[1] === n));
-  return `
-<header class="hero">
-  <div class="wrap hero-grid">
-    <div>
-      <span class="eyebrow">Anime Mindset</span>
-      <h1>Turn The Anime You Love Into Habits That Actually Stick.</h1>
-      <p class="lede">Weekly lessons, archetype-matched templates, coaching, and a community of others doing the same. Start free.</p>
-      <div class="hero-actions">
-        ${subscribe('Join Our Free Weekly Newsletter')}
-        <a href="${links.quiz}" ${ext} class="btn btn-outline">Take The Archetype Quiz</a>
-      </div>
-      <p class="hero-note">No spam. One email a week. Unsubscribe anytime.</p>
+// An anime discovery front page: search first, a featured guide, then shelves of the site's own guides.
+// Everything shown comes from Kaminari's published guides; nothing here is a live catalogue or chart.
+// filler guide order: by GA4 landing sessions, Aug 20 to Nov 17, 2026 (not shown on the page)
+const MOST_READ_FILLER = ['black-clover-filler-list', 'naruto-shippuden-filler-list', 'naruto-filler-list', 'bleach-filler-list', 'my-hero-academia-filler-list', 'fairy-tail-filler-list', 'boruto-filler-list', 'gintama-filler-list', 'jojo-filler-list', 'one-piece-filler-list'];
+const WATCH_ORDER_PICKS = ['that-time-i-got-reincarnated-as-a-slime-watch-order', 'one-piece-watch-order', 'attack-on-titan-watch-order', 'demon-slayer-watch-order', 'jojo-watch-order', 'bleach-watch-order', 'fate-watch-order', 'monogatari-watch-order', 'gundam-watch-order', 'sword-art-online-watch-order'];
+const NEXT_WATCH_PICKS = ['anime-like-chainsaw-man', 'anime-like-jujutsu-kaisen', 'anime-like-solo-leveling', 'anime-like-frieren', 'anime-like-demon-slayer', 'anime-like-attack-on-titan', 'anime-like-one-punch-man', 'anime-like-death-note'];
+// "Black Clover Filler List: Which Episodes to Skip" -> "Black Clover"
+const seriesName = p => p.title.split(/:| Filler| Watch Order| Quotes/)[0].replace(/^Top \d+\s+/i, '').trim();
+// "anime-like-jujutsu-kaisen" -> "If you liked Jujutsu Kaisen" (the article titles are long headlines)
+const LIKE_NAMES = { 'death-note': 'Death Note', 'one-punch-man': 'One Punch Man', 'attack-on-titan': 'Attack on Titan' };
+const likeName = p => { const k = p.slug.replace(/^(top-)?anime-like-/, ''); return 'If you liked ' + (LIKE_NAMES[k] || k.split('-').map(w => w[0].toUpperCase() + w.slice(1)).join(' ')); };
+const guideKindNoun = { 'filler-list': 'Filler list', 'watch-order': 'Watch order', 'anime-like': 'What to watch next', quotes: 'Quotes', characters: 'Characters' };
+// a title card: the series' own guide image on a light plate, then what the guide is
+const titleCard = (p, extra = '') => `
+      <a class="title-card" href="/blog/${p.slug}">
+        <div class="tc-art"><img src="${p.thumbnail || '/assets/post-default.png'}" alt="" loading="lazy" decoding="async"></div>
+        <div class="tc-body"><span class="tc-kind">${esc(guideKindNoun[p.kind] || kindLabel(p.kind))}</span><b>${esc(p.kind === 'anime-like' ? likeName(p) : seriesName(p))}</b>${extra}</div>
+      </a>`;
+const shelf = (id, eyebrow, title, note, href, cards, wide) => `
+<section class="shelf-sec" id="${id}">
+  <div class="wrap">
+    <div class="shelf-head">
+      <div><span class="eyebrow">${eyebrow}</span><h2>${title}</h2>${note ? `<p>${note}</p>` : ''}</div>
+      <a href="${href}" class="shelf-all">See all →</a>
     </div>
-    <div class="hero-visual"><img src="/assets/hero.webp" alt="Anime silhouette lit by lightning" width="960" height="704" fetchpriority="high"></div>
+    <div class="shelf${wide ? ' shelf-wide' : ''}" tabindex="0" aria-label="${esc(title)}">${cards}
+    </div>
   </div>
+</section>`;
+
+export const home = (posts, guides = {}) => {
+  const bySlug = Object.fromEntries(posts.map(p => [p.slug, p]));
+  const pick = slugs => slugs.map(s => bySlug[s]).filter(Boolean);
+  const count = id => posts.filter(p => p.kind === id).length;
+  const featured = bySlug['black-clover-filler-list'];
+  const fg = guides['black-clover-filler-list'];
+  const fStats = fg ? (() => {
+    const filler = fg.episodes.filter(e => e.type === 'filler' || e.type === 'keep').reduce((n, e) => n + e.range[1] - e.range[0] + 1, 0);
+    return { total: fg.total, filler, pct: Math.round(filler / fg.total * 100) };
+  })() : null;
+  // the search box searches the site's own guides (titles), in the browser
+  const index = posts.map(p => [p.slug, p.title, kindLabel(p.kind)]);
+  const tiles = [
+    ['filler-list', 'Skip the filler', 'Every episode marked canon or filler, with the filler worth keeping.'],
+    ['watch-order', 'Watch in order', 'Seasons, movies and OVAs in the right order.'],
+    ['anime-like', 'What to watch next', 'Picks matched to the show you just finished.'],
+    ['characters', 'Characters', 'Rankings and breakdowns of the characters people argue about.'],
+    ['quotes', 'Quotes', 'The lines that stuck, with the moment behind them.'],
+  ];
+  return `
+<header class="home-hero">
+  <div class="home-hero-bg" aria-hidden="true"><img src="/assets/hero-desktop.png" alt="" width="1440" height="764" fetchpriority="high"></div>
+  <div class="wrap home-hero-grid">
+    <div class="home-hero-copy">
+      <span class="eyebrow">Anime guides &amp; discovery</span>
+      <h1>Know what to watch. <span class="accent">Skip what you don't.</span></h1>
+      <p class="lede">Filler lists, watch orders and what-to-watch-next picks for the anime you love, written by fans who've sat through the filler so you don't have to.</p>
+      <form class="home-search" role="search" action="/blog" method="get" data-home-search>
+        <label class="sr-only" for="home-q">Search Kaminari's anime guides</label>
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+        <input id="home-q" name="q" type="search" autocomplete="off" placeholder="Search a series, e.g. Naruto" aria-controls="home-results" aria-autocomplete="list">
+        <button type="submit" class="btn btn-primary btn-sm">Search</button>
+        <div class="home-results" id="home-results" role="listbox" hidden></div>
+      </form>
+      <p class="home-search-note">Searches ${posts.length} Kaminari guides and articles. Kaminari doesn't stream anime or host manga.</p>
+      <nav class="home-quick" aria-label="Guide types">
+        ${kinds.map(k => `<a class="chip" href="${kindPath(k.id)}">${esc(k.label)} <span>${count(k.id)}</span></a>`).join('\n        ')}
+      </nav>
+    </div>
+    ${featured ? `<a class="feature-card" href="/blog/${featured.slug}">
+      <span class="feature-tag">Featured guide</span>
+      <div class="feature-art"><img src="${featured.thumbnail}" alt="Black Clover" width="1200" height="800"></div>
+      <div class="feature-body">
+        <h2>Black Clover filler list</h2>
+        ${fStats ? `<div class="feature-stats"><div><b>${fStats.total}</b><span>episodes</span></div><div><b>${fStats.filler}</b><span>filler</span></div><div><b>${fStats.pct}%</b><span>filler rate</span></div></div>` : ''}
+        <p>The full skip list, the three filler episodes worth keeping, and every episode at a glance.</p>
+        <span class="btn btn-primary btn-sm">Open the guide</span>
+      </div>
+    </a>` : ''}
+  </div>
+  <script type="application/json" id="home-index">${JSON.stringify(index).replace(/</g, '\\u003c')}</script>
 </header>
 
-<section id="branches" class="alt">
+${shelf('filler', 'Filler lists', 'Filler guides', '', kindPath('filler-list'), pick(MOST_READ_FILLER).map(p => titleCard(p)).join(''))}
+
+${shelf('watch-order', 'Watch orders', 'Start a series in the right order', 'Seasons, movies, OVAs and spin-offs, in sequence.', kindPath('watch-order'), pick(WATCH_ORDER_PICKS).map(p => titleCard(p)).join(''))}
+
+${shelf('next', 'What to watch next', 'Finished a show? Find your next one', 'Lists built around the show you just loved.', kindPath('anime-like'), pick(NEXT_WATCH_PICKS).map(p => titleCard(p)).join(''), true)}
+
+<section class="shelf-sec" id="browse">
   <div class="wrap">
-    <div class="section-head center">
-      <span class="eyebrow">What We Do</span>
-      <h2>Three Branches, <span class="accent">One Mission</span></h2>
-      <p>The newsletter builds the mindset, the templates turn it into habits, and the coaching keeps you consistent. Start wherever fits your week.</p>
-    </div>
-    <div class="branch-grid">
-      <div class="branch-card">
-        <div class="icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="14" rx="2" stroke="#00C0F9" stroke-width="1.7"/><path d="M3 7l9 6 9-6" stroke="#00C0F9" stroke-width="1.7" stroke-linecap="round"/></svg></div>
-        <div class="k">Free</div>
-        <h3>The Newsletter</h3>
-        <p>One anime story or character breakdown every Wednesday, with insights and exercises to level up each week.</p>
-        <a href="/newsletter" class="link">Start reading →</a>
-      </div>
-      <div class="branch-card">
-        <div class="icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="5" y="3" width="14" height="18" rx="2" stroke="#00C0F9" stroke-width="1.7"/><path d="M9 8h6M9 12h6M9 16h3" stroke="#00C0F9" stroke-width="1.7" stroke-linecap="round"/></svg></div>
-        <div class="k">Templates</div>
-        <h3>The Anime Mindset System</h3>
-        <p>Habit and productivity templates matched to your archetype, so the plan fits how you're actually wired.</p>
-        <a href="/anime-mindset" class="link">See the system →</a>
-      </div>
-      <div class="branch-card">
-        <div class="icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="3.4" stroke="#00C0F9" stroke-width="1.7"/><path d="M5 20c0-3.6 3.1-6 7-6s7 2.4 7 6" stroke="#00C0F9" stroke-width="1.7" stroke-linecap="round"/></svg></div>
-        <div class="k">Coaching</div>
-        <h3>Guided Accountability</h3>
-        <p>Group goal-setting, weekly check-ins with founders, and opportunities for 1:1 coaching with trained professionals.</p>
-        <a href="/anime-mindset" class="link">Work with us →</a>
-      </div>
+    <div class="shelf-head"><div><span class="eyebrow">Browse</span><h2>Find it by guide type</h2></div></div>
+    <div class="browse-grid">
+      ${tiles.map(([id, title, text]) => `<a class="browse-tile" href="${kindPath(id)}"><b>${title}</b><span>${text}</span><em>${count(id)} guides →</em></a>`).join('\n      ')}
     </div>
   </div>
 </section>
 
-<section id="archetype">
-  <div class="wrap split">
-    <div>
-      <span class="eyebrow">Start Here</span>
-      <h2 class="h">Which Protagonist Are You?</h2>
-      <p class="sub">Every archetype builds habits differently. Take the quiz and get a system matched to how you're actually wired — not a generic routine you'll drop by week two.</p>
-      <ul class="archetype-list">
-        <li>Twelve quick questions, under five minutes</li>
-        <li>Your archetype, plus the weakness that comes with it</li>
-        <li>No wrong answers, just honest ones</li>
-      </ul>
-      <a href="${links.quiz}" ${ext} class="btn btn-primary">Take The Archetype Quiz</a>
-    </div>
-    <div class="archetype-visual">
-      ${tiles.map(([, name, , , , demon, key, hue]) => `<div class="arch-tile">
-        <img class="arc-face" style="--hue:${hue};width:64px;" src="/assets/avatars/${key}.png" alt="" width="200" height="200" loading="lazy">
-        ${name}
-        <div class="sub">Weakness: ${esc(demon)}</div>
-      </div>`).join('\n      ')}
-    </div>
-  </div>
-</section>
-
-<section id="community" class="alt">
-  <div class="wrap split">
-    <div class="discord-card">
-      <div class="discord-top"><span class="dot"></span> Kaminari Discord</div>
-      <div class="discord-body">
-        <div class="dmsg"><div class="av">✅</div><div><div class="who">Daily check-ins</div><div class="txt">Channels that make skipping visible.</div></div></div>
-        <div class="dmsg"><div class="av">⚡</div><div><div class="who">Founder drop-ins</div><div class="txt">Weekly drop-ins and group goal-setting.</div></div></div>
-        <div class="dmsg"><div class="av">💬</div><div><div class="who">Recs &amp; arc discussion</div><div class="txt">Recommendations, deep dives, and arc discussion.</div></div></div>
-      </div>
-    </div>
-    <div>
-      <span class="eyebrow">The Community</span>
-      <h2 class="h">You'll Quit Alone. You Won't Quit Here.</h2>
-      <p class="sub">Most habits die quietly, with nobody around to notice. The Kaminari Discord is where members post check-ins, compare templates, and keep each other honest through the boring middle of an arc.</p>
-      ${links.discordOpen ? `<a href="${links.discord}" ${ext} class="btn btn-primary">Join The Discord</a>` : discordLink('Join The Waitlist', 'btn btn-primary')}
-    </div>
-  </div>
-</section>
-
-<section id="about">
-  <div class="wrap founder-grid">
-    <div class="founder-faces">
-      ${team.map(t => `<figure><img src="${t.photo}" alt="${esc(t.name)}" loading="lazy"><figcaption>${esc(t.name)}</figcaption></figure>`).join('\n      ')}
-    </div>
-    <div>
-      <span class="eyebrow">About Kaminari</span>
-      <h2 class="h">We Break Down Arcs. You Get The Takeaways.</h2>
-      <p class="sub" style="margin-bottom:16px;">The fights, arcs, and characters you grew up on hold real lessons about mindset, discipline, and purpose. Kaminari exists to make that explicit — we pull the lesson out of the story and hand you something you can use on a random Tuesday.</p>
-      <p class="sub">Not "watch more anime." Extract the arc. Apply the lesson. Repeat until it's who you are.</p>
-      <a href="/about" class="btn btn-outline">Meet The Team</a>
-    </div>
-  </div>
-</section>
-
-<section class="alt">
+<section class="shelf-sec" id="blog">
   <div class="wrap">
-    <div class="quote-block">
-      <div class="mark">"</div>
-      <p id="quote-text" data-quotes="${esc(JSON.stringify(quotes))}">${esc(quotes[0])}</p>
-      <div class="src">Kaminari</div>
-      <div class="quote-dots" id="quote-dots"></div>
-    </div>
-  </div>
-</section>
-
-<section id="blog">
-  <div class="wrap">
-    <div class="section-head row">
-      <div>
-        <span class="eyebrow">From The Blog</span>
-        <h2>Latest Blog Drops</h2>
-        <p>Curated reads on anime watch order, filler episodes, character quotes &amp; more.</p>
-      </div>
-      <a href="/blog" class="btn btn-outline btn-sm">Explore all</a>
+    <div class="shelf-head">
+      <div><span class="eyebrow">Editorial</span><h2>Latest from Kaminari</h2><p>New guides, rankings and takes.</p></div>
+      <a href="/blog" class="shelf-all">All articles →</a>
     </div>
     <div class="post-grid">${posts.slice(0, 6).map(postCard).join('')}</div>
   </div>
 </section>
 
-${shock({ second: `<a href="/anime-mindset" class="btn btn-outline">See The Anime Mindset System</a>` })}`;
+<section class="shelf-sec beyond" id="beyond">
+  <div class="wrap">
+    <div class="shelf-head"><div><span class="eyebrow">Beyond the screen</span><h2>More from Kaminari</h2><p>For when you want the anime to do something for you off the couch.</p></div></div>
+    <div class="beyond-grid">
+      <a class="beyond-card" href="/anime-mindset">
+        <span class="beyond-k">Anime Mindset</span>
+        <b>Turn the arcs you love into habits</b>
+        <span>The archetype quiz, the Arc Tracker habit app and coaching from the Kaminari founders.</span>
+        <em>Explore Anime Mindset →</em>
+      </a>
+      <a class="beyond-card" href="/anime-art-academy">
+        <span class="beyond-k">Partner</span>
+        <b>Learn to draw anime</b>
+        <span>Lessons from Japanese pro animators and manga artists. Kaminari earns a commission if you join.</span>
+        <em>See the course →</em>
+      </a>
+      <div class="beyond-card">
+        <span class="beyond-k">Newsletter</span>
+        <b>One anime read a week</b>
+        <span>A story or character breakdown every Wednesday, free.</span>
+        ${subscribe('Join the newsletter', 'btn btn-outline btn-sm')}
+      </div>
+    </div>
+  </div>
+</section>`;
 };
 
 /* ---------- ABOUT ---------- */

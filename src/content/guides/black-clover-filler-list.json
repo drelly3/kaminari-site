@@ -1,0 +1,201 @@
+{
+  "show": "Black Clover",
+  "total": 170,
+  "minutesPerEpisode": 23,
+  "aired": "2017–2021",
+  "note": "Episode data taken from this guide's own tables. Episode 149 is listed as both anime canon and filler in the article; it is shown as filler here until Devin confirms.",
+  "verdict": "Only 18 of 170 episodes are filler. Skip 15, keep 3 fan favourites, and never skip the anime-canon timeskip (130–157).",
+  "labels": {
+    "canon": "Manga canon",
+    "anime": "Anime canon",
+    "filler": "Filler",
+    "keep": "Filler worth watching"
+  },
+  "episodes": [
+    {
+      "range": [
+        3,
+        3
+      ],
+      "type": "anime",
+      "label": "Anime original, supervised by Tabata"
+    },
+    {
+      "range": [
+        13,
+        13
+      ],
+      "type": "anime",
+      "label": "Anime original, supervised by Tabata"
+    },
+    {
+      "range": [
+        29,
+        29
+      ],
+      "type": "filler",
+      "label": "Gordon's diary recap",
+      "why": "Recaps Asta's early days in the Black Bulls with nothing new."
+    },
+    {
+      "range": [
+        55,
+        56
+      ],
+      "type": "anime",
+      "label": "Anime original, supervised by Tabata"
+    },
+    {
+      "range": [
+        66,
+        66
+      ],
+      "type": "filler",
+      "label": "Eye of the Midnight Sun history",
+      "why": "Light worldbuilding, zero plot."
+    },
+    {
+      "range": [
+        68,
+        68
+      ],
+      "type": "keep",
+      "label": "Yami vs. Jack festival brawl",
+      "why": "A hilarious food-stall rivalry that becomes one of the show's most fun fights."
+    },
+    {
+      "range": [
+        82,
+        82
+      ],
+      "type": "filler",
+      "label": "Charmy's mushroom trip",
+      "why": "A Petit Clover special. Funny, but no lasting value."
+    },
+    {
+      "range": [
+        123,
+        124
+      ],
+      "type": "filler",
+      "label": "Nero Reminisces (Parts 1 & 2)",
+      "why": "Recap episodes. Redundant if you're binge-watching."
+    },
+    {
+      "range": [
+        125,
+        125
+      ],
+      "type": "filler",
+      "label": "Return (Henry's hideout)",
+      "why": "A laid-back hangout at the Black Bulls base."
+    },
+    {
+      "range": [
+        130,
+        130
+      ],
+      "type": "anime",
+      "label": "Timeskip: anime canon"
+    },
+    {
+      "range": [
+        131,
+        131
+      ],
+      "type": "keep",
+      "label": "A New Resolve (Hage homecoming)",
+      "why": "Asta and Yuno go home. Quiet, nostalgic, and a fan favourite."
+    },
+    {
+      "range": [
+        132,
+        133
+      ],
+      "type": "anime",
+      "label": "Timeskip: anime canon"
+    },
+    {
+      "range": [
+        134,
+        134
+      ],
+      "type": "filler",
+      "label": "Mereoleona's party",
+      "why": "Fun chaos with party tricks, no substance."
+    },
+    {
+      "range": [
+        135,
+        135
+      ],
+      "type": "keep",
+      "label": "Finral's dating spotlight",
+      "why": "A comedy episode carried by the Black Bulls' chemistry."
+    },
+    {
+      "range": [
+        136,
+        141
+      ],
+      "type": "anime",
+      "label": "Timeskip: anime canon"
+    },
+    {
+      "range": [
+        142,
+        149
+      ],
+      "type": "filler",
+      "label": "Devil Believers arc",
+      "why": "The most debated stretch. Curious? Watch 142 and 148 for the setup and payoff."
+    },
+    {
+      "range": [
+        150,
+        157
+      ],
+      "type": "anime",
+      "label": "Timeskip: anime canon"
+    }
+  ],
+  "watchOrder": [
+    {
+      "label": "Episodes 1–157",
+      "detail": "Seasons 1–4 up to the end of the timeskip"
+    },
+    {
+      "label": "Sword of the Wizard King",
+      "detail": "The movie. Fits between episodes 157 and 158",
+      "movie": true
+    },
+    {
+      "label": "Episodes 158–170",
+      "detail": "The end of the TV series"
+    },
+    {
+      "label": "Season 2",
+      "detail": "Spade Kingdom Raid onward"
+    }
+  ],
+  "related": [
+    "naruto-shippuden-filler-list",
+    "naruto-filler-list",
+    "bleach-filler-list",
+    "boruto-filler-list"
+  ],
+  "whereToWatch": [
+    {
+      "name": "Crunchyroll",
+      "url": "https://www.crunchyroll.com/search?q=black%20clover"
+    },
+    {
+      "name": "Netflix",
+      "url": "https://www.netflix.com/search?q=black%20clover"
+    },
+    {
+      "name": "Hulu",
+      "url": "https://www.hulu.com/search?q=black%20clover"
+    }
+  ]
+}
