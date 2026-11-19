@@ -72,9 +72,9 @@ write('/', {
   body: pages.home(posts, guides),
 });
 write('/about', {
-  title: 'About | Kaminari Newsletter',
-  description: "Anime ain't just entertainment — it's energy, lessons, and mindset shifts disguised as battles. Kaminari is a weekly newsletter for people who grew up on anime — and grew up learning from it.",
-  body: pages.about(),
+  title: 'About Kaminari | Anime Filler Lists, Watch Orders & Recommendations',
+  description: 'Kaminari is a home base for exploring anime: filler lists, watch order guides and what-to-watch-next picks for the series fans actually binge.',
+  body: pages.about(posts),
 });
 write('/newsletter', { title: 'Your Ultimate Anime Newsletter | Kaminari Newsletter', body: pages.newsletter(posts) });
 write('/anime-mindset', {
