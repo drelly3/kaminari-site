@@ -41,7 +41,7 @@ Explore list on the home and newsletter pages:
 
 | Tab | Goes to |
 | --- | --- |
-| Arc Tracker | `https://www.joinkaminari.com/arc-tracker/app`, the live Arc Tracker, so existing users sign in as before. No tracker page or data lives on this site. |
+| Arc Tracker | `/arc-tracker/app`, the Arc Tracker on this site (see "Arc Tracker on animemindset.com"): the same app and records as joinkaminari.com, which keeps working. |
 | Coaching | `coaching.html` |
 | Newsletter | `newsletter.html` |
 
@@ -126,8 +126,8 @@ Nothing is copied.
   `deploy/stage-check.mjs` (read-only): it fails if any remote branch has newer `animemindset-site` commits, if the
   generated Worker doesn't match the source, or (with `--expect-live <id>`) if the live version changed since review.
   Rollback is a fresh-source deploy with `wrangler.jsonc`, never an old version, so newer site changes are kept.
-- **Not switched yet:** the site's Arc Tracker buttons still open joinkaminari.com. Switching them, with the privacy
-  sentence for the tracker, is a separate final change.
+- **Switched (stage 2):** the site's 10 Arc Tracker links open `/arc-tracker/app`, and the privacy policy says how the
+  tracker handles a member's key, progress, photos and notifications.
 - Members sign in again on the new address with the same key (browser storage is per address), and turn
   notifications on again there. Anything logged offline and not yet backed up stays in the old address's browser
   until it syncs there.
