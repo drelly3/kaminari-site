@@ -165,44 +165,54 @@ ${shelf('next', 'What to watch next', 'Finished a show? Find your next one', 'Li
 };
 
 /* ---------- ABOUT ---------- */
-export const about = () => `
-<header class="page-hero center">
-  <div class="wrap">
+export const about = (posts = []) => {
+  const count = id => posts.filter(p => p.kind === id).length;
+  const offers = [
+    ['filler-list', 'Filler lists', 'Which episodes are canon, which are filler, and the filler that is actually worth watching.'],
+    ['watch-order', 'Watch orders', 'Seasons, movies, OVAs and spin-offs lined up in the order they make sense.'],
+    ['anime-like', 'What to watch next', 'Finished something great? Lists built around the show you just loved.'],
+    ['characters', 'Characters', 'Rankings and breakdowns of the characters fans argue about.'],
+    ['quotes', 'Quotes', 'The lines that stuck, with the scene behind them.'],
+  ];
+  return `
+<header class="about-hero">
+  <div class="home-hero-bg" aria-hidden="true"><img src="/assets/hero-desktop.png" alt="" width="1440" height="764" fetchpriority="high"></div>
+  <div class="wrap about-hero-inner">
     <span class="eyebrow">About Kaminari</span>
-    <h1>Where Anime Meets Real Life. Weekly Thunder.</h1>
-    <p class="lede">Anime ain't just entertainment — it's energy, lessons, and mindset shifts disguised as battles. Every loss, every power-up, every inner demon? That's life. Just with better animation. Kaminari is a weekly newsletter for people who grew up on anime — and grew up learning from it.</p>
-    <div class="hero-actions">${subscribe('Join Our Free Weekly Newsletter')}</div>
+    <h1>Raised on anime. <span class="accent">Allergic to filler.</span></h1>
+    <p class="lede">We grew up on anime that ran for hundreds of episodes, with no way to tell the real story from the filler until we'd already sat through it. Kaminari is the guide we wish we'd had: which episodes to skip, what order to watch in, and the shows we think are straight heat.</p>
+    <p class="lede about-taste">We've got good taste. Trust us.</p>
+    <div class="hero-actions">
+      <a href="/" class="btn btn-primary">Explore the guides</a>
+      <a href="/blog" class="btn btn-outline">Browse all articles</a>
+    </div>
   </div>
 </header>
 
-<section class="alt">
+<section class="about-sec">
   <div class="wrap">
-    <div class="section-head center">
-      <h2>Enter The Kaminari Storm</h2>
-      <p>Kaminari means lightning in Japanese, and that's exactly what we bring. Every week, we hit your inbox with anime-fueled electricity.</p>
+    <div class="shelf-head"><div><span class="eyebrow">What you'll find here</span><h2>Guides for every stage of a series</h2><p>From deciding where to start to deciding what comes after the finale.</p></div></div>
+    <div class="about-offers">
+      ${offers.map(([id, title, text]) => `<a class="browse-tile" href="${kindPath(id)}"><b>${title}</b><span>${text}</span><em>${count(id)} guides →</em></a>`).join('\n      ')}
     </div>
-    <div class="branch-grid two">
-      <div class="branch-card">
-        <div class="icon">❤️</div>
-        <h3>Motivational Wednesdays</h3>
-        <p>Power-ups for your real life. We break down the struggles, grit, and glow-ups of your favorite characters and show you how to charge through your own.</p>
-      </div>
-      <div class="branch-card">
-        <div class="icon">⚡</div>
-        <h3>Sunday Funday</h3>
-        <p>Chaotic polls, spicy takes, dumb anime moments, and "why am I wheezing?" memes. It's the side quest you didn't know you needed.</p>
-      </div>
+    <p class="about-note">Kaminari is a guide site. We don't stream anime or host manga, and we don't run a ratings database. We point you to the episodes and series worth your time.</p>
+  </div>
+</section>
+
+<section class="about-sec">
+  <div class="wrap about-name">
+    <div class="about-kanji" aria-hidden="true">雷</div>
+    <div>
+      <span class="eyebrow">The name</span>
+      <h2>Kaminari means lightning</h2>
+      <p>That's the feeling we're after: the jolt of finding the right episode to jump back in at, the right order to start a franchise, or the next show that hits the way the last one did.</p>
     </div>
   </div>
 </section>
 
-<section>
+<section class="about-sec">
   <div class="wrap">
-    <div class="section-head center">
-      <span class="eyebrow">Meet The Team</span>
-      <h2>Why We Started This</h2>
-      <p>We're just three anime-heads raised on Toonami, trauma arcs, and characters who powered up through pain. Now we're flipping all that energy into real-life voltage — helping you level up through every arc life throws your way.</p>
-    </div>
+    <div class="shelf-head"><div><span class="eyebrow">The team</span><h2>Meet the co-founders</h2><p>Kaminari is built by fans. Here's who's behind it, and the anime they'd put at the top of their lists.</p></div></div>
     <div class="team-grid">
       ${team.map(t => `<div class="team-card">
         <img src="${t.photo}" alt="${esc(t.name)}" loading="lazy">
@@ -218,7 +228,30 @@ export const about = () => `
   </div>
 </section>
 
-${shock({ text: 'Good energy, heavy laughs, and anime truths that hit harder than a final form.' })}`;
+<section class="about-sec about-last">
+  <div class="wrap">
+    <div class="beyond-grid">
+      <a class="beyond-card" href="/anime-mindset">
+        <span class="beyond-k">Also from Kaminari</span>
+        <b>Anime Mindset</b>
+        <span>A separate, optional project for fans who want to turn the arcs they love into habits: the archetype quiz, the Arc Tracker app and coaching.</span>
+        <em>Visit Anime Mindset →</em>
+      </a>
+      <div class="beyond-card">
+        <span class="beyond-k">Newsletter</span>
+        <b>Get new guides by email</b>
+        <span>New Kaminari guides and anime reads, free in your inbox.</span>
+        ${subscribe('Join the newsletter', 'btn btn-outline btn-sm')}
+      </div>
+      <div class="beyond-card">
+        <span class="beyond-k">Contact</span>
+        <b>Say hello</b>
+        <span>Questions, corrections or a guide you'd like to see: <a href="mailto:${site.email}">${site.email}</a>. Advertising and partnerships: <a href="mailto:${site.advertiseEmail}">${site.advertiseEmail}</a>.</span>
+      </div>
+    </div>
+  </div>
+</section>`;
+};
 
 /* ---------- NEWSLETTER ---------- */
 export const newsletter = posts => `
