@@ -136,6 +136,7 @@ for (const p of posts) {
     description: p.metaDescription,
     image: p.thumbnail || site.ogImage,
     type: 'article',
+    showAds: p.ads !== false, // Mediavine ads: blog posts only
     lastmod: p.updatedDate,
     jsonLd: {
       '@context': 'https://schema.org', '@type': 'BlogPosting',

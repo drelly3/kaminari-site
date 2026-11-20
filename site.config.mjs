@@ -20,6 +20,18 @@ export const site = {
   advertiseEmail: 'contact@joinkaminari.com',
 };
 
+// Ads (Mediavine). Mediavine places the ads itself; we only add its script.
+// - The script is only added to the production build on Vercel (VERCEL_ENV=production), so local
+//   builds and preview deploys never load ads.
+// - Ads show on blog posts only: every other page carries Mediavine's "no ads on this page" marker,
+//   and the Arc Tracker app (no tracking) doesn't load the script at all.
+// - A single post can opt out with "ads": false in its .json.
+// enabled: false removes the script from the whole site.
+export const ads = {
+  enabled: true,
+  scriptUrl: '//scripts.scriptwrapper.com/tags/8838dd5d-c616-41f9-bdf4-bf563c5fb8f9.js',
+};
+
 export const links = {
   substack: 'https://joinkaminari.substack.com/',
   substackEmbed: 'https://joinkaminari.substack.com/embed',

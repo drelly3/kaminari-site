@@ -1,4 +1,4 @@
-import { site, links, nav } from '../../site.config.mjs';
+import { site, links, nav, ads } from '../../site.config.mjs';
 
 export const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 export const abs = p => (p.startsWith('http') ? p : site.url + p);
@@ -40,10 +40,18 @@ if (/(^|\\.)joinkaminari\\.com$/.test(location.hostname)) {
 }
 </script>`;
 
+// Mediavine ad script (settings: site.config.mjs → ads). Only in the production build on Vercel.
+const adsLive = ads.enabled && process.env.VERCEL_ENV === 'production';
+const adScript = `<script type="text/javascript" async="async" data-noptimize="1" data-cfasync="false" src="${ads.scriptUrl}"></script>`;
+// Mediavine's marker that turns off every ad on the page it's on
+const noAds = `<div id="mediavine-settings" data-blocklist-all="1"></div>`;
+
 const logo = `<img src="/assets/kaminari-mark.svg" alt="" width="35" height="28">Kaminari`;
 
-// head: extra tags for one page. tracking: false leaves GA4, the Google tag and Clarity off that page.
-export function layout({ title, description = site.description, path, image = site.ogImage, type = 'website', jsonLd, body, head = '', tracking = true, chrome = true }) {
+// head: extra tags for one page. tracking: false leaves GA4, the Google tag, Clarity and the ad script off that page.
+// showAds: true lets Mediavine place ads on the page (blog posts); everywhere else ads are switched off.
+export function layout({ title, description = site.description, path, image = site.ogImage, type = 'website', jsonLd, body, head = '', tracking = true, chrome = true, showAds = false }) {
+  const adsOnPage = adsLive && tracking;
   const canonical = site.url + (path === '/' ? '' : path);
   return `<!DOCTYPE html>
 <html lang="en">
@@ -74,6 +82,7 @@ export function layout({ title, description = site.description, path, image = si
 ${jsonLd ? `<script type="application/ld+json">${JSON.stringify(jsonLd).replace(/</g, '\\u003c')}</script>` : ''}
 ${head}
 ${tracking ? analytics : ''}
+${adsOnPage ? adScript : ''}
 </head>
 <body${chrome ? '' : ' class="app"'}>
 ${chrome ? `
@@ -91,7 +100,7 @@ ${chrome ? `
 </nav>
 ` : ''}
 <main>
-${body}
+${adsOnPage && !showAds ? noAds : ''}${body}
 </main>
 ${chrome ? `
 <footer id="newsletter">
