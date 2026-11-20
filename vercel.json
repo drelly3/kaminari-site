@@ -41,6 +41,11 @@
       "source": "/arc-tracker",
       "destination": "/arc-tracker/app",
       "permanent": false
+    },
+    {
+      "source": "/ads.txt",
+      "destination": "https://adstxt.journeymv.com/sites/8838dd5d-c616-41f9-bdf4-bf563c5fb8f9/ads.txt",
+      "statusCode": 301
     }
   ]
 }
