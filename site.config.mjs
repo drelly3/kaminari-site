@@ -21,8 +21,8 @@ export const site = {
 };
 
 // Ads (Mediavine). Mediavine places the ads itself; we only add its script.
-// - The script is only added to the production build on Vercel (VERCEL_ENV=production), so local
-//   builds and preview deploys never load ads.
+// - The script is only added to production builds (Cloudflare building the main branch, or a Vercel
+//   production build), so local builds and preview deploys never load ads.
 // - Ads show on blog posts only: every other page carries Mediavine's "no ads on this page" marker,
 //   and the Arc Tracker app (no tracking) doesn't load the script at all.
 // - A single post can opt out with "ads": false in its .json.

@@ -40,8 +40,11 @@ if (/(^|\\.)joinkaminari\\.com$/.test(location.hostname)) {
 }
 </script>`;
 
-// Mediavine ad script (settings: site.config.mjs → ads). Only in the production build on Vercel.
-const adsLive = ads.enabled && process.env.VERCEL_ENV === 'production';
+// Mediavine ad script (settings: site.config.mjs → ads). Only in production builds: Cloudflare building
+// the main branch (the live site), or a Vercel production build. Local builds and previews get none.
+const env = process.env;
+const productionBuild = (env.WORKERS_CI === '1' && env.WORKERS_CI_BRANCH === 'main') || env.VERCEL_ENV === 'production';
+const adsLive = ads.enabled && productionBuild;
 const adScript = `<script type="text/javascript" async="async" data-noptimize="1" data-cfasync="false" src="${ads.scriptUrl}"></script>`;
 // Mediavine's marker that turns off every ad on the page it's on
 const noAds = `<div id="mediavine-settings" data-blocklist-all="1"></div>`;
