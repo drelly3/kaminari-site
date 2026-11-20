@@ -89,7 +89,7 @@ const ARCHETYPES = [
    light:'Lightness, presence, resilience through humor, lifts morale.',
    shadow:'Avoidance. Deflects pain with jokes, never goes deep, runs from commitment.',
    integration:'Joy is strength; escape is not. Let yourself feel it, then laugh.',
-   anime:'Gintoki Sakata, Bon Clay.',
+   anime:'Gintoki Sakata, Bon Clay, Frieren.',
    ranks:[{name:'Free Radical',ms:0},{name:'Jester',ms:10},{name:'Trickster',ms:25},{name:'Wildcard',ms:50},{name:'Nomad',ms:100}],
    lightHabits:['Make someone laugh on purpose today','Try something new just because it sounds fun','Lighten a tense moment with humor'],
    shadowOptions:['Sit with a hard feeling for 5 minutes without deflecting','Have one direct, serious conversation you\u2019ve been avoiding','Follow through on one commitment instead of floating past it']},
