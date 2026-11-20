@@ -1,4 +1,4 @@
-import { site, links, team, quotes, archetypes, kinds, authors } from '../../site.config.mjs';
+import { site, links, team, quotes, archetypes, kinds, authors, popularPosts } from '../../site.config.mjs';
 import { discordLink } from './layout.mjs';
 import { esc, abs, subscribe, shock } from './layout.mjs';
 
@@ -408,8 +408,8 @@ export const blogIndex = posts => `
 
 <section class="alt" style="padding:64px 0;">
   <div class="wrap">
-    <div class="section-head"><span class="eyebrow">Editor's Picks</span></div>
-    <div class="post-grid">${posts.filter(p => p.featured).slice(0, 6).map(postCard).join('')}</div>
+    <div class="section-head"><span class="eyebrow">Most Popular</span></div>
+    <div class="post-grid">${popularPosts.map(slug => posts.find(p => p.slug === slug)).filter(Boolean).map(postCard).join('')}</div>
   </div>
 </section>
 

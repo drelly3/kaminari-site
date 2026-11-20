@@ -39,6 +39,17 @@ export const nav = [
   { label: 'Anime Mindset', href: '/anime-mindset' },
 ];
 
+// The six cards under "Most Popular" at the top of /blog, in order. These are the most visited pages
+// (Google Search clicks, Aug 18 to Nov 17, 2026). To change them, swap the slugs (the part after /blog/).
+export const popularPosts = [
+  'black-clover-filler-list',
+  'naruto-filler-list',
+  'naruto-shippuden-filler-list',
+  'my-hero-academia-filler-list',
+  'bleach-filler-list',
+  'boruto-filler-list',
+];
+
 export const authors = {
   'devin-morris': { name: 'Devin Morris', photo: '/assets/team/devin-morris.png' },
 };
