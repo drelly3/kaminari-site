@@ -30,6 +30,8 @@ export const site = {
 export const ads = {
   enabled: true,
   scriptUrl: '//scripts.scriptwrapper.com/tags/8838dd5d-c616-41f9-bdf4-bf563c5fb8f9.js',
+  // joinkaminari.com/ads.txt 301-redirects here; Mediavine keeps this file up to date
+  adsTxt: 'https://adstxt.journeymv.com/sites/8838dd5d-c616-41f9-bdf4-bf563c5fb8f9/ads.txt',
 };
 
 export const links = {

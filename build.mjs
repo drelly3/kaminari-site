@@ -2,7 +2,7 @@
 import { QUOTES } from './api/arc-quotes.js';
 import fs from 'node:fs';
 import path from 'node:path';
-import { site, kinds, authors } from './site.config.mjs';
+import { site, kinds, authors, ads } from './site.config.mjs';
 import { layout, esc, abs } from './src/templates/layout.mjs';
 import * as pages from './src/templates/pages.mjs';
 
@@ -164,7 +164,8 @@ fs.writeFileSync(path.join(DIST, 'rss.xml'),
 fs.writeFileSync(path.join(DIST, 'robots.txt'), `User-agent: *\nAllow: /\n\nSitemap: ${site.url}/sitemap.xml\n`);
 
 // ---------- Cloudflare Pages settings (the Vercel equivalents live in vercel.json) ----------
-fs.writeFileSync(path.join(DIST, '_redirects'), '/arc-tracker /arc-tracker/app 302\n');
+fs.writeFileSync(path.join(DIST, '_redirects'), '/arc-tracker /arc-tracker/app 302\n' +
+  (ads.enabled ? `/ads.txt ${ads.adsTxt} 301\n` : '')); // ads.txt lives with Mediavine (site.config.mjs → ads)
 fs.writeFileSync(path.join(DIST, '_headers'), '/media/*\n  Cache-Control: public, max-age=31536000, immutable\n');
 // only the licence check runs as server code; every other address is a plain file
 fs.writeFileSync(path.join(DIST, '_routes.json'), JSON.stringify({ version: 1, include: ['/api/*'], exclude: [] }) + '\n');
