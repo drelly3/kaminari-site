@@ -50,7 +50,7 @@ export const links = {
 export const nav = [
   { label: 'About', href: '/about' },
   { label: 'Blog', href: '/blog' },
-  { label: 'Anime Mindset', href: '/anime-mindset' },
+  { label: 'Anime Mindset', href: 'https://animemindset.com/' },
   { label: 'Browse', href: '/browse' },
 ];
 
