@@ -51,6 +51,7 @@ export const nav = [
   { label: 'About', href: '/about' },
   { label: 'Blog', href: '/blog' },
   { label: 'Anime Mindset', href: '/anime-mindset' },
+  { label: 'Browse', href: '/browse' },
 ];
 
 // The six cards under "Most Popular" at the top of /blog, in order. These are the most visited pages
