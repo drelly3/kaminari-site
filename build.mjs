@@ -94,6 +94,12 @@ write('/anime-art-academy', {
   description: 'Learn to draw anime and manga online from Japanese pro animators and manga artists, with personal red-line corrections. Watch two free lessons, no account needed.',
   body: pages.animeArtAcademy(),
 });
+// Browse: what Kaminari recommends (top menu)
+write('/browse', {
+  title: 'Browse: What Kaminari Recommends | Kaminari',
+  description: "Things we use, partner with, or build ourselves, collected in one place. Some links earn Kaminari a commission at no extra cost to you. We only list things we'd recommend anyway.",
+  body: pages.browse(),
+});
 // a page for each kind of post: watch orders, filler lists, quotes and the rest
 for (const k of kinds) {
   const list = posts.filter(p => p.kind === k.id);

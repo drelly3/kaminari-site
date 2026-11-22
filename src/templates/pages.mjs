@@ -447,6 +447,33 @@ export const blogCategory = (kind, posts) => {
 ${shock()}`;
 };
 
+/* ---------- BROWSE ---------- */
+// What Kaminari recommends: partners and Kaminari's own products, in one place (top menu: Browse).
+export const browse = () => `
+<header class="post-head">
+  <div class="wrap">
+    <div class="crumb"><span>Kaminari</span><span>/</span><span>Browse</span></div>
+    <h1>Browse: What Kaminari Recommends</h1>
+    <p class="summary">Things we use, partner with, or build ourselves, collected in one place. Some links earn Kaminari a commission at no extra cost to you. We only list things we'd recommend anyway.</p>
+  </div>
+</header>
+<div class="wrap post-layout">
+  <div class="rich">
+    <div style="border:1px solid #23283a;border-radius:14px;padding:22px;margin:26px 0;background:#12141d">
+      <p style="margin:0 0 4px;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:#8b93ad">Partner</p>
+      <h2 style="margin:0 0 8px">Anime Art Academy</h2>
+      <p>Learn to draw anime and manga with English video lessons from Japanese pro animators and manga artists, who send your drawings back with personal red-line corrections. Two lessons are free to watch.</p>
+      <a class="btn btn-primary partner-btn" href="/anime-art-academy">See why we recommend it →</a>
+    </div>
+    <div style="border:1px solid #23283a;border-radius:14px;padding:22px;margin:26px 0;background:#12141d">
+      <p style="margin:0 0 4px;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:#8b93ad">Kaminari product</p>
+      <h2 style="margin:0 0 8px">Arc Tracker</h2>
+      <p>Our own habit tracker that turns the anime you love into daily training arcs: pick a habit, build the streak, watch your own progress arc grow. Available now.</p>
+      <a class="btn btn-primary partner-btn" href="https://animemindset.com/arc-tracker/app">Open Arc Tracker →</a>
+    </div>
+  </div>
+</div>`;
+
 /* ---------- PARTNER: ANIME ART ACADEMY ---------- */
 // A feature page for an affiliate partner. It isn't in the main menu: blog posts, the footer and
 // shared links point here. Every sign-up button goes through /go/anime-art-academy, which adds
@@ -555,7 +582,10 @@ export const blogPost = (p, related) => {
   <div class="wrap post-layout">
     <div class="rich">
 ${p.html}
-${p.kind === 'characters' ? `<div class="partner-card"><b>Want to draw your favorite characters?</b><span>Learn from Japanese pro animators and manga artists. Two lessons are free to watch.</span><a href="/anime-art-academy">Learn to draw anime →</a></div>` : ''}
+${p.slug === 'anime-motivational-quotes' ? `<div style="border:1px solid #23283a;border-radius:14px;padding:18px 22px;margin:28px 0;background:#12141d">
+<p style="margin:0;font-size:15px"><span style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#8b93ad">From Kaminari</span><br>
+Like carrying these lines with you? The Anime Mindset is our own system for turning the discipline and identity behind moments like these into daily life. <a href="https://animemindset.com/" style="color:#5db8ff">See how it works →</a></p>
+</div>` : ''}${p.kind === 'characters' ? `<div class="partner-card"><b>Want to draw your favorite characters?</b><span>Learn from Japanese pro animators and manga artists. Two lessons are free to watch.</span><a href="/anime-art-academy">Learn to draw anime →</a></div>` : ''}
     </div>
     <aside class="post-aside">
       ${p.toc.length > 1 ? `<div><h4>On this page</h4><ul class="toc">${p.toc.map(t => `<li><a href="#${t.id}">${esc(t.text)}</a></li>`).join('')}</ul></div>` : ''}
