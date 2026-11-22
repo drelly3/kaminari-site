@@ -120,7 +120,7 @@ ${chrome ? `
           <li><a href="/about">About</a></li>
           <li><a href="/blog">Blog</a></li>
           <li><a href="/newsletter">Newsletter</a></li>
-          <li><a href="/anime-mindset">Anime Mindset</a></li>
+          <li><a href="https://animemindset.com/">Anime Mindset</a></li>
           <li><a href="/anime-art-academy">Learn to Draw Anime</a></li>
           <li>${discordLink('Discord')}</li>
         </ul>
