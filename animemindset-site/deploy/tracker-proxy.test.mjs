@@ -64,7 +64,7 @@ _resetVerification();
 r = await call('/arc-tracker/app'); const html = await r.text();
 ok(r.status === 200 && /text\/html/.test(r.headers.get('content-type')), 'app page 200 html');
 const rootRefs = (html.match(/(?:href|src)="\/[^"]*"/g) || []).filter(x => !x.includes('"/arc-tracker/k/'));
-ok(rootRefs.sort().join(' ') === 'href="/" href="/assets/apple-touch-icon.png" href="/assets/favicon-32.png"', 'app page: root paths are namespaced tracker files or this site\'s own icons/home', rootRefs.join(' '));
+ok(rootRefs.sort().join(' ') === 'href="/" href="/assets/apple-touch-icon.png" href="/assets/favicon-32.png" src="/assets/anime-mindset-logo.png" src="/assets/anime-mindset-logo.png"', 'app page: root paths are namespaced tracker files or this site\'s own icons/home', rootRefs.join(' '));
 ok(html.includes('<a href="/">← Back to The Anime Mindset</a>') && !html.includes('anime-mindset"') && !html.includes('Back to Kaminari'), 'app page: back link goes to this site\'s homepage');
 ok(!html.includes('joinkaminari') && !html.includes('rss.xml') && !html.includes('google-site-verification'), 'app page: no joinkaminari metadata, RSS feed or verification tag');
 ok(html.includes('<title>Arc Tracker | The Anime Mindset</title>') && html.includes('<link rel="canonical" href="https://animemindset.com/arc-tracker/app">') && html.includes('content="https://animemindset.com/assets/og-image.png"') && html.includes('<meta property="og:site_name" content="The Anime Mindset">') && html.includes('<meta name="robots" content="noindex">'), 'app page: title, canonical, og image/site name for this site; still noindex');
@@ -79,7 +79,9 @@ ok(gate.includes("s.src = '/arc-tracker/k/arc-tracker.js'"), 'gate loads namespa
 const app = await (await call('/arc-tracker/k/arc-tracker.js')).text();
 ok(app.includes("register('/arc-tracker/arc-sw.js',{scope:'/arc-tracker/'})"), 'tracker registers namespaced service worker with /arc-tracker/ scope');
 ok(app.includes("'/arc-tracker/k/assets/avatars/'") && app.includes('href="/quiz.html"') && !app.includes('href="/quiz"'), 'tracker avatars namespaced; quiz link opens this site\'s quiz.html');
-ok(!/['"`(]\/(?:assets|arc-sw|styles|favicon)/.test(app), 'tracker script: no remaining root asset paths');
+ok(!/['"`(]\/(?:assets|arc-sw|styles|favicon)/.test(app.split('"/assets/anime-mindset-logo.png"').join('')), 'tracker script: no remaining root asset paths (except this site\'s logo)');
+ok(app.split('src="/assets/anime-mindset-logo.png"').length - 1 === 2 && !app.includes('kaminari-bolt'), 'tracker script: bolt replaced by this site\'s logo (2)');
+ok(html.split('src="/assets/anime-mindset-logo.png"').length - 1 === 2 && !html.includes('kaminari-bolt'), 'app page: bolt replaced by this site\'s logo (2)');
 ok(!/joinkaminari\.com/.test(app.replace('arc-tracker-daily-reminder@joinkaminari.com', '')), 'tracker script: no joinkaminari.com links (calendar event ID only)');
 ok(app.includes("fetch('/api/arc-sync'") && app.includes("fetch('/api/arc-photos'"), 'tracker script: API paths unchanged');
 const sw = await call('/arc-tracker/arc-sw.js'); const swText = await sw.text();
@@ -87,11 +89,11 @@ ok(sw.status === 200 && /javascript/.test(sw.headers.get('content-type')) && swT
 ok(!/addEventListener\('fetch'/.test(swText) && !/caches\./.test(swText), 'service worker has no fetch handler / Cache API use');
 const man = JSON.parse(await (await call('/arc-tracker/k/arc-tracker.webmanifest')).text());
 ok(man.scope === '/arc-tracker/' && man.start_url === '/arc-tracker/app' && man.icons.every(i => i.src.startsWith('/arc-tracker/k/')), 'manifest scope/start_url unchanged, icons namespaced');
-for (const f of ['styles.css', 'arc-tracker.css', 'assets/kaminari-bolt.png', 'assets/arc-icon-192.png', 'assets/arc-icon-512.png', 'assets/avatars/balanced-master.png', 'assets/avatars/strategist.png']) {
+for (const f of ['styles.css', 'arc-tracker.css', 'assets/arc-icon-192.png', 'assets/arc-icon-512.png', 'assets/avatars/balanced-master.png', 'assets/avatars/strategist.png']) {
   const x = await call('/arc-tracker/k/' + f); ok(x.status === 200 && (await x.arrayBuffer()).byteLength > 0, 'namespaced file 200: ' + f);
   const cc = x.headers.get('cache-control'); ok(/\.(png|jpg)$/.test(f) ? cc === 'public, max-age=86400' : cc === 'public, max-age=60', 'cache-control for ' + f, cc);
 }
-for (const f of ['favicon.jpg', 'apple-touch-icon.jpg', 'worker.js', 'index.html', 'arc-tracker/app.html', 'assets/avatars/../../worker.js', 'assets/avatars/Strategist.png', 'assets/og-image.jpg', '../api/arc-sync', 'api/arc-sync', 'rss.xml', '']) {
+for (const f of ['assets/kaminari-bolt.png', 'favicon.jpg', 'apple-touch-icon.jpg', 'worker.js', 'index.html', 'arc-tracker/app.html', 'assets/avatars/../../worker.js', 'assets/avatars/Strategist.png', 'assets/og-image.jpg', '../api/arc-sync', 'api/arc-sync', 'rss.xml', '']) {
   seen.length = 0; const x = await call('/arc-tracker/k/' + f); ok(x.status === 404 && seen.length === 0, 'namespaced non-allowlisted 404 without upstream: ' + f, x.status);
 }
 ok((await call('/arc-tracker/other')).status === 404, 'unknown tracker path 404');

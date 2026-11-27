@@ -34,7 +34,6 @@ const STATIC = new Map([
   ['arc-gate.js', 'text/javascript'],
   ['arc-tracker.js', 'text/javascript'],
   ['arc-tracker.webmanifest', 'application/manifest+json'],
-  ['assets/kaminari-bolt.png', 'image/png'],
   ['assets/arc-icon-192.png', 'image/png'],
   ['assets/arc-icon-512.png', 'image/png'],
 ]);
@@ -75,7 +74,8 @@ export const REWRITES = {
     R('href="/styles.css"', `href="${NS}styles.css"`, 1),
     R('href="/arc-tracker.css"', `href="${NS}arc-tracker.css"`, 1),
     R('href="/arc-tracker.webmanifest"', `href="${NS}arc-tracker.webmanifest"`, 1),
-    R('src="/assets/kaminari-bolt.png"', `src="${NS}assets/kaminari-bolt.png"`, 2),
+    // this site's logo in place of the Kaminari bolt (gate icon and app header)
+    R('src="/assets/kaminari-bolt.png"', 'src="/assets/anime-mindset-logo.png"', 2),
     R('src="/arc-gate.js"', `src="${NS}arc-gate.js"`, 1),
     // the gate's way out goes to this site's homepage
     R('<a href="/anime-mindset">← Back to Kaminari</a>', '<a href="/">← Back to The Anime Mindset</a>', 1),
@@ -90,7 +90,8 @@ export const REWRITES = {
   ],
   'arc-tracker.js': [
     R("'/assets/avatars/'", `'${NS}assets/avatars/'`, 1),
-    R('src="/assets/kaminari-bolt.png"', `src="${NS}assets/kaminari-bolt.png"`, 2),
+    // this site's logo in place of the Kaminari bolt (header fallback and the "Day Cleared" help line)
+    R('src="/assets/kaminari-bolt.png"', 'src="/assets/anime-mindset-logo.png"', 2),
     R("navigator.serviceWorker.register('/arc-sw.js',{scope:'/arc-tracker/'})", "navigator.serviceWorker.register('/arc-tracker/arc-sw.js',{scope:'/arc-tracker/'})", 1),
     // "Don't know? Take the archetype quiz" opens this site's quiz (same questions and scoring; it hands no data
     // to the tracker, which has its own archetype picker)
