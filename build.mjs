@@ -171,6 +171,7 @@ fs.writeFileSync(path.join(DIST, 'robots.txt'), `User-agent: *\nAllow: /\n\nSite
 
 // ---------- Cloudflare Pages settings (the Vercel equivalents live in vercel.json) ----------
 fs.writeFileSync(path.join(DIST, '_redirects'), '/arc-tracker /arc-tracker/app 302\n' +
+  '/community /newsletter 301\n/habits /anime-mindset 301\n/coaching /anime-mindset 301\n' +
   (ads.enabled ? `/ads.txt ${ads.adsTxt} 301\n` : '')); // ads.txt lives with Mediavine (site.config.mjs → ads)
 fs.writeFileSync(path.join(DIST, '_headers'), '/media/*\n  Cache-Control: public, max-age=31536000, immutable\n');
 // only the licence check runs as server code; every other address is a plain file
