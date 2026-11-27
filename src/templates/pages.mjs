@@ -258,9 +258,9 @@ export const about = (posts = []) => {
 export const newsletter = posts => `
 <header class="page-hero center">
   <div class="wrap">
-    <span class="eyebrow">Weekly Anime Lessons &amp; Insights</span>
+    <span class="eyebrow">Weekly Anime Guides &amp; Picks</span>
     <h1>Your Ultimate Anime Newsletter</h1>
-    <p class="lede">Stay ahead of the anime curve with Kaminari. Get life lessons, actionable insights, and exclusive content delivered straight to your inbox every Wednesday!</p>
+    <p class="lede">Stay ahead of the anime curve with Kaminari. Get our latest filler lists, watch orders, and what-to-watch guides delivered straight to your inbox every Wednesday!</p>
     <div class="embed-box"><iframe src="${links.substackEmbed}" title="Subscribe to the Kaminari newsletter" scrolling="no"></iframe></div>
     <p class="hero-note">No spam. One email a week. Unsubscribe anytime.</p>
   </div>
@@ -270,18 +270,18 @@ export const newsletter = posts => `
   <div class="wrap">
     <div class="section-head center">
       <h2>Experience The Kaminari Energy</h2>
-      <p>Join thousands of anime fans who come for the hard-hitting advice and stay for the insights.</p>
+      <p>Join the anime fans who come for the straight answers and stay for the next favorite show.</p>
     </div>
     <div class="branch-grid">
       <div class="branch-card">
         <div class="icon">📬</div>
         <h3>Every Wednesday</h3>
-        <p>Fuel your grind with anime-inspired lessons and takeaways that keep you pushing forward throughout your week.</p>
+        <p>One email every Wednesday with our newest filler lists, watch orders, and what-to-watch picks, so you always know what is worth your time.</p>
       </div>
       <div class="branch-card">
         <div class="icon">📈</div>
-        <h3>Level Up</h3>
-        <p>Anime-inspired lessons, quotes, and stories that keep you pushing forward like a true shonen hero.</p>
+        <h3>Skip With Confidence</h3>
+        <p>Straight answers on what is canon, what is filler, and what you can safely skip, so no episode time goes to waste.</p>
       </div>
       <div class="branch-card">
         <div class="icon">🤝</div>
