@@ -21,7 +21,7 @@ On animemindset.com the home, quiz and newsletter pages are indexable. `coaching
 (meta tag and response header), as the owner asked. Everything served on the `workers.dev` address gets
 `X-Robots-Tag: noindex, nofollow`, so search engines list animemindset.com rather than the duplicate. Each page has a
 description, a canonical URL (except coaching), Open Graph/Twitter tags and the share image `assets/og-image.png`
-(1200×630). Favicons (`assets/icon.svg`, `assets/favicon-32.png`, `assets/apple-touch-icon.png`) and the share image show the blue bolt from `assets/kaminari-bolt.png`.
+(1200×630). Favicons (`assets/icon.svg`, `assets/favicon-32.png`, `assets/apple-touch-icon.png`) and the share image show the site logo from `assets/anime-mindset-logo.png`.
 
 ## Homepage
 
@@ -77,7 +77,7 @@ section uses the approved wording exactly.
 
 `assets/home.css` holds the homepage redesign only. `assets/styles.css` is a copy of the main site's stylesheet. The blocks at the end are the only additions: the header
 is laid out as name | tabs | button with the tabs centred on desktop (name 30px, tabs 16.5px); below 700px the
-newsletter button hides and the name sizes to the screen; the logo (`assets/kaminari-bolt.png`, the blue lightning bolt from the joinkaminari.com logo) sizes with the name; and the newsletter
+newsletter button hides and the name sizes to the screen; the logo (`assets/anime-mindset-logo.png`: a figure in a circle split by a lightning bolt, logo 4 of the owner's logo sheet) sizes with the name; and the newsletter
 signup box's fallback row is styled. The header button on the home and newsletter pages is "Find Your Archetype". The coaching
 and quiz pages keep their own `<style>` blocks.
 
@@ -146,7 +146,7 @@ Open `index.html` in a browser, or serve the folder:
 ## Known gaps
 
 - Still Kaminari by design: the newsletter itself (the Substack and its embed), the quiz's newsletter and Discord
-  checkboxes, the newsletter page's line saying it goes out through the Kaminari newsletter, the logo bolt, the footer
+  checkboxes, the newsletter page's line saying it goes out through the Kaminari newsletter, the footer
   LinkedIn and the About link.
 - The mockup folders this was built from (`mockups/animemindset/`, `mockups/coaching/`) are kept unchanged as
   reference.
