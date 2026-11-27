@@ -100,11 +100,12 @@ export const home = (posts, guides = {}) => {
     </div>
     ${featured ? `<a class="feature-card" href="/blog/${featured.slug}">
       <span class="feature-tag">Featured guide</span>
+      <span class="feature-tag">Updated for Season 2</span>
       <div class="feature-art"><img src="${featured.thumbnail}" alt="Black Clover" width="1200" height="800"></div>
       <div class="feature-body">
         <h2>Black Clover filler list</h2>
         ${fStats ? `<div class="feature-stats"><div><b>${fStats.total}</b><span>episodes</span></div><div><b>${fStats.filler}</b><span>filler</span></div><div><b>${fStats.pct}%</b><span>filler rate</span></div></div>` : ''}
-        <p>The full skip list, the three filler episodes worth keeping, and every episode at a glance.</p>
+        <p>The full skip list, the three filler episodes worth keeping, every episode at a glance, and the Season 2 tracker.</p>
         <span class="btn btn-primary btn-sm">Open the guide</span>
       </div>
     </a>` : ''}
