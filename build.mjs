@@ -76,7 +76,7 @@ write('/about', {
   description: 'Kaminari is a home base for exploring anime: filler lists, watch order guides and what-to-watch-next picks for the series fans actually binge.',
   body: pages.about(posts),
 });
-write('/newsletter', { title: 'Your Ultimate Anime Newsletter | Kaminari Newsletter', body: pages.newsletter(posts) });
+write('/newsletter', { title: 'Your Ultimate Anime Newsletter | Kaminari Newsletter', description: 'One email a week with Kaminari\'s newest anime filler lists, watch order guides, and what-to-watch picks. No spam, unsubscribe anytime.', body: pages.newsletter(posts) });
 write('/anime-mindset', {
   title: 'The Anime Mindset | Kaminari',
   description: 'Stop watching growth and start living it. Find your archetype, name your weakness, and build a daily system from the anime you love.',
