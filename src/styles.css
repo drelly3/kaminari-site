@@ -255,7 +255,7 @@ p.sub{ margin-bottom:26px; }
 .post-layout{ display:grid; grid-template-columns:minmax(0,1fr) 280px; gap:60px; padding-top:20px; padding-bottom:88px; align-items:start; }
 .post-aside{ position:sticky; top:100px; display:flex; flex-direction:column; gap:26px; max-height:calc(100vh - 120px); overflow:auto; }
 @media (max-width:980px){
-  .post-layout{ grid-template-columns:1fr; gap:36px; }
+  .post-layout{ grid-template-columns:minmax(0,1fr); gap:36px; }
   .post-aside{ order:-1; position:static; max-height:none; }
   .post-aside .aside-cta{ display:none; }
 }
